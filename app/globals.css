@@ -2,11 +2,69 @@
 @tailwind components;
 @tailwind utilities;
 
-:root { color-scheme: dark; --font-inter: Inter, ui-sans-serif, system-ui, sans-serif; --font-bebas: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif; --font-playfair: Georgia, "Times New Roman", serif; }
+:root {
+  color-scheme: dark;
+  --font-inter: "Inter", "Avenir Next", "Segoe UI", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-bebas: "Bebas Neue", "Oswald", Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  --font-playfair: "Playfair Display", "Cormorant Garamond", Georgia, "Times New Roman", serif;
+}
+
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body { margin: 0; background: #050304; color: #FFF6E8; }
-body::before { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 50; opacity: .055; background-image: radial-gradient(circle at 1px 1px, #fff 1px, transparent 0); background-size: 4px 4px; mix-blend-mode: screen; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 18% 4%, rgba(225, 18, 27, .2), transparent 28rem),
+    radial-gradient(circle at 88% 18%, rgba(246, 183, 60, .13), transparent 24rem),
+    linear-gradient(180deg, #09050a 0%, #050304 46%, #080507 100%);
+  color: #FFF6E8;
+}
+
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+body::before {
+  z-index: 0;
+  opacity: .028;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(255, 246, 232, .85) 1px, transparent 0),
+    linear-gradient(115deg, transparent 0 52%, rgba(246, 183, 60, .16) 52.2% 52.45%, transparent 52.7%);
+  background-size: 7px 7px, 100% 100%;
+  mix-blend-mode: screen;
+}
+
+body::after {
+  z-index: 1;
+  opacity: .18;
+  background-image:
+    linear-gradient(135deg, transparent 0 58%, rgba(18, 61, 49, .42) 58.2% 59.1%, transparent 59.3%),
+    linear-gradient(38deg, transparent 0 65%, rgba(18, 61, 49, .38) 65.2% 66%, transparent 66.2%),
+    radial-gradient(ellipse at 18% 18%, rgba(18, 61, 49, .3), transparent 28rem);
+  filter: blur(.2px);
+}
+
+body > * { position: relative; z-index: 2; }
 ::selection { background: #E1121B; color: #FFF6E8; }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; } }
-.palm-shadow { background: linear-gradient(130deg, transparent 0 55%, rgba(18,61,49,.35) 55% 57%, transparent 57%), linear-gradient(35deg, transparent 0 62%, rgba(18,61,49,.32) 62% 64%, transparent 64%); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+.palm-shadow {
+  background:
+    radial-gradient(ellipse at 16% 12%, rgba(18, 61, 49, .32), transparent 24rem),
+    linear-gradient(130deg, transparent 0 55%, rgba(18, 61, 49, .32) 55.15% 56.3%, transparent 56.45%),
+    linear-gradient(35deg, transparent 0 62%, rgba(18, 61, 49, .28) 62.1% 63.1%, transparent 63.25%),
+    linear-gradient(158deg, transparent 0 72%, rgba(18, 61, 49, .2) 72.15% 73%, transparent 73.15%);
+}
