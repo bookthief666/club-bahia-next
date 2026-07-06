@@ -5,8 +5,17 @@ import { HistorySection } from '@/components/sections/HistorySection';
 import { HoursSection } from '@/components/sections/HoursSection';
 import { DressCodeSection } from '@/components/sections/DressCodeSection';
 import { LocationSection } from '@/components/sections/LocationSection';
-import { ContactSection } from '@/components/sections/ContactSection';
 
 export default function Home() {
-  return <main><HeroSection /><TonightSection /><ReservationCTASection /><HistorySection /><HoursSection /><DressCodeSection /><LocationSection /><ContactSection /></main>;
+  return (
+    <main className="pb-16 md:pb-0">
+      <HeroSection />
+      <TonightSection />
+      <ReservationCTASection />
+      <HistorySection />
+      <HoursSection />
+      <DressCodeSection />
+      <LocationSection />
+    </main>
+  );
 }
