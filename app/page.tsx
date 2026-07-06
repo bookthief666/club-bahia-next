@@ -1,21 +1,21 @@
-import { HeroSection } from '@/components/sections/HeroSection';
-import { TonightSection } from '@/components/sections/TonightSection';
-import { ReservationCTASection } from '@/components/sections/ReservationCTASection';
-import { HistorySection } from '@/components/sections/HistorySection';
-import { HoursSection } from '@/components/sections/HoursSection';
-import { DressCodeSection } from '@/components/sections/DressCodeSection';
-import { LocationSection } from '@/components/sections/LocationSection';
+import { HomeHeroV2 } from '@/components/sections/HomeHeroV2';
+import { QuickActions } from '@/components/sections/QuickActions';
+import { TonightPoster } from '@/components/sections/TonightPoster';
+import { ReservationPreview } from '@/components/sections/ReservationPreview';
+import { HistoryFeature } from '@/components/sections/HistoryFeature';
+import { InfoGrid } from '@/components/sections/InfoGrid';
+import { LocationContact } from '@/components/sections/LocationContact';
 
 export default function Home() {
   return (
-    <main className="pb-16 md:pb-0">
-      <HeroSection />
-      <TonightSection />
-      <ReservationCTASection />
-      <HistorySection />
-      <HoursSection />
-      <DressCodeSection />
-      <LocationSection />
+    <main className="bahia-bg overflow-hidden pb-8 md:pb-0">
+      <HomeHeroV2 />
+      <QuickActions />
+      <TonightPoster />
+      <ReservationPreview />
+      <HistoryFeature />
+      <InfoGrid />
+      <LocationContact />
     </main>
   );
 }
