@@ -1,21 +1,22 @@
 import { Section } from '@/components/ui/Section';
 import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
+
+const badges = ['21+', 'Dress Code', 'Sunset Blvd'];
 
 export function TonightSection() {
   return (
-    <Section id="tonight" eyebrow="Tonight" title="Live Latin Entertainment" className="pt-10 sm:pt-14">
-      <Card className="grid gap-5 overflow-hidden border-sunsetGold/15 bg-[linear-gradient(135deg,rgba(225,18,27,.13),rgba(23,21,26,.68)_42%,rgba(246,183,60,.08))] md:grid-cols-[1.15fr_.85fr]">
-        <div>
-          <Badge>Dance floor energy</Badge>
-          <p className="mt-5 max-w-2xl text-base leading-7 text-mutedSand sm:text-lg sm:leading-8">
-            Step into a cinematic Sunset Blvd room shaped by salsa rhythms, red neon, warm marquee light, and a crowd that comes ready to dance.
-          </p>
-        </div>
-        <div className="rounded-3xl border border-bahiaRed/25 bg-bahiaBlack/42 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,.06)]">
-          <p className="text-[0.68rem] font-black uppercase tracking-[0.3em] text-amberGlow">After dark</p>
-          <h3 className="mt-3 font-display text-[clamp(2.3rem,12vw,3.5rem)] leading-none text-warmIvory">21+ Nightlife</h3>
-          <p className="mt-3 text-sm leading-6 text-softGray sm:text-base">Government ID required. Dress code enforced at the door.</p>
+    <Section id="tonight" eyebrow="Tonight" title="Live Latin Entertainment" className="pt-10">
+      <Card className="relative overflow-hidden border-sunsetGold/20 bg-[linear-gradient(145deg,rgba(61,12,16,.82),rgba(23,21,26,.82)_46%,rgba(8,4,5,.9))]">
+        <div className="absolute right-0 top-0 h-full w-24 bg-[linear-gradient(90deg,transparent,rgba(246,183,60,.12))]" />
+        <div className="relative grid gap-5 md:grid-cols-[1.1fr_.9fr] md:items-end">
+          <div>
+            <p className="text-[0.68rem] font-black uppercase tracking-[0.34em] text-amberGlow">Tonight</p>
+            <h3 className="mt-3 font-display text-[clamp(2.45rem,12vw,4.4rem)] leading-none text-warmIvory">Live Latin Entertainment</h3>
+            <p className="mt-4 max-w-xl text-base leading-7 text-mutedSand">Dance floor energy, salsa rhythms, tropical noir lighting.</p>
+          </div>
+          <div className="flex flex-wrap gap-2 md:justify-end">
+            {badges.map((badge) => <span key={badge} className="rounded-full border border-sunsetGold/30 bg-sunsetGold/10 px-3 py-1.5 text-xs font-black uppercase tracking-[0.16em] text-amberGlow">{badge}</span>)}
+          </div>
         </div>
       </Card>
     </Section>

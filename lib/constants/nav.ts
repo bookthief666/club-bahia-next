@@ -4,5 +4,4 @@ export const navItems = [
   { label: 'History', href: '#history' },
   { label: 'Hours', href: '#hours' },
   { label: 'Location', href: '#location' },
-  { label: 'Contact', href: '#contact' },
 ];
