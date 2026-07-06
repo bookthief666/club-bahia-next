@@ -1,0 +1,2 @@
+import { Section } from '@/components/ui/Section';
+export function HistorySection() { return <Section id="history" eyebrow="Since 1974" title="Entertaining Los Angeles since 1974"><p className="max-w-3xl text-lg leading-8 text-mutedSand">Club Bahia brings historic Latin nightlife to Sunset Blvd with a warm, dramatic room built for live music, dancing, and late-night Los Angeles memories.</p></Section>; }
