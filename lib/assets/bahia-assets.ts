@@ -19,7 +19,7 @@ export type BahiaImageAsset = {
 
 export const bahiaAssets = {
   exteriorNightFacade: {
-    src: '/assets/bahia/exterior-night-facade.webp',
+    src: '/assets/bahia/exterior-night-sunset-blvd.webp',
     alt: 'Club Bahia exterior facade glowing at night on Sunset Boulevard',
   },
   barNeonPalms: {
