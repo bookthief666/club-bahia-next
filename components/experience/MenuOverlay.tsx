@@ -5,7 +5,7 @@ export function MenuOverlay({ onClose }: { onClose: () => void }) {
   return (
     <OverlayFrame title="Close Menus and Events overlay" onClose={onClose}>
       <div className="mx-auto flex min-h-full max-w-4xl flex-col justify-center">
-        <h2 className="font-serif text-[clamp(3.5rem,13vw,8.5rem)] leading-[0.8] tracking-[-0.08em]">{experienceCopy.menu.heading}</h2>
+        <h2 className="font-serif text-[clamp(3.5rem,13vw,8.5rem)] leading-[0.8] tracking-[-0.065em]">{experienceCopy.menu.heading}</h2>
         <p className="mt-8 max-w-2xl text-xl leading-9 text-amber-50/80">{experienceCopy.menu.body}</p>
         <div className="mt-10 flex flex-col gap-3 sm:flex-row">
           <a href={`tel:${experienceCopy.venue.phone.replace(/[^0-9]/g, '')}`} className="rounded-full bg-red-600 px-6 py-3 text-center text-sm uppercase tracking-[0.22em] text-white">Call Club Bahia</a>

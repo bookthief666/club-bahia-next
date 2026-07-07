@@ -18,7 +18,7 @@ export function ExperienceShell() {
   const closeOverlay = useCallback(() => setOverlay(null), []);
 
   return (
-    <main className="relative min-h-screen overflow-x-hidden bg-[#050304] text-amber-50">
+    <main className="relative min-h-screen w-full max-w-full overflow-x-hidden bg-[#050304] text-amber-50">
       <TextureLayer />
       <ExperienceNav onOpen={setOverlay} />
       <HeroScene />
