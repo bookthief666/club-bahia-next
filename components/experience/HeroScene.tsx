@@ -8,10 +8,10 @@ import { sceneReveal } from '@/lib/experience/experience-motion';
 export function HeroScene() {
   const reduceMotion = useReducedMotion();
   return (
-    <section id="experience-hero" className="relative flex min-h-[100svh] items-start justify-center overflow-hidden px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-24 text-center sm:min-h-screen sm:items-center sm:px-6 sm:py-28">
+    <section id="experience-hero" className="relative isolate flex min-h-[100svh] items-start justify-center overflow-hidden px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-24 text-center sm:min-h-screen sm:items-center sm:px-6 sm:py-28">
       <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} className="relative z-10 flex w-full max-w-[min(100%,64rem)] flex-col items-center">
-        <motion.div variants={sceneReveal} custom={0.05} animate={reduceMotion ? { opacity: 1, y: 0 } : undefined} className="w-full max-w-[10.75rem] sm:max-w-[17rem] lg:max-w-[20rem]">
-          <BahiaCrest title="Club Bahia sunset palm crest" />
+        <motion.div variants={sceneReveal} custom={0.05} animate={reduceMotion ? { opacity: 1, y: 0 } : undefined} className="flex w-full justify-center">
+          <BahiaCrest variant="hero" title="Club Bahia sunset palm crest" />
         </motion.div>
         <motion.p variants={sceneReveal} custom={0.16} className="mt-4 max-w-full text-[0.68rem] uppercase tracking-[0.34em] text-amber-200/80 sm:mt-6 sm:text-xs sm:tracking-[0.45em]">
           {experienceCopy.venue.label}
