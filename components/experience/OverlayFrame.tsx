@@ -1,12 +1,13 @@
 'use client';
 
-import { type ReactNode, useEffect, useRef } from 'react';
+import { type ReactNode, useEffect, useId, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { overlayVariants } from '@/lib/experience/experience-motion';
 import { TextureLayer } from './TextureLayer';
 
 export function OverlayFrame({ children, onClose, title }: { children: ReactNode; onClose: () => void; title: string }) {
   const closeRef = useRef<HTMLButtonElement>(null);
+  const titleId = useId();
 
   useEffect(() => {
     closeRef.current?.focus();
@@ -21,6 +22,7 @@ export function OverlayFrame({ children, onClose, title }: { children: ReactNode
     <motion.div
       role="dialog"
       aria-modal="true"
+      aria-labelledby={titleId}
       initial="hidden"
       animate="visible"
       exit="exit"
@@ -37,7 +39,10 @@ export function OverlayFrame({ children, onClose, title }: { children: ReactNode
       >
         Close
       </button>
-      <div className="relative z-10 mx-auto min-h-[calc(100svh-2.5rem)] w-full max-w-7xl overflow-x-hidden py-20 sm:py-24">{children}</div>
+      <div className="relative z-10 mx-auto min-h-[calc(100svh-2.5rem)] w-full max-w-7xl overflow-x-hidden py-20 sm:py-24">
+        <span id={titleId} className="sr-only">{title}</span>
+        {children}
+      </div>
     </motion.div>
   );
 }
