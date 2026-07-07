@@ -323,3 +323,62 @@ body > * { position: relative; z-index: 2; }
     animation: none !important;
   }
 }
+
+.bahia-sunset-logo {
+  isolation: isolate;
+  animation: bahia-neon-pulse 5.6s ease-in-out infinite;
+}
+
+.bahia-sunset-logo__aura {
+  position: absolute;
+  inset: 16%;
+  z-index: -1;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, rgba(255, 246, 232, .22), transparent 46%),
+    radial-gradient(circle, rgba(225, 18, 27, .38), transparent 68%);
+  filter: blur(12px);
+  opacity: .72;
+}
+
+.bahia-sunset-logo__image {
+  filter:
+    brightness(0) saturate(100%) invert(92%) sepia(23%) saturate(653%) hue-rotate(333deg) brightness(107%) contrast(101%)
+    drop-shadow(0 0 10px rgba(255, 246, 232, .28))
+    drop-shadow(0 0 18px rgba(225, 18, 27, .42))
+    drop-shadow(0 0 34px rgba(246, 183, 60, .16));
+  opacity: .94;
+}
+
+.bahia-sunset-logo--mark .bahia-sunset-logo__aura { inset: 4%; filter: blur(7px); opacity: .62; }
+.bahia-sunset-logo--mark .bahia-sunset-logo__image { filter: brightness(0) saturate(100%) invert(90%) sepia(29%) saturate(580%) hue-rotate(334deg) brightness(108%) contrast(101%) drop-shadow(0 0 10px rgba(225, 18, 27, .46)); }
+.bahia-sunset-logo--subtle .bahia-sunset-logo__aura { opacity: .38; }
+.bahia-sunset-logo--subtle .bahia-sunset-logo__image { opacity: .82; }
+
+.bahia-kenburns,
+.bahia-kenburns-panel {
+  transform: scale(1.035);
+  transform-origin: center;
+  animation: bahia-kenburns 18s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.bahia-kenburns-panel { animation-duration: 22s; }
+
+@keyframes bahia-kenburns {
+  0% { transform: scale(1.035) translate3d(-.45%, -.35%, 0); }
+  100% { transform: scale(1.075) translate3d(.45%, .35%, 0); }
+}
+
+@media (max-width: 420px) {
+  .bahia-sunset-logo__aura { inset: 20%; filter: blur(10px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bahia-kenburns,
+  .bahia-kenburns-panel {
+    animation: none !important;
+    transform: none !important;
+    will-change: auto;
+  }
+}

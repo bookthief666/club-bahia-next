@@ -23,10 +23,10 @@ type CinematicScene = {
 const scenes: CinematicScene[] = [
   {
     id: 'arrival',
-    eyebrow: 'Scene 01',
-    kicker: 'Sunset arrival.',
+    eyebrow: 'Scene 01 / Sunset Blvd',
+    kicker: 'Arrival on Sunset',
     title: 'Arrival on Sunset',
-    line: 'Sunset arrival.',
+    line: 'Doors. Glow. Nightfall.',
     asset: bahiaAssets.exteriorNightFacade,
     alt: bahiaAssets.exteriorNightFacade.alt,
     imageClassName: 'object-[52%_50%] min-[360px]:object-center',
@@ -35,10 +35,10 @@ const scenes: CinematicScene[] = [
   },
   {
     id: 'lounge',
-    eyebrow: 'Scene 02',
-    kicker: 'Red room glow.',
-    title: 'The red lounge',
-    line: 'Red room glow.',
+    eyebrow: 'Scene 02 / Lounge',
+    kicker: 'The Red Lounge',
+    title: 'The Red Lounge',
+    line: 'Velvet red glow.',
     asset: bahiaAssets.redLoungeVipBooths,
     alt: bahiaAssets.redLoungeVipBooths.alt,
     imageClassName: 'object-[48%_50%] min-[360px]:object-center',
@@ -47,10 +47,10 @@ const scenes: CinematicScene[] = [
   },
   {
     id: 'bar',
-    eyebrow: 'Scene 03',
-    kicker: 'Neon palms.',
-    title: 'Neon palms',
-    line: 'Neon palms.',
+    eyebrow: 'Scene 03 / Bar',
+    kicker: 'Neon Palms',
+    title: 'Neon Palms',
+    line: 'Tropical after dark.',
     asset: bahiaAssets.barNeonPalms,
     alt: bahiaAssets.barNeonPalms.alt,
     imageClassName: 'object-[58%_50%] min-[360px]:object-center',
@@ -59,10 +59,10 @@ const scenes: CinematicScene[] = [
   },
   {
     id: 'dance-floor',
-    eyebrow: 'Scene 04',
-    kicker: 'The floor fills.',
-    title: 'Dance floor energy',
-    line: 'The floor fills.',
+    eyebrow: 'Scene 04 / Dance',
+    kicker: 'Dance Floor Energy',
+    title: 'Dance Floor Energy',
+    line: 'Bass. Bodies. Bahia.',
     asset: bahiaAssets.liveDanceCrowdStage,
     alt: bahiaAssets.liveDanceCrowdStage.alt,
     imageClassName: 'object-[50%_48%]',
@@ -71,10 +71,10 @@ const scenes: CinematicScene[] = [
   },
   {
     id: 'reserve',
-    eyebrow: 'Scene 05',
-    kicker: 'Reserve the night.',
-    title: 'Reserve the night',
-    line: 'Reserve the night.',
+    eyebrow: 'Scene 05 / Tables',
+    kicker: 'Reserve the Night',
+    title: 'Reserve the Night',
+    line: 'Your Friday or Saturday.',
     asset: bahiaAssets.discoBallEmptyDanceFloor,
     alt: bahiaAssets.discoBallEmptyDanceFloor.alt,
     imageClassName: 'object-[50%_42%]',
@@ -98,7 +98,7 @@ export function InsideBahiaScene() {
         </h2>
       </div>
 
-      <div className="relative z-10 mt-8 grid gap-4 px-3 pb-10 sm:px-6 sm:pb-16 md:gap-6">
+      <div className="relative z-10 mx-auto mt-8 grid max-w-7xl gap-4 px-3 pb-10 sm:px-6 sm:pb-16 md:grid-cols-12 md:gap-6">
         {scenes.map((scene, index) => (
           <motion.article
             key={scene.id}
@@ -106,7 +106,7 @@ export function InsideBahiaScene() {
             whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.28 }}
             transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
-            className="group relative mx-auto min-h-[82svh] w-full max-w-7xl overflow-hidden rounded-[1.55rem] border border-amber-100/12 bg-[radial-gradient(circle_at_35%_20%,rgba(225,18,27,0.2),transparent_28%),linear-gradient(135deg,#160506,#020102_65%)] shadow-[0_28px_90px_rgba(0,0,0,0.5)] sm:min-h-[88svh] sm:rounded-[2.25rem]"
+            className={`group relative mx-auto min-h-[72svh] w-full overflow-hidden rounded-[1.35rem] border border-amber-100/12 bg-[radial-gradient(circle_at_35%_20%,rgba(225,18,27,0.2),transparent_28%),linear-gradient(135deg,#160506,#020102_65%)] shadow-[0_28px_90px_rgba(0,0,0,0.5)] min-[390px]:min-h-[76svh] sm:min-h-[80svh] sm:rounded-[2.25rem] md:min-h-[72vh] ${index === 0 || index === 4 ? 'md:col-span-12' : index === 1 ? 'md:col-span-7' : index === 2 ? 'md:col-span-5' : 'md:col-span-6'}`}
             aria-label={`${scene.eyebrow}: ${scene.kicker}`}
           >
             {scene.asset ? (
@@ -121,16 +121,15 @@ export function InsideBahiaScene() {
                   src={scene.asset.src}
                   alt={scene.alt ?? scene.asset.alt}
                   fill
-                  priority={index === 0}
-                  sizes="100vw"
-                  className={`${scene.imageClassName ?? 'object-center'} object-cover opacity-90 saturate-[1.12] contrast-[1.04]`}
+                  sizes="(min-width: 768px) 50vw, 100vw"
+                  className={`bahia-kenburns-panel ${scene.imageClassName ?? 'object-center'} object-cover opacity-90 saturate-[1.12] contrast-[1.04]`}
                 />
               </motion.div>
             ) : null}
             <div className={`absolute inset-0 bg-gradient-to-t ${scene.tone}`} aria-hidden="true" />
             <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.72),rgba(0,0,0,0.08)_48%,rgba(0,0,0,0.52)),radial-gradient(circle_at_50%_18%,rgba(255,231,184,0.15),transparent_22%)]" aria-hidden="true" />
             <div className="bahia-light-sweep absolute inset-y-0 -left-1/2 w-1/2 bg-gradient-to-r from-transparent via-amber-100/10 to-transparent" aria-hidden="true" />
-            <div className={`relative z-10 flex min-h-[82svh] p-5 sm:min-h-[88svh] sm:p-8 md:p-12 ${scene.align === 'end' ? 'items-end justify-end text-right' : scene.align === 'center' ? 'items-end justify-center text-center' : 'items-end justify-start'}`}>
+            <div className={`relative z-10 flex min-h-[72svh] p-5 min-[390px]:min-h-[76svh] sm:min-h-[80svh] sm:p-8 md:min-h-[72vh] md:p-12 ${scene.align === 'end' ? 'items-end justify-end text-right' : scene.align === 'center' ? 'items-end justify-center text-center' : 'items-end justify-start'}`}>
               <motion.div
                 initial={reduceMotion ? false : { opacity: 0, y: 18 }}
                 whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
@@ -139,7 +138,7 @@ export function InsideBahiaScene() {
                 className="w-full max-w-[38rem] pb-5 sm:pb-6"
               >
                 <p className="text-[0.62rem] font-black uppercase tracking-[0.3em] text-amber-100/72 sm:text-xs">{scene.eyebrow}</p>
-                <h3 className="mt-3 text-balance font-serif text-[clamp(3.25rem,17vw,8.5rem)] leading-[0.76] tracking-[-0.085em] text-amber-50 drop-shadow-[0_8px_34px_rgba(0,0,0,0.62)] sm:mt-4">
+                <h3 className="mt-3 max-w-full text-balance font-serif text-[clamp(2.9rem,15vw,8.5rem)] leading-[0.78] tracking-[-0.085em] text-amber-50 drop-shadow-[0_8px_34px_rgba(0,0,0,0.62)] sm:mt-4">
                   {scene.title}
                 </h3>
                 <p className="mt-4 text-[0.78rem] font-black uppercase tracking-[0.22em] text-red-100/80 sm:text-sm sm:tracking-[0.28em]">{scene.line}</p>

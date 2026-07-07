@@ -11,6 +11,7 @@ type BahiaSunsetLogoProps = {
   fallbackClassName?: string;
   priority?: boolean;
   showFallbackText?: boolean;
+  tone?: 'hero' | 'mark' | 'subtle';
 };
 
 export function BahiaSunsetLogo({
@@ -19,11 +20,13 @@ export function BahiaSunsetLogo({
   fallbackClassName,
   showFallbackText = false,
   priority = false,
+  tone = 'hero',
 }: BahiaSunsetLogoProps) {
   const [missing, setMissing] = useState(false);
 
   return (
-    <div className={cn('bahia-sunset-logo relative inline-flex items-center justify-center', className)}>
+    <div className={cn('bahia-sunset-logo relative inline-flex items-center justify-center', `bahia-sunset-logo--${tone}`, className)}>
+      <span className="bahia-sunset-logo__aura" aria-hidden="true" />
       {!missing ? (
         <Image
           src="/assets/bahia/logo/bahia-sunset-logo.webp"
@@ -31,7 +34,7 @@ export function BahiaSunsetLogo({
           fill
           sizes="(min-width: 768px) 13rem, 9rem"
           priority={priority}
-          className={cn('object-contain drop-shadow-[0_0_18px_rgba(225,18,27,0.38)]', imageClassName)}
+          className={cn('bahia-sunset-logo__image object-contain', imageClassName)}
           onError={() => setMissing(true)}
         />
       ) : (
