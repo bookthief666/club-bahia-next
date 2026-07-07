@@ -7,6 +7,7 @@ import { ExperienceNav } from './ExperienceNav';
 import { FloatingBahiaMark } from './FloatingBahiaMark';
 import { HeroScene } from './HeroScene';
 import { MantraScene } from './MantraScene';
+import { InsideBahiaScene } from './InsideBahiaScene';
 import { TextureLayer } from './TextureLayer';
 import { StoryOverlay } from './StoryOverlay';
 import { ReservationOverlay } from './ReservationOverlay';
@@ -23,6 +24,7 @@ export function ExperienceShell() {
       <ExperienceNav onOpen={setOverlay} />
       <HeroScene />
       <MantraScene />
+      <InsideBahiaScene />
       <FloatingBahiaMark />
       <AnimatePresence mode="wait">
         {overlay === 'story' && <StoryOverlay key="story" onClose={closeOverlay} />}
