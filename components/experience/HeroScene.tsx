@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { motion, useReducedMotion } from 'framer-motion';
-import { BahiaCrest } from './BahiaCrest';
+import { BahiaSunsetLogo } from './BahiaSunsetLogo';
 import { experienceCopy } from '@/lib/experience/experience-copy';
 import { sceneReveal } from '@/lib/experience/experience-motion';
 import { bahiaAssets } from '@/lib/assets/bahia-assets';
@@ -16,7 +16,7 @@ export function HeroScene() {
       <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-red-950/35 via-transparent to-amber-900/20 mix-blend-screen" aria-hidden="true" />
       <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} className="relative z-10 flex w-full max-w-[min(100%,64rem)] flex-col items-center">
         <motion.div variants={sceneReveal} custom={0.05} animate={reduceMotion ? { opacity: 1, y: 0 } : undefined} className="flex w-full justify-center">
-          <BahiaCrest variant="hero" title="Club Bahia sunset palm crest" />
+          <BahiaSunsetLogo className="h-32 w-32 sm:h-40 sm:w-40 md:h-52 md:w-52" showFallbackText={false} />
         </motion.div>
         <motion.p variants={sceneReveal} custom={0.16} className="mt-3 max-w-full text-[0.68rem] uppercase tracking-[0.34em] text-amber-200/80 sm:mt-5 sm:text-xs sm:tracking-[0.45em]">
           {experienceCopy.venue.label}
