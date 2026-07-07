@@ -1,14 +1,19 @@
 'use client';
 
+import Image from 'next/image';
 import { motion, useReducedMotion } from 'framer-motion';
 import { BahiaCrest } from './BahiaCrest';
 import { experienceCopy } from '@/lib/experience/experience-copy';
 import { sceneReveal } from '@/lib/experience/experience-motion';
+import { bahiaAssets } from '@/lib/assets/bahia-assets';
 
 export function HeroScene() {
   const reduceMotion = useReducedMotion();
   return (
     <section id="experience-hero" className="relative isolate flex min-h-[100svh] items-start justify-center overflow-hidden px-4 pb-[calc(4.25rem+env(safe-area-inset-bottom))] pt-20 text-center min-[360px]:pt-[5.5rem] sm:min-h-screen sm:items-center sm:px-6 sm:py-24 md:py-28">
+      <Image src={bahiaAssets.exteriorNightFacade.src} alt="" fill priority sizes="100vw" className="pointer-events-none absolute inset-0 -z-20 object-cover object-[54%_50%] opacity-72 saturate-125" aria-hidden="true" />
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_38%,rgba(225,18,27,0.22),transparent_30%),linear-gradient(90deg,rgba(5,3,4,0.92),rgba(5,3,4,0.46)_45%,rgba(5,3,4,0.9)),linear-gradient(180deg,rgba(5,3,4,0.58),rgba(5,3,4,0.38)_42%,rgba(5,3,4,0.96))]" aria-hidden="true" />
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-red-950/35 via-transparent to-amber-900/20 mix-blend-screen" aria-hidden="true" />
       <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} className="relative z-10 flex w-full max-w-[min(100%,64rem)] flex-col items-center">
         <motion.div variants={sceneReveal} custom={0.05} animate={reduceMotion ? { opacity: 1, y: 0 } : undefined} className="flex w-full justify-center">
           <BahiaCrest variant="hero" title="Club Bahia sunset palm crest" />
