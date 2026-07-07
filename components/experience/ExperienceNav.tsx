@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { experienceCopy, type ExperienceOverlay } from '@/lib/experience/experience-copy';
 
@@ -25,13 +26,13 @@ export function ExperienceNav({ onOpen }: ExperienceNavProps) {
         </a>
         <div className="flex min-w-0 items-center justify-end gap-2 md:hidden">
           {reserveItem && (
-            <button
-              type="button"
-              onClick={() => openOverlay(reserveItem.overlay)}
+            <Link
+              href="/reservations"
+              onClick={() => setMenuOpen(false)}
               className="shrink-0 whitespace-nowrap rounded-full border border-red-400/50 bg-red-600/25 px-3 py-2 text-[0.62rem] tracking-[0.14em] text-white transition hover:bg-red-600/40 focus:outline-none focus:ring-2 focus:ring-red-500"
             >
               {reserveItem.label}
-            </button>
+            </Link>
           )}
           <button
             type="button"
@@ -45,14 +46,24 @@ export function ExperienceNav({ onOpen }: ExperienceNavProps) {
         </div>
         <div className="hidden items-center justify-end gap-x-4 md:flex lg:gap-x-7">
           {experienceCopy.nav.map((item) => (
-            <button
-              key={item.label}
-              type="button"
-              onClick={() => openOverlay(item.overlay)}
-              className="whitespace-nowrap transition hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
-            >
-              {item.label}
-            </button>
+            item.overlay === 'reservations' ? (
+              <Link
+                key={item.label}
+                href="/reservations"
+                className="whitespace-nowrap transition hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+              >
+                {item.label}
+              </Link>
+            ) : (
+              <button
+                key={item.label}
+                type="button"
+                onClick={() => openOverlay(item.overlay)}
+                className="whitespace-nowrap transition hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+              >
+                {item.label}
+              </button>
+            )
           ))}
         </div>
         {menuOpen && (
