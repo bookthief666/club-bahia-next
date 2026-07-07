@@ -3,7 +3,7 @@ export const experienceCopy = {
     name: 'Club Bahia',
     label: 'Bahia Sunset',
     established: 'Est. 1974',
-    address: '1130 Sunset Blvd, Los Angeles, CA',
+    address: '1130 Sunset Blvd · Los Angeles, CA',
     phone: '(213) 250-4313',
     instagram: '@clubbahia_la',
   },
