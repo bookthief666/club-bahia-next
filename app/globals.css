@@ -296,3 +296,30 @@ body > * { position: relative; z-index: 2; }
 @media (prefers-reduced-motion: reduce) {
   .experience-texture__grain { mix-blend-mode: normal; }
 }
+
+.bahia-sunset-logo {
+  animation: bahia-neon-pulse 4.8s ease-in-out infinite;
+}
+
+.bahia-light-sweep {
+  transform: translateX(-140%) skewX(-12deg);
+  animation: bahia-light-sweep 8.5s ease-in-out infinite;
+}
+
+@keyframes bahia-neon-pulse {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(225, 18, 27, .26)); opacity: .94; }
+  50% { filter: drop-shadow(0 0 18px rgba(225, 18, 27, .5)) drop-shadow(0 0 28px rgba(246, 183, 60, .18)); opacity: 1; }
+}
+
+@keyframes bahia-light-sweep {
+  0%, 18% { transform: translateX(-140%) skewX(-12deg); opacity: 0; }
+  32% { opacity: .55; }
+  48%, 100% { transform: translateX(420%) skewX(-12deg); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bahia-sunset-logo,
+  .bahia-light-sweep {
+    animation: none !important;
+  }
+}

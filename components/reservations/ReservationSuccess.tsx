@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ReservationFormValues } from '@/lib/reservations/reservation-schema';
 import { ReservationSummary } from './ReservationSummary';
+import { BahiaSunsetLogo } from '@/components/experience/BahiaSunsetLogo';
 
 export function ReservationSuccess({ values, onEdit }: { values: ReservationFormValues; onEdit: () => void }) {
   return (
@@ -8,6 +9,7 @@ export function ReservationSuccess({ values, onEdit }: { values: ReservationForm
       <div className="rounded-[1.2rem] border border-dashed border-amber-200/20 bg-black/20 p-4 sm:rounded-[1.5rem] sm:p-6">
         <div className="flex flex-col gap-2 border-b border-dotted border-amber-100/20 pb-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
+            <BahiaSunsetLogo className="mb-3 h-14 w-28" showFallbackText />
             <p className="text-[0.66rem] uppercase tracking-[0.26em] text-red-200 sm:text-xs sm:tracking-[0.32em]">Review</p>
             <h2 id="reservation-ready-title" className="mt-2 font-serif text-[2.65rem] leading-none tracking-[-0.04em] text-amber-50 sm:text-6xl">
               Reservation Request Ready

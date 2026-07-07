@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { experienceCopy, type ExperienceOverlay } from '@/lib/experience/experience-copy';
+import { BahiaSunsetLogo } from './BahiaSunsetLogo';
 
 type ExperienceNavProps = {
   onOpen: (overlay: ExperienceOverlay) => void;
@@ -68,6 +69,7 @@ export function ExperienceNav({ onOpen }: ExperienceNavProps) {
         </div>
         {menuOpen && (
           <div id="experience-mobile-menu" className="absolute left-0 right-0 top-full mt-2 grid gap-2 rounded-2xl border border-amber-100/15 bg-[#050304]/95 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.5)] backdrop-blur md:hidden">
+            <BahiaSunsetLogo className="mx-auto h-16 w-32 py-1" showFallbackText />
             {menuItems.map((item) => (
               <button
                 key={item.label}
