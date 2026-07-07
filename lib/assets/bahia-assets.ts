@@ -10,7 +10,9 @@ export type BahiaAssetKey =
   | 'packedDanceFloorGreenNeon'
   | 'discoBallEmptyDanceFloor'
   | 'sunsetLineExteriorDay'
-  | 'pressRedCurtain';
+  | 'pressRedCurtain'
+  | 'liveDanceCrowdStage'
+  | 'socialCollageExteriorDancefloor';
 
 export type BahiaImageAsset = {
   src: `/assets/bahia/${string}`;
@@ -63,7 +65,15 @@ export const bahiaAssets = {
     alt: 'Guests lined outside Club Bahia on Sunset Boulevard',
   },
   pressRedCurtain: {
-    src: '/assets/bahia/press-red-curtain.webp',
+    src: '/assets/bahia/press-red-curtain-newspaper.webp',
     alt: 'Club Bahia press image with red curtain atmosphere',
+  },
+  liveDanceCrowdStage: {
+    src: '/assets/bahia/live-dance-crowd-stage.webp',
+    alt: 'Live Club Bahia crowd dancing in front of the stage',
+  },
+  socialCollageExteriorDancefloor: {
+    src: '/assets/bahia/social-collage-exterior-dancefloor.webp',
+    alt: 'Club Bahia social collage showing the exterior and dance floor',
   },
 } as const satisfies Record<BahiaAssetKey, BahiaImageAsset>;
