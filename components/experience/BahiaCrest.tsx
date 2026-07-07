@@ -1,12 +1,28 @@
-import type { SVGProps } from 'react';
+import { useId, type SVGProps } from 'react';
+
+type BahiaCrestVariant = 'hero' | 'mark' | 'watermark';
 
 type BahiaCrestProps = SVGProps<SVGSVGElement> & {
+  /** @deprecated Use variant="mark" instead. */
   compact?: boolean;
   title?: string;
+  variant?: BahiaCrestVariant;
 };
 
-export function BahiaCrest({ compact = false, title, className = '', ...props }: BahiaCrestProps) {
-  const titleId = title ? 'bahia-crest-title' : undefined;
+const variantClassNames: Record<BahiaCrestVariant, string> = {
+  hero: 'bahia-crest--hero w-[clamp(9rem,48vw,15rem)] max-w-[70vw] md:w-[clamp(14rem,28vw,24rem)]',
+  mark: 'bahia-crest--mark h-7 w-7 shrink-0 sm:h-8 sm:w-8',
+  watermark: 'bahia-crest--watermark pointer-events-none hidden max-w-[70vw] opacity-[0.08] min-[481px]:block',
+};
+
+export function BahiaCrest({ compact = false, title, variant = 'hero', className = '', ...props }: BahiaCrestProps) {
+  const generatedId = useId();
+  const titleId = title ? `${generatedId}-bahia-crest-title` : undefined;
+  const activeVariant: BahiaCrestVariant = compact ? 'mark' : variant;
+  const neonId = `${generatedId}-bahia-neon`;
+  const sunId = `${generatedId}-bahia-sun`;
+  const frameId = `${generatedId}-bahia-frame`;
+  const isMark = activeVariant === 'mark';
 
   return (
     <svg
@@ -14,24 +30,24 @@ export function BahiaCrest({ compact = false, title, className = '', ...props }:
       role={title ? 'img' : undefined}
       aria-hidden={title ? undefined : true}
       aria-labelledby={titleId}
-      className={`bahia-crest ${compact ? 'bahia-crest--mini' : ''} ${className}`.trim()}
+      className={`bahia-crest ${variantClassNames[activeVariant]} ${className}`.trim()}
       {...props}
     >
       {title ? <title id={titleId}>{title}</title> : null}
       <defs>
-        <radialGradient id="bahiaSun" cx="50%" cy="38%" r="58%">
+        <radialGradient id={sunId} cx="50%" cy="38%" r="58%">
           <stop offset="0%" stopColor="#fff6e8" />
           <stop offset="34%" stopColor="#f6b73c" />
           <stop offset="67%" stopColor="#e1121b" />
           <stop offset="100%" stopColor="#4d070b" />
         </radialGradient>
-        <linearGradient id="bahiaFrame" x1="28" y1="20" x2="196" y2="238">
+        <linearGradient id={frameId} x1="28" y1="20" x2="196" y2="238">
           <stop offset="0%" stopColor="#fff6e8" stopOpacity="0.88" />
           <stop offset="32%" stopColor="#f6b73c" />
           <stop offset="72%" stopColor="#e1121b" />
           <stop offset="100%" stopColor="#7a0b12" />
         </linearGradient>
-        <filter id="bahiaNeon" x="-35%" y="-30%" width="170%" height="170%">
+        <filter id={neonId} x="-35%" y="-30%" width="170%" height="170%">
           <feGaussianBlur stdDeviation="4" result="blur" />
           <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0.9 0 0.18 0 0 0.04 0 0 0.12 0 0.03 0 0 0 0.7 0" result="redGlow" />
           <feMerge>
@@ -41,15 +57,15 @@ export function BahiaCrest({ compact = false, title, className = '', ...props }:
         </filter>
       </defs>
 
-      <path className="bahia-crest__halo" d="M110 14c50 0 86 38 86 90v112H24V104c0-52 36-90 86-90Z" />
-      <path className="bahia-crest__frame" d="M110 18c48 0 82 36 82 88v112H28V106c0-52 34-88 82-88Z" />
+      {!isMark ? <path className="bahia-crest__halo" d="M110 14c50 0 86 38 86 90v112H24V104c0-52 36-90 86-90Z" filter={`url(#${neonId})`} /> : null}
+      {!isMark ? <path className="bahia-crest__frame" d="M110 18c48 0 82 36 82 88v112H28V106c0-52 34-88 82-88Z" style={{ stroke: `url(#${frameId})` }} /> : null}
       <path className="bahia-crest__inner-frame" d="M110 39c35 0 61 28 61 67v88H49v-88c0-39 26-67 61-67Z" />
 
-      <circle className="bahia-crest__sun" cx="110" cy="102" r="45" />
+      <circle className="bahia-crest__sun" cx="110" cy="102" r="45" fill={`url(#${sunId})`} />
       <path className="bahia-crest__sun-line" d="M68 103h84" />
       <path className="bahia-crest__sun-line bahia-crest__sun-line--low" d="M75 122h70" />
 
-      <g className="bahia-crest__palm" filter="url(#bahiaNeon)">
+      <g className="bahia-crest__palm" filter={`url(#${neonId})`}>
         <path className="bahia-crest__trunk" d="M109 199c6-28 5-58-2-92" />
         <path d="M109 107c-15-25-38-34-67-27 23 4 42 14 58 31" />
         <path d="M111 105c-4-28-20-48-47-60 16 20 27 41 34 64" />
@@ -61,7 +77,7 @@ export function BahiaCrest({ compact = false, title, className = '', ...props }:
 
       <path className="bahia-crest__base" d="M54 199h112" />
       <path className="bahia-crest__base bahia-crest__base--red" d="M73 214h74" />
-      {!compact ? <text className="bahia-crest__year" x="110" y="235" textAnchor="middle">1974</text> : null}
+      {!isMark ? <text className="bahia-crest__year" x="110" y="235" textAnchor="middle">1974</text> : null}
     </svg>
   );
 }

@@ -2,13 +2,15 @@
 
 import { motion } from 'framer-motion';
 import { experienceCopy } from '@/lib/experience/experience-copy';
+import { BahiaCrest } from './BahiaCrest';
 
 const words = ['DINE.', 'DANCE.', 'BAHIA.'];
 
 export function MantraScene() {
   return (
     <section id="experience-mantra" className="relative flex min-h-[100svh] flex-col justify-center overflow-hidden px-[clamp(1rem,5vw,2rem)] py-24 sm:min-h-screen sm:py-28">
-      <div className="mx-auto grid w-full max-w-7xl gap-4 sm:gap-8">
+      <BahiaCrest variant="watermark" className="absolute right-0 top-1/2 z-0 w-[min(38rem,70vw)] -translate-y-1/2 translate-x-[18%]" />
+      <div className="relative z-10 mx-auto grid w-full max-w-7xl gap-4 sm:gap-8">
         {words.map((word, index) => (
           <motion.h2
             key={word}
