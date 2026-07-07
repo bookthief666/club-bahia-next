@@ -17,7 +17,7 @@ export function ReservationShell() {
           <Link href="/" className="inline-flex min-h-10 items-center rounded-full border border-amber-100/20 px-3.5 text-[0.68rem] uppercase tracking-[0.18em] text-amber-100/75 transition hover:border-red-300/60 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-400 sm:min-h-11 sm:px-4 sm:text-xs sm:tracking-[0.2em]">
             Back to Club Bahia
           </Link>
-          <BahiaSunsetLogo className="mt-6 h-20 w-36 sm:mt-10" showFallbackText />
+          <BahiaSunsetLogo className="mt-6 h-16 w-32 sm:mt-10 sm:h-20 sm:w-36" tone="subtle" showFallbackText />
           <p className="mt-4 text-[0.68rem] uppercase tracking-[0.3em] text-red-200 sm:text-xs sm:tracking-[0.38em]">Club Bahia Los Angeles</p>
           <h1 id="reservation-title" className="mt-3 max-w-3xl font-serif text-[clamp(4rem,18vw,7rem)] leading-[0.85] tracking-[-0.065em] text-amber-50 drop-shadow-[0_0_30px_rgba(225,18,27,0.35)] sm:mt-4 sm:text-[clamp(5.5rem,14vw,9.5rem)] sm:leading-[0.78] sm:tracking-[-0.075em]">
             Reserve Your Night

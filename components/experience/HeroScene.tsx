@@ -10,13 +10,13 @@ import { bahiaAssets } from '@/lib/assets/bahia-assets';
 export function HeroScene() {
   const reduceMotion = useReducedMotion();
   return (
-    <section id="experience-hero" className="relative isolate flex min-h-[100svh] items-start justify-center overflow-hidden px-4 pb-[calc(4.25rem+env(safe-area-inset-bottom))] pt-20 text-center min-[360px]:pt-[5.5rem] sm:min-h-screen sm:items-center sm:px-6 sm:py-24 md:py-28">
-      <Image src={bahiaAssets.exteriorNightFacade.src} alt="" fill priority sizes="100vw" className="pointer-events-none absolute inset-0 -z-20 object-cover object-[54%_50%] opacity-72 saturate-125" aria-hidden="true" />
+    <section id="experience-hero" className="relative isolate flex min-h-[100svh] items-start justify-center overflow-hidden px-4 pb-[calc(4.25rem+env(safe-area-inset-bottom))] pt-[4.8rem] text-center min-[360px]:pt-[5.2rem] sm:min-h-screen sm:items-center sm:px-6 sm:py-24 md:py-28">
+      <Image src={bahiaAssets.exteriorNightFacade.src} alt="" fill priority sizes="100vw" className="bahia-kenburns pointer-events-none absolute inset-0 -z-20 object-cover object-[54%_50%] opacity-72 saturate-125" aria-hidden="true" />
       <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_38%,rgba(225,18,27,0.22),transparent_30%),linear-gradient(90deg,rgba(5,3,4,0.92),rgba(5,3,4,0.46)_45%,rgba(5,3,4,0.9)),linear-gradient(180deg,rgba(5,3,4,0.58),rgba(5,3,4,0.38)_42%,rgba(5,3,4,0.96))]" aria-hidden="true" />
       <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-red-950/35 via-transparent to-amber-900/20 mix-blend-screen" aria-hidden="true" />
       <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} className="relative z-10 flex w-full max-w-[min(100%,64rem)] flex-col items-center">
         <motion.div variants={sceneReveal} custom={0.05} animate={reduceMotion ? { opacity: 1, y: 0 } : undefined} className="flex w-full justify-center">
-          <BahiaSunsetLogo className="h-32 w-32 sm:h-40 sm:w-40 md:h-52 md:w-52" showFallbackText={false} />
+          <BahiaSunsetLogo className="h-20 w-32 min-[360px]:h-24 min-[360px]:w-36 sm:h-28 sm:w-48 md:h-32 md:w-56" showFallbackText={false} />
         </motion.div>
         <motion.p variants={sceneReveal} custom={0.16} className="mt-3 max-w-full text-[0.68rem] uppercase tracking-[0.34em] text-amber-200/80 sm:mt-5 sm:text-xs sm:tracking-[0.45em]">
           {experienceCopy.venue.label}
