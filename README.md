@@ -13,7 +13,7 @@ This v2 pack includes the original optimized venue images plus the new dance-flo
 ### Strong homepage / background candidates
 - `exterior-night-sunset-blvd.webp` — homepage hero / Sunset Blvd exterior scene
 - `disco-ball-empty-dance-floor.webp` — strongest cinematic hero or transition background
-- `couples-dancing-neon-floor.webp` — DINE. DANCE. BAHIA. atmosphere
+- `couples-dancing-neon-floor.webp` — LIVE MUSIC. HOT KITCHEN. BIG DANCE FLOOR. atmosphere
 - `dance-floor-light-trails.webp` — motion/energy background
 
 ### Venue proof / story candidates

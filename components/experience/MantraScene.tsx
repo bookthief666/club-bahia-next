@@ -6,7 +6,7 @@ import { experienceCopy } from '@/lib/experience/experience-copy';
 import { BahiaCrest } from './BahiaCrest';
 import { bahiaAssets } from '@/lib/assets/bahia-assets';
 
-const words = ['DINE.', 'DANCE.', 'BAHIA.'];
+const words = ['LIVE MUSIC.', 'HOT KITCHEN.', 'BIG DANCE FLOOR.'];
 
 export function MantraScene() {
   return (
@@ -22,7 +22,7 @@ export function MantraScene() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: false, amount: 0.55 }}
             transition={{ duration: 0.55, ease: 'easeOut' }}
-            className={`max-w-full overflow-visible font-serif text-[clamp(3rem,16vw,14rem)] leading-[0.78] tracking-[-0.075em] sm:leading-[0.72] ${index === 1 ? 'self-end text-right text-red-100 drop-shadow-[0_0_28px_rgba(225,18,27,0.48)]' : 'text-left text-amber-50'}`}
+            className={`max-w-full whitespace-nowrap font-serif text-[clamp(2.14rem,10.9vw,11.5rem)] font-semibold leading-[0.84] tracking-[-0.065em] min-[390px]:text-[clamp(2.55rem,11.4vw,11.5rem)] sm:leading-[0.76] ${index === 1 ? 'self-end text-right text-red-100 drop-shadow-[0_0_28px_rgba(225,18,27,0.48)]' : 'text-left text-amber-50'}`}
           >
             {word}
           </motion.h2>
