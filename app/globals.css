@@ -198,7 +198,6 @@ body > * { position: relative; z-index: 2; }
 
 .bahia-crest {
   display: block;
-  width: 100%;
   height: auto;
   overflow: visible;
   color: #fff6e8;
@@ -209,12 +208,10 @@ body > * { position: relative; z-index: 2; }
   fill: rgba(225, 18, 27, .06);
   stroke: rgba(225, 18, 27, .34);
   stroke-width: 10;
-  filter: url(#bahiaNeon);
 }
 
 .bahia-crest__frame {
   fill: rgba(5, 3, 4, .54);
-  stroke: url(#bahiaFrame);
   stroke-width: 3;
 }
 
@@ -224,7 +221,7 @@ body > * { position: relative; z-index: 2; }
   stroke-width: 1.4;
 }
 
-.bahia-crest__sun { fill: url(#bahiaSun); opacity: .96; }
+.bahia-crest__sun { opacity: .96; }
 .bahia-crest__sun-line,
 .bahia-crest__base {
   fill: none;
@@ -256,14 +253,39 @@ body > * { position: relative; z-index: 2; }
   letter-spacing: .42em;
 }
 
-.bahia-crest--mini {
+.bahia-crest--hero {
+  width: clamp(9rem, 48vw, 15rem);
+  max-width: 70vw;
+}
+
+.bahia-crest--mark {
+  width: 1.75rem;
+  height: 1.75rem;
+  overflow: hidden;
   filter: drop-shadow(0 0 10px rgba(225, 18, 27, .45));
+}
+
+.bahia-crest--watermark {
+  filter: drop-shadow(0 0 32px rgba(225, 18, 27, .18));
 }
 
 .bahia-crest--mini .bahia-crest__year,
 .bahia-crest--mini .bahia-crest__base--red,
-.bahia-crest--mini .bahia-crest__sun-line--low {
+.bahia-crest--mini .bahia-crest__sun-line--low,
+.bahia-crest--mark .bahia-crest__base--red,
+.bahia-crest--mark .bahia-crest__sun-line--low {
   display: none;
+}
+
+@media (min-width: 768px) {
+  .bahia-crest--hero { width: clamp(14rem, 28vw, 24rem); }
+}
+
+@media (min-width: 640px) {
+  .bahia-crest--mark {
+    width: 2rem;
+    height: 2rem;
+  }
 }
 
 @media (max-width: 420px) {
