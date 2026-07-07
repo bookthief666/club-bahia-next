@@ -139,3 +139,113 @@ body > * { position: relative; z-index: 2; }
   background: linear-gradient(118deg, transparent 0 42%, rgba(246,183,60,.16) 42.5% 45%, transparent 45.5% 100%);
   transform: rotate(-4deg);
 }
+
+.experience-texture {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background: #050304;
+}
+
+.experience-texture__glow,
+.experience-texture__palms,
+.experience-texture__grain {
+  position: absolute;
+  inset: 0;
+}
+
+.experience-texture__glow {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(225, 18, 27, .24), transparent 28rem),
+    radial-gradient(circle at 78% 28%, rgba(246, 183, 60, .14), transparent 24rem),
+    linear-gradient(180deg, rgba(5,3,4,.1), rgba(5,3,4,.96));
+}
+
+.experience-texture__palms {
+  opacity: .24;
+  background:
+    linear-gradient(128deg, transparent 0 58%, rgba(18, 61, 49, .72) 58.2% 59%, transparent 59.2%),
+    linear-gradient(38deg, transparent 0 62%, rgba(18, 61, 49, .55) 62.15% 63.05%, transparent 63.2%),
+    linear-gradient(155deg, transparent 0 70%, rgba(90, 20, 24, .5) 70.15% 71%, transparent 71.2%);
+  filter: blur(.5px);
+}
+
+.experience-texture__grain {
+  opacity: .14;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(255, 246, 232, .85) 1px, transparent 0),
+    linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+  background-size: 9px 9px, 37px 37px;
+  mix-blend-mode: screen;
+}
+
+.bahia-ornament {
+  position: relative;
+  width: min(58vw, 25rem);
+  aspect-ratio: 1;
+  margin-inline: auto;
+  border: 1px solid rgba(255, 207, 112, .35);
+  border-radius: 999px 999px 42% 42%;
+  box-shadow:
+    0 0 26px rgba(225, 18, 27, .42),
+    inset 0 0 38px rgba(225, 18, 27, .24);
+}
+
+.bahia-ornament--compact {
+  width: 1.45rem;
+  border-color: rgba(225, 18, 27, .55);
+  box-shadow: 0 0 14px rgba(225, 18, 27, .38);
+}
+
+.bahia-ornament__sun {
+  position: absolute;
+  left: 50%;
+  top: 20%;
+  width: 36%;
+  aspect-ratio: 1;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: radial-gradient(circle, #fff6e8 0 13%, #f6b73c 14% 46%, #e1121b 47% 70%, transparent 71%);
+  box-shadow: 0 0 34px rgba(225, 18, 27, .72);
+}
+
+.bahia-ornament__horizon {
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  top: 55%;
+  height: 1px;
+  background: rgba(255, 207, 112, .7);
+  box-shadow: 0 10px 0 rgba(225, 18, 27, .45), 0 20px 0 rgba(255, 207, 112, .25);
+}
+
+.bahia-ornament__arch {
+  position: absolute;
+  inset: 13% 22% 18%;
+  border: 2px solid rgba(225, 18, 27, .7);
+  border-bottom: 0;
+  border-radius: 999px 999px 0 0;
+}
+
+.bahia-ornament__palm {
+  position: absolute;
+  bottom: 22%;
+  width: 28%;
+  height: 34%;
+  border-top: 2px solid rgba(255, 246, 232, .56);
+  transform-origin: bottom center;
+}
+
+.bahia-ornament__palm--left { left: 18%; transform: rotate(-28deg); border-radius: 100% 0 0; }
+.bahia-ornament__palm--right { right: 18%; transform: rotate(28deg); border-radius: 0 100% 0 0; }
+
+@media (max-width: 420px) {
+  .bahia-ornament { width: min(72vw, 18rem); }
+  .bahia-ornament--compact { width: 1.35rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .experience-texture__grain { mix-blend-mode: normal; }
+}
