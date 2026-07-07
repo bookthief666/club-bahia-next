@@ -242,8 +242,8 @@ body > * { position: relative; z-index: 2; }
 .bahia-ornament__palm--right { right: 18%; transform: rotate(28deg); border-radius: 0 100% 0 0; }
 
 @media (max-width: 420px) {
-  .bahia-ornament { width: min(72vw, 18rem); }
-  .bahia-ornament--compact { width: 1.35rem; }
+  .bahia-ornament { width: min(46vw, 10.5rem); }
+  .bahia-ornament--compact { width: 1.05rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

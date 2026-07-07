@@ -5,7 +5,7 @@ export function ReservationOverlay({ onClose }: { onClose: () => void }) {
   return (
     <OverlayFrame title="Close Reservations overlay" onClose={onClose}>
       <div className="mx-auto flex min-h-full max-w-4xl flex-col justify-center">
-        <h2 className="font-serif text-[clamp(3.8rem,14vw,9rem)] leading-[0.78] tracking-[-0.08em]">{experienceCopy.reservations.heading}</h2>
+        <h2 className="font-serif text-[clamp(3.8rem,14vw,9rem)] leading-[0.78] tracking-[-0.065em]">{experienceCopy.reservations.heading}</h2>
         <div className="mt-8 grid gap-4 text-lg text-amber-50/80 sm:grid-cols-2">
           {experienceCopy.reservations.lines.map((line) => <p key={line} className="border-t border-red-500/30 pt-4">{line}</p>)}
         </div>
