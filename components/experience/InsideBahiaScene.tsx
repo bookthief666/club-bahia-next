@@ -26,7 +26,7 @@ const scenes: CinematicScene[] = [
     eyebrow: 'Scene 01 / Sunset Blvd',
     kicker: 'Arrival on Sunset',
     title: 'Arrival on Sunset',
-    line: 'Doors. Glow. Nightfall.',
+    line: 'Sunset arrival.',
     asset: bahiaAssets.exteriorNightFacade,
     alt: bahiaAssets.exteriorNightFacade.alt,
     imageClassName: 'object-[52%_50%] min-[360px]:object-center',
@@ -38,7 +38,7 @@ const scenes: CinematicScene[] = [
     eyebrow: 'Scene 02 / Lounge',
     kicker: 'The Red Lounge',
     title: 'The Red Lounge',
-    line: 'Velvet red glow.',
+    line: 'Red room glow.',
     asset: bahiaAssets.redLoungeVipBooths,
     alt: bahiaAssets.redLoungeVipBooths.alt,
     imageClassName: 'object-[48%_50%] min-[360px]:object-center',
@@ -50,7 +50,7 @@ const scenes: CinematicScene[] = [
     eyebrow: 'Scene 03 / Bar',
     kicker: 'Neon Palms',
     title: 'Neon Palms',
-    line: 'Tropical after dark.',
+    line: 'Warm bar light.',
     asset: bahiaAssets.barNeonPalms,
     alt: bahiaAssets.barNeonPalms.alt,
     imageClassName: 'object-[58%_50%] min-[360px]:object-center',
@@ -62,7 +62,7 @@ const scenes: CinematicScene[] = [
     eyebrow: 'Scene 04 / Dance',
     kicker: 'Dance Floor Energy',
     title: 'Dance Floor Energy',
-    line: 'Bass. Bodies. Bahia.',
+    line: 'Floor in motion.',
     asset: bahiaAssets.liveDanceCrowdStage,
     alt: bahiaAssets.liveDanceCrowdStage.alt,
     imageClassName: 'object-[50%_48%]',
@@ -74,7 +74,7 @@ const scenes: CinematicScene[] = [
     eyebrow: 'Scene 05 / Tables',
     kicker: 'Reserve the Night',
     title: 'Reserve the Night',
-    line: 'Your Friday or Saturday.',
+    line: 'Friday or Saturday.',
     asset: bahiaAssets.discoBallEmptyDanceFloor,
     alt: bahiaAssets.discoBallEmptyDanceFloor.alt,
     imageClassName: 'object-[50%_42%]',
@@ -93,7 +93,7 @@ export function InsideBahiaScene() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#050304] to-transparent" aria-hidden="true" />
       <div className="relative z-10 mx-auto max-w-7xl px-4 pt-16 sm:px-6 sm:pt-20">
         <p className="text-[0.64rem] uppercase tracking-[0.34em] text-red-100/75 sm:text-xs">Real venue atmosphere</p>
-        <h2 id="inside-bahia-title" className="mt-3 max-w-[10ch] text-balance font-serif text-[clamp(3.35rem,17vw,9rem)] leading-[0.78] tracking-[-0.085em] text-amber-50">
+        <h2 id="inside-bahia-title" className="mt-3 max-w-[10ch] text-balance font-serif text-[clamp(3.35rem,17vw,9rem)] font-semibold leading-[0.78] tracking-[-0.085em] text-amber-50">
           Inside Bahia
         </h2>
       </div>
@@ -138,15 +138,15 @@ export function InsideBahiaScene() {
                 className="w-full max-w-[38rem] pb-5 sm:pb-6"
               >
                 <p className="text-[0.62rem] font-black uppercase tracking-[0.3em] text-amber-100/72 sm:text-xs">{scene.eyebrow}</p>
-                <h3 className="mt-3 max-w-full text-balance font-serif text-[clamp(2.9rem,15vw,8.5rem)] leading-[0.78] tracking-[-0.085em] text-amber-50 drop-shadow-[0_8px_34px_rgba(0,0,0,0.62)] sm:mt-4">
+                <h3 className="mt-3 max-w-[11ch] text-wrap font-serif text-[clamp(2.35rem,11.6vw,7.5rem)] font-semibold leading-[0.86] tracking-[-0.065em] text-amber-50 drop-shadow-[0_8px_34px_rgba(0,0,0,0.62)] min-[390px]:text-[clamp(2.65rem,12vw,7.5rem)] sm:mt-4 sm:leading-[0.8]">
                   {scene.title}
                 </h3>
-                <p className="mt-4 text-[0.78rem] font-black uppercase tracking-[0.22em] text-red-100/80 sm:text-sm sm:tracking-[0.28em]">{scene.line}</p>
+                <p className="mt-4 text-[0.68rem] font-black uppercase tracking-[0.2em] text-red-100/80 sm:text-sm sm:tracking-[0.28em]">{scene.line}</p>
                 {scene.cta ? (
                   <BahiaSunsetLogo className="mx-auto mt-6 h-16 w-32" showFallbackText />
                 ) : null}
                 {scene.cta ? (
-                  <Link href={scene.cta.href} className="mt-7 inline-flex min-h-12 items-center justify-center rounded-full border border-amber-100/30 bg-red-700/30 px-6 text-xs font-black uppercase tracking-[0.2em] text-amber-50 shadow-[0_0_36px_rgba(225,18,27,0.38)] backdrop-blur transition hover:border-amber-100/60 hover:bg-red-600/45 focus:outline-none focus:ring-2 focus:ring-red-500 sm:px-8">
+                  <Link href={scene.cta.href} className="bahia-reserve-shimmer mt-7 inline-flex min-h-12 items-center justify-center overflow-hidden rounded-full border border-amber-100/30 bg-red-700/30 px-6 text-xs font-black uppercase tracking-[0.2em] text-amber-50 shadow-[0_0_36px_rgba(225,18,27,0.38)] backdrop-blur transition hover:border-amber-100/60 hover:bg-red-600/45 focus:outline-none focus:ring-2 focus:ring-red-500 sm:px-8">
                     {scene.cta.label}
                   </Link>
                 ) : null}

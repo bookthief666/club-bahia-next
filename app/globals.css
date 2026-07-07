@@ -6,7 +6,7 @@
   color-scheme: dark;
   --font-inter: "Inter", "Avenir Next", "Segoe UI", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-bebas: "Bebas Neue", "Oswald", Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
-  --font-playfair: "Playfair Display", "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --font-playfair: "Cormorant Garamond", "Fraunces", "Playfair Display", "Libre Baskerville", Georgia, "Times New Roman", serif;
 }
 
 * { box-sizing: border-box; }
@@ -306,6 +306,12 @@ body > * { position: relative; z-index: 2; }
   animation: bahia-light-sweep 8.5s ease-in-out infinite;
 }
 
+.bahia-hero-sweep {
+  transform: translateX(-125%) skewX(-14deg);
+  animation: bahia-hero-sweep 9.5s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
 @keyframes bahia-neon-pulse {
   0%, 100% { filter: drop-shadow(0 0 8px rgba(225, 18, 27, .26)); opacity: .94; }
   50% { filter: drop-shadow(0 0 18px rgba(225, 18, 27, .5)) drop-shadow(0 0 28px rgba(246, 183, 60, .18)); opacity: 1; }
@@ -317,10 +323,18 @@ body > * { position: relative; z-index: 2; }
   48%, 100% { transform: translateX(420%) skewX(-12deg); opacity: 0; }
 }
 
+@keyframes bahia-hero-sweep {
+  0%, 22% { transform: translateX(-125%) skewX(-14deg); opacity: 0; }
+  38% { opacity: .42; }
+  58%, 100% { transform: translateX(265%) skewX(-14deg); opacity: 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .bahia-sunset-logo,
-  .bahia-light-sweep {
+  .bahia-light-sweep,
+  .bahia-hero-sweep {
     animation: none !important;
+    will-change: auto;
   }
 }
 
@@ -381,4 +395,30 @@ body > * { position: relative; z-index: 2; }
     transform: none !important;
     will-change: auto;
   }
+}
+
+.bahia-reserve-shimmer {
+  position: relative;
+  isolation: isolate;
+}
+
+.bahia-reserve-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: -45% auto -45% -70%;
+  z-index: -1;
+  width: 55%;
+  transform: skewX(-18deg);
+  background: linear-gradient(90deg, transparent, rgba(255, 246, 232, .2), transparent);
+  animation: bahia-button-shimmer 6.8s ease-in-out infinite;
+}
+
+@keyframes bahia-button-shimmer {
+  0%, 36% { transform: translateX(0) skewX(-18deg); opacity: 0; }
+  48% { opacity: .7; }
+  68%, 100% { transform: translateX(360%) skewX(-18deg); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bahia-reserve-shimmer::after { animation: none !important; }
 }
