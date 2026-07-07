@@ -22,7 +22,7 @@ export function HomeHeroV2() {
               </div>
               <p className="mt-4 text-sm font-semibold text-mutedSand">{venue.address}</p>
               <div className="mt-6 grid grid-cols-2 gap-3">
-                <Button href="#reservations" className="px-3">Reserve a Night</Button>
+                <Button href="/reservations" className="px-3">Reserve a Night</Button>
                 <Button href={venue.mapsHref} variant="secondary" className="px-3">Open Maps</Button>
               </div>
             </div>

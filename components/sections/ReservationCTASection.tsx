@@ -14,7 +14,7 @@ export function ReservationCTASection() {
               <p>Full reservation flow coming next.</p>
             </div>
           </div>
-          <Button href="#reservations" className="w-full md:w-auto">Start Reservation</Button>
+          <Button href="/reservations" className="w-full md:w-auto">Start Reservation</Button>
         </div>
       </Card>
     </Section>

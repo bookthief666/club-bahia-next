@@ -41,7 +41,7 @@ export function HeroSection() {
                 {heroBadges.map((badge) => <span key={badge} className="rounded-full border border-warmIvory/12 bg-warmIvory/7 px-3 py-1.5 text-[0.68rem] font-black uppercase tracking-[0.16em] text-softGray">{badge}</span>)}
               </div>
               <div className="mt-6 flex flex-wrap gap-3">
-                <Button href="#reservations" className="min-h-10 px-5 py-2.5">Start Reservation</Button>
+                <Button href="/reservations" className="min-h-10 px-5 py-2.5">Start Reservation</Button>
                 <Button href="#location" variant="secondary" className="min-h-10 px-5 py-2.5">Find Us</Button>
               </div>
             </div>
