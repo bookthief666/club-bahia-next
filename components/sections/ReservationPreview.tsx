@@ -11,7 +11,7 @@ export function ReservationPreview() {
               <h2 className="mt-2 font-serif text-3xl italic text-warmIvory">Friday and Saturday nights</h2>
               <p className="mt-3 max-w-xl text-sm leading-6 text-mutedSand">For groups of 5 or more, phone confirmation may be required.</p>
             </div>
-            <Button href="#contact" className="mt-6 md:mt-0">Start Reservation</Button>
+            <Button href="/reservations" className="mt-6 md:mt-0">Start Reservation</Button>
           </div>
         </div>
       </div>

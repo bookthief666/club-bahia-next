@@ -25,4 +25,4 @@ export function ReservationField({ id, label, error, help, children, className }
   );
 }
 
-export const fieldClassName = 'min-h-12 w-full rounded-2xl border border-amber-100/15 bg-black/35 px-4 py-3 text-base text-amber-50 shadow-inner shadow-black/30 outline-none transition placeholder:text-amber-100/35 focus:border-red-300 focus:ring-2 focus:ring-red-500/70';
+export const fieldClassName = 'min-h-12 w-full rounded-xl border border-amber-100/15 bg-black/35 px-3.5 py-3 text-base text-amber-50 shadow-inner shadow-black/30 outline-none transition placeholder:text-amber-100/35 focus:border-red-300 focus:ring-2 focus:ring-red-500/70 sm:rounded-2xl sm:px-4';

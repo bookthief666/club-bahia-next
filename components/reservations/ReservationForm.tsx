@@ -37,17 +37,22 @@ export function ReservationForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="rounded-[2rem] border border-amber-100/15 bg-[#100606]/90 p-4 shadow-[0_0_70px_rgba(225,18,27,0.16)] sm:p-6 lg:p-8" noValidate>
-      <div className="rounded-[1.5rem] border border-dashed border-amber-200/25 bg-gradient-to-br from-amber-200/[0.07] via-transparent to-red-600/[0.08] p-4 sm:p-6">
-        <div className="flex flex-col gap-2 border-b border-amber-100/15 pb-5 sm:flex-row sm:items-end sm:justify-between">
+    <form onSubmit={handleSubmit(onSubmit)} className="rounded-[1.55rem] border border-amber-100/15 bg-[#100606]/90 p-3 shadow-[0_0_70px_rgba(225,18,27,0.16)] sm:rounded-[2rem] sm:p-6 lg:p-8" noValidate>
+      <div className="rounded-[1.2rem] border border-dashed border-amber-200/20 bg-gradient-to-br from-amber-200/[0.07] via-transparent to-red-600/[0.08] p-3 sm:rounded-[1.5rem] sm:border-amber-200/25 sm:p-6">
+        <div className="flex flex-col gap-3 border-b border-dotted border-amber-100/20 pb-4 sm:flex-row sm:items-end sm:justify-between sm:pb-5">
           <div>
-            <p className="text-xs uppercase tracking-[0.28em] text-red-200">Nightlife Invitation</p>
-            <h2 className="mt-2 font-serif text-3xl leading-none tracking-[-0.04em] text-amber-50 sm:text-5xl">Request Details</h2>
+            <p className="text-[0.66rem] uppercase tracking-[0.24em] text-red-200 sm:text-xs sm:tracking-[0.28em]">Bahia Reservation Request</p>
+            <h2 className="mt-1.5 font-serif text-[2rem] leading-none tracking-[-0.04em] text-amber-50 sm:mt-2 sm:text-5xl">Request Details</h2>
           </div>
-          <p className="text-sm uppercase tracking-[0.18em] text-amber-100/60">Fri · Sat</p>
+          <div className="flex flex-wrap items-center gap-2 text-[0.64rem] uppercase tracking-[0.16em] text-amber-100/65 sm:justify-end sm:text-sm sm:tracking-[0.18em]">
+            <span className="rounded-full border border-amber-100/15 px-2.5 py-1">Ticket No. 1974</span>
+            <span className="rounded-full border border-red-300/25 bg-red-600/10 px-2.5 py-1 text-amber-100">Fri · Sat</span>
+          </div>
         </div>
 
-        <div className="mt-6 grid gap-5 sm:grid-cols-2">
+        <div className="my-4 border-t border-dotted border-amber-100/20 sm:my-5" aria-hidden="true" />
+
+        <div className="grid gap-4 sm:grid-cols-2 sm:gap-5">
           <ReservationField id="firstName" label="First name" error={errors.firstName?.message}>
             <input id="firstName" autoComplete="given-name" aria-invalid={!!errors.firstName} aria-describedby={errors.firstName ? 'firstName-error' : undefined} className={fieldClassName} {...register('firstName')} />
           </ReservationField>
@@ -60,8 +65,8 @@ export function ReservationForm() {
           <ReservationField id="email" label="Email" error={errors.email?.message}>
             <input id="email" type="email" autoComplete="email" placeholder="you@example.com" aria-invalid={!!errors.email} aria-describedby={errors.email ? 'email-error' : undefined} className={fieldClassName} {...register('email')} />
           </ReservationField>
-          <ReservationField id="date" label="Date of reservation" error={errors.date?.message} help="Reservations are currently Friday and Saturday nights only.">
-            <input id="date" type="date" aria-invalid={!!errors.date} aria-describedby={errors.date ? 'date-error' : 'date-help'} className={fieldClassName} {...register('date')} />
+          <ReservationField id="date" label="Date of reservation" error={errors.date?.message} help="Choose a Friday or Saturday.">
+            <input id="date" type="date" aria-invalid={!!errors.date} aria-describedby={errors.date ? 'date-error' : 'date-help'} className={`${fieldClassName} appearance-none text-amber-50 [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-80 [&::-webkit-calendar-picker-indicator]:invert`} {...register('date')} />
           </ReservationField>
           <ReservationField id="guests" label="Number of guests" error={errors.guests?.message}>
             <select id="guests" aria-invalid={!!errors.guests} aria-describedby={errors.guests ? 'guests-error' : Number(guests) >= 5 ? 'guests-notice' : undefined} className={fieldClassName} {...register('guests', { valueAsNumber: true })}>
@@ -73,11 +78,11 @@ export function ReservationForm() {
             <input id="occasion" placeholder="Birthday, anniversary, group night..." aria-invalid={!!errors.occasion} aria-describedby={errors.occasion ? 'occasion-error' : undefined} className={fieldClassName} {...register('occasion')} />
           </ReservationField>
           <ReservationField id="note" label="Optional note" error={errors.note?.message} className="sm:col-span-2">
-            <textarea id="note" rows={5} placeholder="Anything the door or reservation team should know?" aria-invalid={!!errors.note} aria-describedby={errors.note ? 'note-error' : undefined} className={fieldClassName} {...register('note')} />
+            <textarea id="note" rows={4} placeholder="Anything the door or reservation team should know?" aria-invalid={!!errors.note} aria-describedby={errors.note ? 'note-error' : undefined} className={fieldClassName} {...register('note')} />
           </ReservationField>
         </div>
 
-        <div className="mt-6 rounded-2xl border border-red-300/25 bg-red-950/20 p-4 text-sm leading-6 text-amber-50/75">
+        <div className="mt-5 rounded-2xl border border-red-300/25 bg-red-950/20 p-3 text-sm leading-6 text-amber-50/75 sm:mt-6 sm:p-4">
           <p className="font-semibold text-amber-50">Before you request:</p>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>Reservations are Friday and Saturday nights only.</li>
@@ -87,7 +92,7 @@ export function ReservationForm() {
           </ul>
         </div>
 
-        <button type="submit" className="mt-6 min-h-12 w-full rounded-full bg-red-600 px-6 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-white shadow-[0_0_36px_rgba(225,18,27,0.35)] transition hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-400">
+        <button type="submit" className="mt-5 min-h-12 w-full rounded-full bg-red-600 px-5 py-3.5 text-sm font-semibold uppercase tracking-[0.18em] text-white shadow-[0_0_36px_rgba(225,18,27,0.35)] transition hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-400 sm:mt-6 sm:px-6 sm:py-4 sm:tracking-[0.2em]">
           Review Reservation Request
         </button>
       </div>

@@ -10,7 +10,7 @@ export function SiteHeader() {
           <a href="#history" className="text-xs font-bold uppercase tracking-[0.18em] text-mutedSand transition hover:text-warmIvory focus-visible:outline focus-visible:outline-2 focus-visible:outline-amberGlow">History</a>
           <a href="#contact" className="text-xs font-bold uppercase tracking-[0.18em] text-mutedSand transition hover:text-warmIvory focus-visible:outline focus-visible:outline-2 focus-visible:outline-amberGlow">Contact</a>
         </div>
-        <a href="#reservations" className="rounded-full border border-sunsetGold/45 bg-sunsetGold/10 px-3.5 py-1.5 text-xs font-black uppercase tracking-[0.16em] text-warmIvory shadow-[0_0_22px_rgba(246,183,60,.12)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-amberGlow">Reserve</a>
+        <a href="/reservations" className="rounded-full border border-sunsetGold/45 bg-sunsetGold/10 px-3.5 py-1.5 text-xs font-black uppercase tracking-[0.16em] text-warmIvory shadow-[0_0_22px_rgba(246,183,60,.12)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-amberGlow">Reserve</a>
       </nav>
     </header>
   );
