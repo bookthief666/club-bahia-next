@@ -22,9 +22,18 @@ export function HeroScene() {
         <motion.p variants={sceneReveal} custom={0.16} className="mt-3 max-w-full text-[0.68rem] uppercase tracking-[0.34em] text-amber-200/80 sm:mt-5 sm:text-xs sm:tracking-[0.45em]">
           {experienceCopy.venue.label}
         </motion.p>
-        <motion.h1 variants={sceneReveal} custom={0.24} className="bahia-display-serif mt-2 max-w-full overflow-visible break-normal text-[clamp(3.25rem,15.8vw,11.25rem)] font-semibold leading-[0.88] tracking-[-0.045em] text-amber-50 drop-shadow-[0_0_26px_rgba(225,18,27,0.35)] min-[390px]:text-[clamp(3.9rem,16vw,11.25rem)] sm:leading-[0.8]">
-          Club Bahia
-        </motion.h1>
+        <h1 className="sr-only">Club Bahia</h1>
+        <motion.div variants={sceneReveal} custom={0.24} className="bahia-neon-hero-sign mt-1 w-full max-w-[min(100%,22rem)] min-[360px]:max-w-[23.5rem] min-[390px]:max-w-[25.5rem] sm:mt-2 sm:max-w-[36rem] md:max-w-[44rem] lg:max-w-[52rem]" aria-hidden="true">
+          <Image
+            src="/assets/bahia/logo/club-bahia-neon-green-sign.png"
+            alt=""
+            width={2508}
+            height={627}
+            priority
+            sizes="(max-width: 359px) calc(100vw - 2rem), (max-width: 639px) min(25.5rem, calc(100vw - 2rem)), (max-width: 767px) 36rem, (max-width: 1023px) 44rem, 52rem"
+            className="h-auto w-full"
+          />
+        </motion.div>
         <motion.div variants={sceneReveal} custom={0.34} className="mt-3 flex max-w-full flex-col items-center gap-1 text-[0.62rem] uppercase tracking-[0.14em] text-amber-100/80 sm:mt-5 sm:flex-row sm:gap-5 sm:text-xs sm:tracking-[0.22em]">
           <span>{experienceCopy.venue.established}</span>
           <span className="hidden h-px w-10 bg-red-500/70 sm:block" />
