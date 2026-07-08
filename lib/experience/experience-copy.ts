@@ -14,14 +14,17 @@ export const experienceCopy = {
     { label: 'Talk To Us', overlay: 'menu' },
   ] as const,
   story: {
-    heading: 'OUR STORY.',
-    body: 'Club Bahia has carried Latin nightlife on Sunset Blvd since 1974 — a room for live entertainment, dancing, private celebrations, and late-night Los Angeles memories.',
-    bullets: [
-      'Live Latin entertainment',
-      'Sunset Blvd address',
-      '21+ nightlife',
-      'Dress code enforced',
-      'Private events available',
+    heading: 'Since 1974 on Sunset Boulevard',
+    paragraphs: [
+      'Since 1974, Club Bahia has held its place on Sunset Boulevard as a Los Angeles Latin nightlife destination: part live-music room, part kitchen, part dance floor, and part neighborhood ritual.',
+      'The room carries the character of old L.A. nightlife — neon palms, red booths, a real stage, and a crowd that comes to celebrate across generations.',
+      'Reservations, weekend parties, private events, and live entertainment keep the Bahia experience moving from dinner plans into a full night out.',
+    ],
+    facts: [
+      'EST. 1974',
+      'SUNSET BLVD',
+      'LIVE MUSIC',
+      'KITCHEN + DANCE FLOOR',
     ],
   },
   reservations: {
