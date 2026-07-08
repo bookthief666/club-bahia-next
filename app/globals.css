@@ -6,7 +6,7 @@
   color-scheme: dark;
   --font-inter: "Inter", "Avenir Next", "Segoe UI", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-bebas: "Bebas Neue", "Oswald", Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
-  --font-playfair: var(--font-bodoni-moda), "Bodoni 72", "Didot", "Libre Baskerville", Georgia, "Times New Roman", serif;
+  --font-playfair: var(--font-fraunces), "Fraunces", "Cormorant Garamond", "Libre Baskerville", Georgia, "Times New Roman", serif;
 }
 
 * { box-sizing: border-box; }
@@ -425,6 +425,7 @@ body > * { position: relative; z-index: 2; }
 
 
 .bahia-display-serif {
-  font-family: var(--font-bodoni-moda), "Bodoni 72", "Didot", "Libre Baskerville", Georgia, "Times New Roman", serif;
+  font-family: var(--font-fraunces), "Fraunces", "Cormorant Garamond", "Libre Baskerville", Georgia, "Times New Roman", serif;
   font-optical-sizing: auto;
+  font-variation-settings: "SOFT" 78, "WONK" 1;
 }

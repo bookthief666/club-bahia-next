@@ -22,7 +22,7 @@ export function HeroScene() {
         <motion.p variants={sceneReveal} custom={0.16} className="mt-3 max-w-full text-[0.68rem] uppercase tracking-[0.34em] text-amber-200/80 sm:mt-5 sm:text-xs sm:tracking-[0.45em]">
           {experienceCopy.venue.label}
         </motion.p>
-        <motion.h1 variants={sceneReveal} custom={0.24} className="bahia-display-serif mt-2 max-w-full overflow-visible break-normal text-[clamp(3.6rem,17vw,12rem)] font-bold leading-[0.84] tracking-[-0.075em] text-amber-50 drop-shadow-[0_0_26px_rgba(225,18,27,0.35)] min-[390px]:text-[clamp(4.2rem,17vw,12rem)] sm:leading-[0.78]">
+        <motion.h1 variants={sceneReveal} custom={0.24} className="bahia-display-serif mt-2 max-w-full overflow-visible break-normal text-[clamp(3.25rem,15.8vw,11.25rem)] font-semibold leading-[0.88] tracking-[-0.045em] text-amber-50 drop-shadow-[0_0_26px_rgba(225,18,27,0.35)] min-[390px]:text-[clamp(3.9rem,16vw,11.25rem)] sm:leading-[0.8]">
           Club Bahia
         </motion.h1>
         <motion.div variants={sceneReveal} custom={0.34} className="mt-3 flex max-w-full flex-col items-center gap-1 text-[0.62rem] uppercase tracking-[0.14em] text-amber-100/80 sm:mt-5 sm:flex-row sm:gap-5 sm:text-xs sm:tracking-[0.22em]">

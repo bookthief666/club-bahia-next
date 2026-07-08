@@ -13,6 +13,7 @@ import { StoryOverlay } from './StoryOverlay';
 import { ReservationOverlay } from './ReservationOverlay';
 import { DressCodeOverlay } from './DressCodeOverlay';
 import { MenuOverlay } from './MenuOverlay';
+import { Footer } from '@/components/layout/Footer';
 
 export function ExperienceShell() {
   const [overlay, setOverlay] = useState<ExperienceOverlay | null>(null);
@@ -25,6 +26,7 @@ export function ExperienceShell() {
       <HeroScene />
       <MantraScene />
       <InsideBahiaScene />
+      <Footer />
       <FloatingBahiaMark />
       <AnimatePresence mode="wait">
         {overlay === 'story' && <StoryOverlay key="story" onClose={closeOverlay} />}

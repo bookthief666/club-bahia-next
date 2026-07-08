@@ -4,6 +4,7 @@ import { bahiaAssets } from '@/lib/assets/bahia-assets';
 import { ReservationForm } from './ReservationForm';
 import { getEventTitleBySlug } from '@/lib/events/bahia-events';
 import { BahiaSunsetLogo } from '@/components/experience/BahiaSunsetLogo';
+import { Footer } from '@/components/layout/Footer';
 
 const badges = ['21+', 'Dress Code', 'Sunset Blvd', 'Fri & Sat'];
 
@@ -11,6 +12,7 @@ export function ReservationShell({ eventSlug }: { eventSlug?: string }) {
   const eventTitle = eventSlug ? getEventTitleBySlug(eventSlug) ?? eventSlug.split('-').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : null;
 
   return (
+    <>
     <main className="relative min-h-screen overflow-x-hidden bg-[#050304] px-4 py-5 text-amber-50 sm:px-6 lg:px-8">
       <Image src={bahiaAssets.redLoungeNeonRoom.src} alt="" fill sizes="100vw" className="pointer-events-none absolute inset-0 object-cover object-center opacity-24 saturate-125" aria-hidden="true" />
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(5,3,4,0.96),rgba(5,3,4,0.76)_52%,rgba(5,3,4,0.98)),linear-gradient(180deg,rgba(5,3,4,0.82),rgba(5,3,4,0.94)),radial-gradient(circle_at_20%_10%,rgba(225,18,27,0.28),transparent_28%),radial-gradient(circle_at_80%_0%,rgba(245,158,11,0.18),transparent_30%),linear-gradient(135deg,rgba(255,247,237,0.05),transparent_45%)]" />
@@ -22,7 +24,7 @@ export function ReservationShell({ eventSlug }: { eventSlug?: string }) {
           </Link>
           <BahiaSunsetLogo className="mt-6 h-16 w-32 sm:mt-10 sm:h-20 sm:w-36" tone="subtle" showFallbackText />
           <p className="mt-4 text-[0.68rem] uppercase tracking-[0.3em] text-red-200 sm:text-xs sm:tracking-[0.38em]">Club Bahia Los Angeles</p>
-          <h1 id="reservation-title" className="mt-3 max-w-3xl font-serif text-[clamp(4rem,18vw,7rem)] font-semibold leading-[0.85] tracking-[-0.075em] text-amber-50 drop-shadow-[0_0_30px_rgba(225,18,27,0.35)] sm:mt-4 sm:text-[clamp(5.5rem,14vw,9.5rem)] sm:leading-[0.78] sm:tracking-[-0.085em]">
+          <h1 id="reservation-title" className="mt-3 max-w-3xl bahia-display-serif text-[clamp(3.55rem,15.5vw,7rem)] font-semibold leading-[0.88] tracking-[-0.045em] text-amber-50 drop-shadow-[0_0_30px_rgba(225,18,27,0.35)] sm:mt-4 sm:text-[clamp(5rem,13vw,9.25rem)] sm:leading-[0.82] sm:tracking-[-0.05em]">
             Reserve Your Night
           </h1>
           <p className="mt-4 max-w-xl text-base leading-7 text-amber-50/75 sm:mt-5 sm:text-xl sm:leading-8">
@@ -46,5 +48,7 @@ export function ReservationShell({ eventSlug }: { eventSlug?: string }) {
         <ReservationForm eventTitle={eventTitle} />
       </div>
     </main>
+    <Footer />
+    </>
   );
 }

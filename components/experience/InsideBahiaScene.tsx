@@ -62,7 +62,7 @@ export function InsideBahiaScene() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#050304] to-transparent" aria-hidden="true" />
       <div className="relative z-10 mx-auto max-w-7xl px-4 pt-16 sm:px-6 sm:pt-20">
         <p className="text-[0.64rem] uppercase tracking-[0.34em] text-red-100/75 sm:text-xs">Real venue atmosphere</p>
-        <h2 id="inside-bahia-title" className="mt-3 max-w-[10ch] text-balance font-serif text-[clamp(3.35rem,17vw,9rem)] font-semibold leading-[0.78] tracking-[-0.085em] text-amber-50">
+        <h2 id="inside-bahia-title" className="mt-3 max-w-[10ch] text-balance bahia-display-serif text-[clamp(3.15rem,15vw,8.5rem)] font-semibold leading-[0.84] tracking-[-0.045em] text-amber-50">
           Inside Bahia
         </h2>
       </div>
@@ -102,7 +102,7 @@ export function InsideBahiaScene() {
               <div className="absolute inset-x-0 bottom-0 z-10 flex justify-center bg-gradient-to-t from-black/82 via-black/30 to-transparent px-5 pb-8 pt-32">
                 <div className="flex w-full max-w-xl flex-col items-center text-center">
                   <p className="text-[0.68rem] uppercase tracking-[0.28em] text-amber-200/85 sm:text-xs">{scene.cta.eyebrow}</p>
-                  <h3 className="bahia-display-serif mt-2 text-[clamp(2.8rem,11vw,6rem)] font-bold leading-[0.86] tracking-[-0.06em] text-amber-50 drop-shadow-[0_0_24px_rgba(225,18,27,0.42)]">{scene.cta.heading}</h3>
+                  <h3 className="bahia-display-serif mt-2 text-[clamp(2.65rem,10vw,5.8rem)] font-semibold leading-[0.9] tracking-[-0.04em] text-amber-50 drop-shadow-[0_0_24px_rgba(225,18,27,0.42)]">{scene.cta.heading}</h3>
                   <Link href={scene.cta.href} aria-label="Start a Club Bahia reservation" className="bahia-reserve-shimmer mt-5 inline-flex min-h-12 items-center justify-center overflow-hidden rounded-full border border-amber-100/30 bg-red-700/40 px-6 text-xs font-black uppercase tracking-[0.2em] text-amber-50 shadow-[0_0_36px_rgba(225,18,27,0.38)] backdrop-blur transition hover:border-amber-100/60 hover:bg-red-600/50 focus:outline-none focus:ring-2 focus:ring-red-500 sm:px-8">
                     {scene.cta.label}
                   </Link>
