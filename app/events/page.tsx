@@ -1,13 +1,15 @@
-import type { Metadata } from 'next';
-import { EventsExperience } from '@/components/events/EventsExperience';
+import type { Metadata } from "next";
+import { EventsExperience } from "@/components/events/EventsExperience";
 
 export const metadata: Metadata = {
-  title: 'Upcoming Events',
-  description: 'Explore editable Club Bahia event placeholders for live music, the kitchen, dance-floor nights, private events, and reservation inquiries.',
+  title: "Upcoming Events",
+  description:
+    "Explore Club Bahia programming for live music, dance nights, private events, birthdays, and reservation inquiries.",
   openGraph: {
-    title: 'Upcoming Events | Club Bahia',
-    description: 'Editable event calendar placeholders for Club Bahia on Sunset Boulevard.',
-    url: '/events',
+    title: "Upcoming Events | Club Bahia",
+    description:
+      "Upcoming Club Bahia programming, private events, birthdays, and reservations on Sunset Boulevard.",
+    url: "/events",
   },
 };
 

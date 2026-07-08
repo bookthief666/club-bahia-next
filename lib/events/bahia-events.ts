@@ -10,12 +10,45 @@ export type BahiaEvent = {
   description: string;
 };
 
-// Editable placeholder owner/event data. Replace this array later with Supabase,
-// Google Calendar, Sanity, or another CMS feed when real event publishing is ready.
+// Owner-editable programming categories for demo review. Replace with verified
+// dated events only when an approved calendar source is available.
 export const bahiaEvents: BahiaEvent[] = [
-  { id: 'friday-night-live', slug: 'friday-night-live', dayLabel: 'Fri', dateLabel: 'Weekend', title: 'Friday Night Live', category: 'Live music + kitchen', timeLabel: 'Doors after dark', status: 'RSVP open', description: 'A sample live-music night for the Club Bahia calendar. Edit before publishing real dates.' },
-  { id: 'saturday-dance-floor', slug: 'saturday-dance-floor', dayLabel: 'Sat', dateLabel: 'Weekend', title: 'Saturday Dance Floor', category: 'DJ / dancing', timeLabel: 'Late night', status: 'Tables encouraged', description: 'A sample weekend dance-floor listing intended to be replaced with owner-approved programming.' },
-  { id: 'private-event-table-inquiry', slug: 'private-event-table-inquiry', dayLabel: 'By request', dateLabel: 'Private', title: 'Private Event / Table Inquiry', category: 'Groups + celebrations', timeLabel: 'Call to coordinate', status: 'Inquiry only', description: 'Use this placeholder for private event and table inquiries until a live calendar source is connected.' },
+  {
+    id: "live-music-programming",
+    slug: "live-music-programming",
+    dayLabel: "Programming",
+    dateLabel: "Live",
+    title: "Live Music Programming",
+    category: "Latin entertainment",
+    timeLabel: "Schedule announced by the venue",
+    status: "Ask about upcoming dates",
+    description:
+      "Club Bahia regularly welcomes guests for Latin entertainment, nightlife, and kitchen service. Contact the team for the latest confirmed programming before making plans.",
+  },
+  {
+    id: "dance-night-programming",
+    slug: "dance-night-programming",
+    dayLabel: "Nights",
+    dateLabel: "Dance",
+    title: "Dance Nights",
+    category: "Dance floor + tables",
+    timeLabel: "Weekend availability varies",
+    status: "Reservations encouraged",
+    description:
+      "Plan a night out around Club Bahia’s dance floor atmosphere. Table requests and group reservations can be coordinated through the reservations page or by phone.",
+  },
+  {
+    id: "private-events-birthdays",
+    slug: "private-events-birthdays",
+    dayLabel: "Private",
+    dateLabel: "Events",
+    title: "Private Events & Birthdays",
+    category: "Celebrations + groups",
+    timeLabel: "By request",
+    status: "Inquiry welcome",
+    description:
+      "Bring birthdays, celebrations, and private event inquiries to the Club Bahia team for confirmed availability, table details, and hospitality coordination.",
+  },
 ];
 
 export function getEventTitleBySlug(slug: string) {
