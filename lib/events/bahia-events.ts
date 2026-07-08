@@ -1,56 +1,97 @@
+import { bahiaAssets, type BahiaImageAsset } from "@/lib/assets/bahia-assets";
+
 export type BahiaEvent = {
-  id: string;
   slug: string;
-  dayLabel: string;
-  dateLabel: string;
   title: string;
+  eyebrow: string;
   category: string;
+  dateLabel: string;
   timeLabel: string;
-  status: string;
+  image: BahiaImageAsset;
   description: string;
+  status: string;
+  ctaLabel: string;
+  reservationHref: string;
+  ticketUrl: string;
+  isPublished: boolean;
+  isFeatured: boolean;
 };
 
-// Owner-editable programming categories for demo review. Replace with verified
-// dated events only when an approved calendar source is available.
 export const bahiaEvents: BahiaEvent[] = [
   {
-    id: "live-music-programming",
-    slug: "live-music-programming",
-    dayLabel: "Programming",
-    dateLabel: "Live",
-    title: "Live Music Programming",
-    category: "Latin entertainment",
-    timeLabel: "Schedule announced by the venue",
-    status: "Ask about upcoming dates",
+    slug: "live-latin-weekends",
+    title: "Live Latin Weekends",
+    eyebrow: "Upcoming at Bahia",
+    category: "Live music",
+    dateLabel: "Dates confirmed by venue",
+    timeLabel: "Evening programming",
+    image: bahiaAssets.liveDanceCrowdStage,
     description:
-      "Club Bahia regularly welcomes guests for Latin entertainment, nightlife, and kitchen service. Contact the team for the latest confirmed programming before making plans.",
+      "A cinematic Club Bahia night built around live Latin entertainment, a hot kitchen, dancing, and table service. Upcoming programming is updated as dates are confirmed.",
+    status: "RSVP recommended",
+    ctaLabel: "RSVP / Reserve",
+    reservationHref: "/reservations?event=live-latin-weekends",
+    ticketUrl: "",
+    isPublished: true,
+    isFeatured: true,
   },
   {
-    id: "dance-night-programming",
-    slug: "dance-night-programming",
-    dayLabel: "Nights",
-    dateLabel: "Dance",
-    title: "Dance Nights",
-    category: "Dance floor + tables",
-    timeLabel: "Weekend availability varies",
-    status: "Reservations encouraged",
+    slug: "dance-floor-nights",
+    title: "Dance Floor Nights",
+    eyebrow: "Weekend energy",
+    category: "Dancing",
+    dateLabel: "Select nights",
+    timeLabel: "Late-night atmosphere",
+    image: bahiaAssets.packedDanceFloorGreenNeon,
     description:
-      "Plan a night out around Club Bahia’s dance floor atmosphere. Table requests and group reservations can be coordinated through the reservations page or by phone.",
+      "Reserve a table, bring a group, and settle into Bahia’s red-room dance floor energy with tropical noir lighting, Latin music, cocktails, and bottle-service-ready seating.",
+    status: "Tables available by request",
+    ctaLabel: "RSVP / Reserve",
+    reservationHref: "/reservations?event=dance-floor-nights",
+    ticketUrl: "",
+    isPublished: true,
+    isFeatured: false,
   },
   {
-    id: "private-events-birthdays",
-    slug: "private-events-birthdays",
-    dayLabel: "Private",
-    dateLabel: "Events",
-    title: "Private Events & Birthdays",
-    category: "Celebrations + groups",
-    timeLabel: "By request",
+    slug: "birthdays-and-celebrations",
+    title: "Birthdays & Celebrations",
+    eyebrow: "Celebrate here",
+    category: "Groups",
+    dateLabel: "By request",
+    timeLabel: "Availability varies",
+    image: bahiaAssets.redLoungeVipBooths,
+    description:
+      "Plan birthdays, anniversaries, and group nights with a reservation inquiry that gives the Bahia team the details needed to coordinate table options and timing.",
     status: "Inquiry welcome",
+    ctaLabel: "RSVP / Reserve",
+    reservationHref: "/reservations?event=birthdays-and-celebrations",
+    ticketUrl: "",
+    isPublished: true,
+    isFeatured: false,
+  },
+  {
+    slug: "private-events-filming",
+    title: "Private Events & Filming",
+    eyebrow: "Owner-managed inquiries",
+    category: "Private events",
+    dateLabel: "Custom dates",
+    timeLabel: "Scheduled with the venue",
+    image: bahiaAssets.mainRoomRedTables,
     description:
-      "Bring birthdays, celebrations, and private event inquiries to the Club Bahia team for confirmed availability, table details, and hospitality coordination.",
+      "Bring private parties, filming inquiries, brand moments, and cultural events to Club Bahia’s historic Sunset Boulevard room for owner-reviewed availability.",
+    status: "Contact venue",
+    ctaLabel: "RSVP / Reserve",
+    reservationHref: "/reservations?event=private-events-filming",
+    ticketUrl: "",
+    isPublished: true,
+    isFeatured: false,
   },
 ];
 
 export function getEventTitleBySlug(slug: string) {
   return bahiaEvents.find((event) => event.slug === slug)?.title;
 }
+
+// Future architecture note: this local event model is intentionally shaped for
+// later migration to Sanity CMS event entries, Supabase RSVP records, and Stripe
+// Checkout ticketing while keeping the current owner-demo page static and safe.
