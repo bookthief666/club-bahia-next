@@ -11,6 +11,7 @@ export const experienceCopy = {
     { label: 'Reserve', overlay: 'reservations' },
     { label: 'Our Story', overlay: 'story' },
     { label: 'Door Policy', overlay: 'dress' },
+    { label: 'Events', href: '/events' },
     { label: 'Talk To Us', overlay: 'menu' },
   ] as const,
   story: {
