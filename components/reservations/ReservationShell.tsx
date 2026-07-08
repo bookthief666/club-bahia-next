@@ -2,11 +2,14 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { bahiaAssets } from '@/lib/assets/bahia-assets';
 import { ReservationForm } from './ReservationForm';
+import { getEventTitleBySlug } from '@/lib/events/bahia-events';
 import { BahiaSunsetLogo } from '@/components/experience/BahiaSunsetLogo';
 
 const badges = ['21+', 'Dress Code', 'Sunset Blvd', 'Fri & Sat'];
 
-export function ReservationShell() {
+export function ReservationShell({ eventSlug }: { eventSlug?: string }) {
+  const eventTitle = eventSlug ? getEventTitleBySlug(eventSlug) ?? eventSlug.split('-').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : null;
+
   return (
     <main className="relative min-h-screen overflow-x-hidden bg-[#050304] px-4 py-5 text-amber-50 sm:px-6 lg:px-8">
       <Image src={bahiaAssets.redLoungeNeonRoom.src} alt="" fill sizes="100vw" className="pointer-events-none absolute inset-0 object-cover object-center opacity-24 saturate-125" aria-hidden="true" />
@@ -40,7 +43,7 @@ export function ReservationShell() {
             </a>
           </div>
         </section>
-        <ReservationForm />
+        <ReservationForm eventTitle={eventTitle} />
       </div>
     </main>
   );

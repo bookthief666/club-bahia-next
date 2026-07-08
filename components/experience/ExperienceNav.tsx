@@ -11,8 +11,8 @@ type ExperienceNavProps = {
 
 export function ExperienceNav({ onOpen }: ExperienceNavProps) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const reserveItem = experienceCopy.nav.find((item) => item.overlay === 'reservations');
-  const menuItems = experienceCopy.nav.filter((item) => item.overlay !== 'reservations');
+  const reserveItem = experienceCopy.nav.find((item) => 'overlay' in item && item.overlay === 'reservations');
+  const menuItems = experienceCopy.nav.filter((item) => !('overlay' in item && item.overlay === 'reservations')); 
 
   const openOverlay = (overlay: ExperienceOverlay) => {
     setMenuOpen(false);
@@ -47,23 +47,12 @@ export function ExperienceNav({ onOpen }: ExperienceNavProps) {
         </div>
         <div className="hidden items-center justify-end gap-x-4 md:flex lg:gap-x-7">
           {experienceCopy.nav.map((item) => (
-            item.overlay === 'reservations' ? (
-              <Link
-                key={item.label}
-                href="/reservations"
-                className="whitespace-nowrap transition hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
-              >
-                {item.label}
-              </Link>
+            'href' in item ? (
+              <Link key={item.label} href={item.href} className="whitespace-nowrap transition hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500">{item.label}</Link>
+            ) : item.overlay === 'reservations' ? (
+              <Link key={item.label} href="/reservations" className="whitespace-nowrap transition hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500">{item.label}</Link>
             ) : (
-              <button
-                key={item.label}
-                type="button"
-                onClick={() => openOverlay(item.overlay)}
-                className="whitespace-nowrap transition hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
-              >
-                {item.label}
-              </button>
+              <button key={item.label} type="button" onClick={() => openOverlay(item.overlay)} className="whitespace-nowrap transition hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500">{item.label}</button>
             )
           ))}
         </div>
@@ -71,14 +60,11 @@ export function ExperienceNav({ onOpen }: ExperienceNavProps) {
           <div id="experience-mobile-menu" className="absolute left-0 right-0 top-full mt-2 grid gap-2 rounded-2xl border border-amber-100/15 bg-[#050304]/95 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.5)] backdrop-blur md:hidden">
             <BahiaSunsetLogo className="mx-auto h-16 w-32 py-1" showFallbackText />
             {menuItems.map((item) => (
-              <button
-                key={item.label}
-                type="button"
-                onClick={() => openOverlay(item.overlay)}
-                className="w-full rounded-xl border border-amber-100/10 px-4 py-3 text-left text-[0.7rem] uppercase tracking-[0.18em] text-amber-100 transition hover:border-red-400/60 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
-              >
-                {item.label}
-              </button>
+              'href' in item ? (
+                <Link key={item.label} href={item.href} onClick={() => setMenuOpen(false)} className="w-full rounded-xl border border-amber-100/10 px-4 py-3 text-left text-[0.7rem] uppercase tracking-[0.18em] text-amber-100 transition hover:border-red-400/60 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500">{item.label}</Link>
+              ) : (
+                <button key={item.label} type="button" onClick={() => openOverlay(item.overlay)} className="w-full rounded-xl border border-amber-100/10 px-4 py-3 text-left text-[0.7rem] uppercase tracking-[0.18em] text-amber-100 transition hover:border-red-400/60 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500">{item.label}</button>
+              )
             ))}
           </div>
         )}

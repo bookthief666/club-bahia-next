@@ -1,9 +1,21 @@
 import type { Metadata } from 'next';
 import './globals.css';
 
+
 export const metadata: Metadata = {
-  title: 'Club Bahia | Latin Nightclub in Los Angeles',
+  metadataBase: new URL('https://clubbahia.com'),
+  title: {
+    default: 'Club Bahia | Latin Nightclub in Los Angeles',
+    template: '%s | Club Bahia',
+  },
   description: 'Club Bahia is a historic Latin nightlife venue on Sunset Blvd in Los Angeles, offering live Latin entertainment, dancing, reservations, and private events since 1974.',
+  openGraph: {
+    title: 'Club Bahia | Latin Nightclub in Los Angeles',
+    description: 'Live music, hot kitchen, and a big dance floor on Sunset Boulevard since 1974.',
+    url: '/',
+    siteName: 'Club Bahia',
+    type: 'website',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   description: 'Request Friday and Saturday night reservations for Club Bahia, a historic Latin nightlife venue on Sunset Blvd in Los Angeles.',
 };
 
-export default function ReservationsPage() {
-  return <ReservationShell />;
+export default async function ReservationsPage({ searchParams }: { searchParams?: Promise<{ event?: string }> }) {
+  const params = await searchParams;
+  return <ReservationShell eventSlug={params?.event} />;
 }

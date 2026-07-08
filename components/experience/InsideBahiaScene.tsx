@@ -11,7 +11,7 @@ type CinematicScene = {
   alt?: string;
   imageClassName?: string;
   tone: string;
-  cta?: { label: string; href: string };
+  cta?: { label: string; href: string; heading?: string; eyebrow?: string };
 };
 
 const scenes: CinematicScene[] = [
@@ -49,7 +49,7 @@ const scenes: CinematicScene[] = [
     alt: bahiaAssets.discoBallEmptyDanceFloor.alt,
     imageClassName: 'object-[50%_42%]',
     tone: 'from-[#050304]/28 via-[#230509]/14 to-black/14',
-    cta: { label: 'Start Reservation', href: '/reservations' },
+    cta: { label: 'Start Reservation', href: '/reservations', heading: 'Reserve the Night', eyebrow: 'Your Friday or Saturday.' },
   },
 ];
 
@@ -99,10 +99,14 @@ export function InsideBahiaScene() {
             <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.28),rgba(0,0,0,0.02)_48%,rgba(0,0,0,0.22)),radial-gradient(circle_at_50%_18%,rgba(255,231,184,0.15),transparent_22%)]" aria-hidden="true" />
             <div className="bahia-light-sweep absolute inset-y-0 -left-1/2 w-1/2 bg-gradient-to-r from-transparent via-amber-100/10 to-transparent" aria-hidden="true" />
             {scene.cta ? (
-              <div className="absolute inset-x-0 bottom-0 z-10 flex justify-center bg-gradient-to-t from-black/72 via-black/18 to-transparent px-5 pb-8 pt-28">
-                <Link href={scene.cta.href} className="bahia-reserve-shimmer inline-flex min-h-12 items-center justify-center overflow-hidden rounded-full border border-amber-100/30 bg-red-700/35 px-6 text-xs font-black uppercase tracking-[0.2em] text-amber-50 shadow-[0_0_36px_rgba(225,18,27,0.38)] backdrop-blur transition hover:border-amber-100/60 hover:bg-red-600/45 focus:outline-none focus:ring-2 focus:ring-red-500 sm:px-8">
-                  {scene.cta.label}
-                </Link>
+              <div className="absolute inset-x-0 bottom-0 z-10 flex justify-center bg-gradient-to-t from-black/82 via-black/30 to-transparent px-5 pb-8 pt-32">
+                <div className="flex w-full max-w-xl flex-col items-center text-center">
+                  <p className="text-[0.68rem] uppercase tracking-[0.28em] text-amber-200/85 sm:text-xs">{scene.cta.eyebrow}</p>
+                  <h3 className="bahia-display-serif mt-2 text-[clamp(2.8rem,11vw,6rem)] font-bold leading-[0.86] tracking-[-0.06em] text-amber-50 drop-shadow-[0_0_24px_rgba(225,18,27,0.42)]">{scene.cta.heading}</h3>
+                  <Link href={scene.cta.href} aria-label="Start a Club Bahia reservation" className="bahia-reserve-shimmer mt-5 inline-flex min-h-12 items-center justify-center overflow-hidden rounded-full border border-amber-100/30 bg-red-700/40 px-6 text-xs font-black uppercase tracking-[0.2em] text-amber-50 shadow-[0_0_36px_rgba(225,18,27,0.38)] backdrop-blur transition hover:border-amber-100/60 hover:bg-red-600/50 focus:outline-none focus:ring-2 focus:ring-red-500 sm:px-8">
+                    {scene.cta.label}
+                  </Link>
+                </div>
               </div>
             ) : null}
           </motion.article>

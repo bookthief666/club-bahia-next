@@ -18,7 +18,7 @@ const defaultValues: ReservationFormInput = {
   note: '',
 };
 
-export function ReservationForm() {
+export function ReservationForm({ eventTitle }: { eventTitle?: string | null }) {
   const [readyRequest, setReadyRequest] = useState<ReservationFormValues | null>(null);
   const { register, handleSubmit, watch, formState: { errors } } = useForm<ReservationFormInput, unknown, ReservationFormValues>({
     resolver: zodResolver(reservationSchema),
@@ -49,6 +49,12 @@ export function ReservationForm() {
             <span className="rounded-full border border-red-300/25 bg-red-600/10 px-2.5 py-1 text-amber-100">Fri · Sat</span>
           </div>
         </div>
+
+        {eventTitle ? (
+          <div className="mt-4 rounded-2xl border border-amber-200/20 bg-amber-100/[0.06] p-3 text-sm leading-6 text-amber-50/80" role="note">
+            <span className="font-semibold text-amber-50">Event inquiry:</span> {eventTitle}
+          </div>
+        ) : null}
 
         <div className="my-4 border-t border-dotted border-amber-100/20 sm:my-5" aria-hidden="true" />
 
