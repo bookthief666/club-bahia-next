@@ -312,6 +312,84 @@ body > * { position: relative; z-index: 2; }
   will-change: transform, opacity;
 }
 
+
+.bahia-neon-hero-sign {
+  position: relative;
+  isolation: isolate;
+  opacity: .97;
+  transform: translateZ(0);
+  filter:
+    drop-shadow(0 0 8px rgba(79, 255, 154, .48))
+    drop-shadow(0 0 22px rgba(34, 197, 94, .34))
+    drop-shadow(0 0 46px rgba(18, 61, 49, .44))
+    drop-shadow(0 12px 34px rgba(0, 0, 0, .68));
+  animation:
+    bahia-neon-sign-flicker 1.85s ease-out both,
+    bahia-neon-sign-pulse 5.8s ease-in-out 1.85s infinite,
+    bahia-neon-sign-irregular 9.5s steps(1, end) 2.2s infinite;
+  will-change: filter, opacity;
+}
+
+.bahia-neon-hero-sign::before {
+  content: '';
+  position: absolute;
+  inset: 8% 4% 2%;
+  z-index: -1;
+  border-radius: 999px;
+  background:
+    radial-gradient(ellipse at center, rgba(58, 255, 149, .22), transparent 60%),
+    radial-gradient(ellipse at center, rgba(225, 18, 27, .14), transparent 76%);
+  filter: blur(24px);
+  opacity: .72;
+  transform: scaleX(1.04);
+}
+
+.bahia-neon-hero-sign img {
+  display: block;
+}
+
+@keyframes bahia-neon-sign-flicker {
+  0% { opacity: .18; filter: drop-shadow(0 0 2px rgba(79, 255, 154, .2)) drop-shadow(0 12px 34px rgba(0, 0, 0, .68)); }
+  8% { opacity: .82; }
+  11% { opacity: .34; }
+  16% { opacity: .95; }
+  21% { opacity: .58; }
+  27%, 100% {
+    opacity: .97;
+    filter:
+      drop-shadow(0 0 8px rgba(79, 255, 154, .48))
+      drop-shadow(0 0 22px rgba(34, 197, 94, .34))
+      drop-shadow(0 0 46px rgba(18, 61, 49, .44))
+      drop-shadow(0 12px 34px rgba(0, 0, 0, .68));
+  }
+}
+
+@keyframes bahia-neon-sign-pulse {
+  0%, 100% {
+    opacity: .95;
+    filter:
+      drop-shadow(0 0 7px rgba(79, 255, 154, .42))
+      drop-shadow(0 0 18px rgba(34, 197, 94, .30))
+      drop-shadow(0 0 40px rgba(18, 61, 49, .36))
+      drop-shadow(0 12px 34px rgba(0, 0, 0, .68));
+  }
+  48% {
+    opacity: 1;
+    filter:
+      drop-shadow(0 0 11px rgba(125, 255, 184, .60))
+      drop-shadow(0 0 28px rgba(34, 197, 94, .42))
+      drop-shadow(0 0 62px rgba(18, 108, 82, .48))
+      drop-shadow(0 14px 38px rgba(0, 0, 0, .72));
+  }
+}
+
+@keyframes bahia-neon-sign-irregular {
+  0%, 18%, 22%, 53%, 57%, 100% { opacity: .97; }
+  20% { opacity: .9; }
+  55% { opacity: .93; }
+  76% { opacity: 1; }
+}
+
 @keyframes bahia-neon-pulse {
   0%, 100% { filter: drop-shadow(0 0 8px rgba(225, 18, 27, .26)); opacity: .94; }
   50% { filter: drop-shadow(0 0 18px rgba(225, 18, 27, .5)) drop-shadow(0 0 28px rgba(246, 183, 60, .18)); opacity: 1; }
@@ -332,9 +410,16 @@ body > * { position: relative; z-index: 2; }
 @media (prefers-reduced-motion: reduce) {
   .bahia-sunset-logo,
   .bahia-light-sweep,
-  .bahia-hero-sweep {
+  .bahia-hero-sweep,
+  .bahia-neon-hero-sign {
     animation: none !important;
     will-change: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bahia-neon-hero-sign {
+    opacity: .97;
   }
 }
 
