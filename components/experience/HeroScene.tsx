@@ -11,8 +11,8 @@ export function HeroScene() {
   const reduceMotion = useReducedMotion();
   return (
     <section id="experience-hero" className="relative isolate flex min-h-[100svh] items-start justify-center overflow-hidden px-4 pb-[calc(4.25rem+env(safe-area-inset-bottom))] pt-[4.8rem] text-center min-[360px]:pt-[5.2rem] sm:min-h-screen sm:items-center sm:px-6 sm:py-24 md:py-28">
-      <Image src={bahiaAssets.exteriorNightFacade.src} alt="" fill priority sizes="100vw" className="bahia-kenburns pointer-events-none absolute inset-0 -z-20 object-cover object-[54%_50%] opacity-72 saturate-125" aria-hidden="true" />
-      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_38%,rgba(225,18,27,0.22),transparent_30%),linear-gradient(90deg,rgba(5,3,4,0.92),rgba(5,3,4,0.46)_45%,rgba(5,3,4,0.9)),linear-gradient(180deg,rgba(5,3,4,0.58),rgba(5,3,4,0.38)_42%,rgba(5,3,4,0.96))]" aria-hidden="true" />
+      <Image src={bahiaAssets.exteriorNightFacade.src} alt="" fill priority sizes="100vw" className="bahia-kenburns pointer-events-none absolute inset-0 -z-20 object-cover object-[54%_50%] opacity-88 saturate-125 contrast-[1.04]" aria-hidden="true" />
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_38%,rgba(225,18,27,0.22),transparent_30%),linear-gradient(90deg,rgba(5,3,4,0.78),rgba(5,3,4,0.30)_45%,rgba(5,3,4,0.76)),linear-gradient(180deg,rgba(5,3,4,0.42),rgba(5,3,4,0.24)_42%,rgba(5,3,4,0.88))]" aria-hidden="true" />
       <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-red-950/35 via-transparent to-amber-900/20 mix-blend-screen" aria-hidden="true" />
       <div className="bahia-hero-sweep pointer-events-none absolute inset-y-0 -z-10 w-1/2 bg-gradient-to-r from-transparent via-amber-100/10 to-transparent mix-blend-screen" aria-hidden="true" />
       <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} className="relative z-10 flex w-full max-w-[min(100%,64rem)] flex-col items-center">
