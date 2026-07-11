@@ -1,14 +1,5 @@
 import type { Metadata } from 'next';
-import { Fraunces } from 'next/font/google';
 import './globals.css';
-
-const fraunces = Fraunces({
-  subsets: ['latin'],
-  variable: '--font-fraunces',
-  display: 'swap',
-  axes: ['SOFT', 'WONK', 'opsz'],
-});
-
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://clubbahia.com'),
@@ -27,5 +18,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return <html lang="en" className={fraunces.variable}><body className="font-sans">{children}</body></html>;
+  return <html lang="en"><body className="font-sans">{children}</body></html>;
 }
