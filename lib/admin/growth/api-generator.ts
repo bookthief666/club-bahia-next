@@ -7,6 +7,7 @@ import type {
   CampaignContentItem,
   CampaignGenerationResult,
   CampaignGenerator,
+  EventGrowthWorkspace,
 } from '@/lib/admin/growth/domain';
 import { FixtureCampaignGenerator } from '@/lib/admin/growth/generator';
 import {
@@ -15,6 +16,12 @@ import {
 } from '@/lib/admin/growth/validation';
 
 const GENERATION_ENDPOINT = '/api/admin/growth/generate';
+
+type PersistableCampaignGeneration = CampaignGenerationResult &
+  Pick<
+    EventGrowthWorkspace,
+    'generationProvider' | 'generationModel' | 'generationWarning'
+  >;
 
 interface ErrorResponse {
   error?: string;
@@ -31,10 +38,23 @@ async function postGenerationRequest(body: unknown): Promise<unknown> {
   const payload = (await response.json()) as unknown;
   if (!response.ok) {
     const errorPayload = payload as ErrorResponse;
-    throw new Error(errorPayload.error || `Campaign generation failed with status ${response.status}.`);
+    throw new Error(
+      errorPayload.error || `Campaign generation failed with status ${response.status}.`,
+    );
   }
 
   return payload;
+}
+
+function toPersistableGeneration(
+  result: CampaignGenerationResult,
+): PersistableCampaignGeneration {
+  return {
+    ...result,
+    generationProvider: result.provider,
+    generationModel: result.model,
+    generationWarning: result.warning,
+  };
 }
 
 export class ApiCampaignGenerator implements CampaignGenerator {
@@ -43,25 +63,25 @@ export class ApiCampaignGenerator implements CampaignGenerator {
   async generate(
     event: OperationsEvent,
     brief: CampaignBrief,
-  ): Promise<CampaignGenerationResult> {
+  ): Promise<PersistableCampaignGeneration> {
     try {
       const payload = await postGenerationRequest({
         mode: 'campaign',
         event,
         brief,
       });
-      return CampaignGenerationResultSchema.parse(payload);
+      return toPersistableGeneration(CampaignGenerationResultSchema.parse(payload));
     } catch (error) {
       const fallback = await this.fallback.generate(event, brief);
       const message = error instanceof Error ? error.message : 'Unknown campaign API error.';
-      return {
+      return toPersistableGeneration({
         ...fallback,
         provider: 'fixture',
         warning: `The campaign API could not be reached, so local fixture copy was used. ${message}`.slice(
           0,
           1000,
         ),
-      };
+      });
     }
   }
 
