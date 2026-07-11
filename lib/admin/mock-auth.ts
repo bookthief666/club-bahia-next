@@ -9,10 +9,11 @@ const isExplicitlyEnabled = process.env.ADMIN_DEV_AUTH_ENABLED === 'true';
 // This mock boundary is available only for local development, explicitly enabled
 // environments, and synthetic-data Vercel previews. Production deployments still
 // redirect away from /admin until real authentication replaces this module.
-const enabled = isLocalDevelopment || isVercelPreview || isExplicitlyEnabled;
+export const isMockAdminEnabled =
+  isLocalDevelopment || isVercelPreview || isExplicitlyEnabled;
 
 export async function requireMockAdminUser(): Promise<AdminUser> {
-  if (!enabled) redirect('/');
+  if (!isMockAdminEnabled) redirect('/');
   return {
     id: 'dev-mock-admin',
     name: process.env.ADMIN_DEV_USER_NAME || 'Maya Rivera',
