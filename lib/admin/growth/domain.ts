@@ -19,6 +19,7 @@ export type CampaignMilestoneStatus = 'todo' | 'ready' | 'complete';
 export type CampaignLanguage = 'english' | 'spanish' | 'bilingual';
 export type CampaignObjective = 'reservations' | 'ticket-sales' | 'attendance' | 'awareness';
 export type PublishingMode = 'automatic' | 'manual';
+export type CampaignGenerationProvider = 'openai' | 'fixture';
 
 export interface CampaignBrief {
   theme: string;
@@ -61,6 +62,12 @@ export interface CampaignMilestone {
   contentItemId?: string;
 }
 
+export interface CampaignGenerationMeta {
+  provider: CampaignGenerationProvider;
+  model?: string;
+  warning?: string;
+}
+
 export interface EventGrowthWorkspace {
   eventId: string;
   brief: CampaignBrief;
@@ -69,18 +76,30 @@ export interface EventGrowthWorkspace {
   milestones: CampaignMilestone[];
   updatedAt: string;
   generatedAt?: string;
+  generationProvider?: CampaignGenerationProvider;
+  generationModel?: string;
+  generationWarning?: string;
+}
+
+export type CampaignGenerationResult = Pick<
+  EventGrowthWorkspace,
+  'content' | 'milestones' | 'readinessScore'
+> & CampaignGenerationMeta;
+
+export interface CampaignItemGenerationResult extends CampaignGenerationMeta {
+  item: CampaignContentItem;
 }
 
 export interface CampaignGenerator {
   generate(
     event: OperationsEvent,
     brief: CampaignBrief,
-  ): Promise<Pick<EventGrowthWorkspace, 'content' | 'milestones' | 'readinessScore'>>;
+  ): Promise<CampaignGenerationResult>;
   generateItem(
     event: OperationsEvent,
     brief: CampaignBrief,
     channel: CampaignChannel,
-  ): Promise<CampaignContentItem>;
+  ): Promise<CampaignItemGenerationResult>;
 }
 
 export const CAMPAIGN_CHANNEL_LABELS: Record<CampaignChannel, string> = {
