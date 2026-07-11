@@ -28,13 +28,13 @@ export function EventListClient() {
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs uppercase tracking-[.3em] text-amber-200/70">
-            Development fixture mode
+            Demo fixture mode
           </p>
-          <h1 className="font-serif text-4xl">Events</h1>
+          <h1 className="font-serif text-3xl">Events</h1>
         </div>
         <Link
           href="/admin/events/new"
-          className="rounded-full bg-red-600 px-4 py-3 text-sm font-bold"
+          className="rounded-xl bg-amber-300 px-4 py-2.5 text-sm font-bold text-black"
         >
           New event
         </Link>

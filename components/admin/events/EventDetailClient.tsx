@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import type { OperationsEvent } from "@/lib/admin/domain";
 import { eventRepository } from "@/lib/admin/event-repository";
+import { formatVenueDateTime, formatVenueTime } from "@/lib/admin/date";
 import { StatusPill } from "./StatusPill";
 import { EventActions } from "./EventActions";
 export function EventDetailClient({ eventId }: { eventId: string }) {
@@ -12,7 +13,7 @@ export function EventDetailClient({ eventId }: { eventId: string }) {
   if (event === undefined)
     return (
       <p className="rounded-3xl border border-white/10 p-6">
-        Loading development fixture event…
+        Loading event…
       </p>
     );
   if (event === null)
@@ -29,12 +30,11 @@ export function EventDetailClient({ eventId }: { eventId: string }) {
     );
   return (
     <div className="space-y-5">
-      <div className="rounded-3xl border border-white/10 bg-black/35 p-5">
+      <div className="rounded-2xl border border-white/10 bg-[#141210]/75 p-4">
         <StatusPill status={event.status} />
-        <h1 className="mt-3 font-serif text-5xl">{event.title}</h1>
+        <h1 className="mt-3 font-serif text-3xl">{event.title}</h1>
         <p className="mt-2 text-white/70">
-          {new Date(event.startsAt).toLocaleString()} –{" "}
-          {new Date(event.endsAt).toLocaleTimeString()} · {event.room}
+          {formatVenueDateTime(event.startsAt)} – {formatVenueTime(event.endsAt)} · {event.room}
         </p>
         <p className="mt-4 max-w-2xl text-white/75">{event.concept}</p>
       </div>
