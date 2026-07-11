@@ -1,6 +1,12 @@
 import type { AdminUser } from '@/lib/admin/domain';
 
-const nav = ['Dashboard', 'Events', 'Reservations', 'Marketing', 'Tasks'];
+const nav = [
+  { label: 'Dashboard', href: '/admin' },
+  { label: 'Events', href: '/admin/events' },
+  { label: 'Calendar', href: '/admin/calendar' },
+  { label: 'Reservations', href: '#' },
+  { label: 'Tasks', href: '#' },
+];
 
 export function AdminShell({ user, children }: { user: AdminUser; children: React.ReactNode }) {
   return (
@@ -12,7 +18,7 @@ export function AdminShell({ user, children }: { user: AdminUser; children: Reac
           <p className="text-xs uppercase tracking-[.42em] text-amber-200/70">Club Bahia</p>
           <h1 className="mt-3 font-serif text-3xl text-white">Command Center</h1>
           <nav className="mt-8 space-y-2" aria-label="Admin">
-            {nav.map((item, index) => <a key={item} href={index === 0 ? '/admin' : '#'} className={`block rounded-2xl px-4 py-3 text-sm ${index === 0 ? 'bg-red-600/25 text-white ring-1 ring-red-300/30' : 'text-white/65 hover:bg-white/10 hover:text-white'}`}>{item}</a>)}
+            {nav.map((item, index) => <a key={item.label} href={item.href} className={`block rounded-2xl px-4 py-3 text-sm ${index === 0 ? 'bg-red-600/25 text-white ring-1 ring-red-300/30' : 'text-white/65 hover:bg-white/10 hover:text-white'}`}>{item.label}</a>)}
           </nav>
         </aside>
         <main className="flex-1 px-4 py-5 min-[390px]:px-5 sm:px-6 lg:px-8">
@@ -23,7 +29,7 @@ export function AdminShell({ user, children }: { user: AdminUser; children: Reac
           {children}
         </main>
         <nav className="fixed inset-x-3 bottom-3 z-20 grid grid-cols-4 gap-2 rounded-3xl border border-white/10 bg-black/80 p-2 text-center text-[11px] shadow-2xl backdrop-blur-xl md:hidden" aria-label="Mobile admin">
-          {['Today', 'Events', 'Risk', 'Requests'].map((item) => <a key={item} href={`#${item.toLowerCase()}`} className="rounded-2xl px-2 py-3 text-white/75 focus:outline-none focus:ring-2 focus:ring-amber-200">{item}</a>)}
+          {[{label:'Today',href:'/admin#today'},{label:'Events',href:'/admin/events'},{label:'Calendar',href:'/admin/calendar'},{label:'Risk',href:'/admin#risk'}].map((item) => <a key={item.label} href={item.href} className="rounded-2xl px-2 py-3 text-white/75 focus:outline-none focus:ring-2 focus:ring-amber-200">{item.label}</a>)}
         </nav>
       </div>
     </div>
