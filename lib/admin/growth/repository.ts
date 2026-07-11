@@ -6,6 +6,8 @@ import type {
   CampaignContentItem,
   CampaignGenerator,
   CampaignItemStatus,
+  CampaignMilestone,
+  CampaignMilestoneStatus,
   EventGrowthWorkspace,
 } from './domain';
 import { FixtureCampaignGenerator } from './generator';
@@ -40,6 +42,7 @@ function emptyWorkspace(event: OperationsEvent): EventGrowthWorkspace {
 
 function calculateReadiness(content: CampaignContentItem[]): number {
   if (!content.length) return 18;
+
   const weights: Record<CampaignItemStatus, number> = {
     draft: 0.45,
     approved: 0.72,
@@ -47,8 +50,17 @@ function calculateReadiness(content: CampaignContentItem[]): number {
     published: 1,
     manual: 0.62,
   };
-  const average = content.reduce((sum, item) => sum + weights[item.status], 0) / content.length;
+
+  const average =
+    content.reduce((sum, item) => sum + weights[item.status], 0) / content.length;
+
   return Math.round(average * 100);
+}
+
+function milestoneStatusForContent(status: CampaignItemStatus): CampaignMilestoneStatus {
+  if (status === 'published') return 'complete';
+  if (status === 'draft') return 'todo';
+  return 'ready';
 }
 
 export interface GrowthWorkspaceRepository {
@@ -66,10 +78,11 @@ export class BrowserGrowthWorkspaceRepository implements GrowthWorkspaceReposito
   constructor(private readonly generator: CampaignGenerator = new FixtureCampaignGenerator()) {}
 
   private readAll(): Record<string, EventGrowthWorkspace> {
-    const storage = globalThis.localStorage;
-    if (!storage) return {};
-    const raw = storage.getItem(STORAGE_KEY);
+    if (typeof window === 'undefined') return {};
+
+    const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return {};
+
     try {
       return JSON.parse(raw) as Record<string, EventGrowthWorkspace>;
     } catch {
@@ -77,13 +90,18 @@ export class BrowserGrowthWorkspaceRepository implements GrowthWorkspaceReposito
     }
   }
 
-  private writeAll(workspaces: Record<string, EventGrowthWorkspace>) {
-    globalThis.localStorage?.setItem(STORAGE_KEY, JSON.stringify(workspaces));
+  private writeAll(workspaces: Record<string, EventGrowthWorkspace>): void {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(workspaces));
   }
 
   private save(workspace: EventGrowthWorkspace): EventGrowthWorkspace {
     const all = this.readAll();
-    const next = { ...workspace, updatedAt: new Date().toISOString() };
+    const next: EventGrowthWorkspace = {
+      ...workspace,
+      updatedAt: new Date().toISOString(),
+    };
+
     all[workspace.eventId] = next;
     this.writeAll(all);
     return clone(next);
@@ -93,13 +111,20 @@ export class BrowserGrowthWorkspaceRepository implements GrowthWorkspaceReposito
     return clone(this.readAll()[event.id] ?? emptyWorkspace(event));
   }
 
-  async updateBrief(event: OperationsEvent, brief: CampaignBrief) {
+  async updateBrief(
+    event: OperationsEvent,
+    brief: CampaignBrief,
+  ): Promise<EventGrowthWorkspace> {
     const current = await this.getWorkspace(event);
     return this.save({ ...current, brief });
   }
 
-  async generateCampaign(event: OperationsEvent, brief: CampaignBrief) {
+  async generateCampaign(
+    event: OperationsEvent,
+    brief: CampaignBrief,
+  ): Promise<EventGrowthWorkspace> {
     const generated = await this.generator.generate(event, brief);
+
     return this.save({
       eventId: event.id,
       brief,
@@ -113,16 +138,19 @@ export class BrowserGrowthWorkspaceRepository implements GrowthWorkspaceReposito
     event: OperationsEvent,
     contentItemId: string,
     status: CampaignItemStatus,
-  ) {
+  ): Promise<EventGrowthWorkspace> {
     const current = await this.getWorkspace(event);
-    const content = current.content.map((item) =>
+
+    const content: CampaignContentItem[] = current.content.map((item) =>
       item.id === contentItemId ? { ...item, status } : item,
     );
-    const milestones = current.milestones.map((item) =>
+
+    const milestones: CampaignMilestone[] = current.milestones.map((item) =>
       item.contentItemId === contentItemId
-        ? { ...item, status: status === 'published' ? 'complete' : status === 'draft' ? 'todo' : 'ready' }
+        ? { ...item, status: milestoneStatusForContent(status) }
         : item,
     );
+
     return this.save({
       ...current,
       content,
