@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { OperationsEvent } from "@/lib/admin/domain";
 import {
   addDays,
+  addMonthsClamped,
   eventLocalDate,
   getVenueToday,
   type LocalDate,
@@ -19,11 +20,8 @@ export function EventCalendarClient() {
     eventRepository.listEvents().then(setEvents);
   }, []);
   function move(dir: number) {
-    if (view === "month") {
-      const d = new Date(`${anchor}T12:00:00Z`);
-      d.setUTCMonth(d.getUTCMonth() + dir);
-      setAnchor(d.toISOString().slice(0, 10) as LocalDate);
-    } else setAnchor(addDays(anchor, dir * (view === "week" ? 7 : 14)));
+    if (view === "month") setAnchor(addMonthsClamped(anchor, dir));
+    else setAnchor(addDays(anchor, dir * (view === "week" ? 7 : 14)));
   }
   const visible = useMemo(
     () =>

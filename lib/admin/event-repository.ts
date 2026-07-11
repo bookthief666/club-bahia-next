@@ -54,10 +54,12 @@ export class BrowserFixtureEventRepository implements EventRepository {
   async updateEvent(id: string, input: Partial<EventInput> & { status?: EventStatus; cancellationReason?: string }, opts: { now?: Date } = {}) {
     const events = this.read(); const index = events.findIndex((event) => event.id === id); if (index < 0) throw new Error('Event not found.');
     const current = events[index];
-    if (input.status) assertValidTransition(current, input.status, { cancellationReason: input.cancellationReason, now: opts.now });
     const patch: Partial<OperationsEvent> = { title: input.title?.trim(), concept: input.concept?.trim(), room: input.room, owner: input.owner, capacityTarget: input.capacityTarget, ticketsSold: input.ticketsSold, riskFlags: input.riskFlags, revenueTarget: input.revenueTarget, committedCosts: input.committedCosts };
     if (input.date) { const starts = localDateToVenueDate(input.date, 21); patch.startsAt = starts.toISOString(); patch.endsAt = new Date(starts.getTime() + 4*60*60*1000).toISOString(); }
-    if (input.status) { patch.status = input.status; if (input.status === 'cancelled') { patch.cancelledAt = new Date().toISOString(); patch.cancellationReason = input.cancellationReason; } if (input.status === 'live') patch.liveAt = new Date().toISOString(); if (input.status === 'completed') patch.completedAt = new Date().toISOString(); }
+    const nextStatus = input.status;
+    const candidate = { ...current, ...Object.fromEntries(Object.entries(patch).filter(([,v]) => v !== undefined)) } as OperationsEvent;
+    if (nextStatus) assertValidTransition({ ...candidate, status: current.status }, nextStatus, { cancellationReason: input.cancellationReason ?? current.cancellationReason, now: opts.now });
+    if (nextStatus) { patch.status = nextStatus; if (nextStatus === 'cancelled') { patch.cancelledAt = current.cancelledAt ?? new Date().toISOString(); patch.cancellationReason = input.cancellationReason ?? current.cancellationReason; } if (nextStatus === 'live') patch.liveAt = new Date().toISOString(); if (nextStatus === 'completed') patch.completedAt = new Date().toISOString(); }
     events[index] = { ...current, ...Object.fromEntries(Object.entries(patch).filter(([,v]) => v !== undefined)) };
     this.write(events); return events[index];
   }

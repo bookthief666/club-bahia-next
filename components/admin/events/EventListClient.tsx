@@ -3,7 +3,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { OperationsEvent } from "@/lib/admin/domain";
-import { eventRepository, isActiveEvent } from "@/lib/admin/event-repository";
+import { eventRepository } from "@/lib/admin/event-repository";
+import { filterEventsForList } from "@/lib/admin/event-list-filters";
 import { EventCard } from "./EventCard";
 import { EventFilters } from "./EventFilters";
 export function EventListClient() {
@@ -13,29 +14,14 @@ export function EventListClient() {
     eventRepository.listEvents().then(setEvents);
   }, []);
   const filtered = useMemo(() => {
-    let rows = [...events];
-    const q = (params.get("q") ?? "").toLowerCase();
-    const archive = params.get("archive") ?? "active";
-    const status = params.get("status");
-    if (q)
-      rows = rows.filter((e) =>
-        (e.title + e.concept + e.owner).toLowerCase().includes(q),
-      );
-    if (archive === "active") rows = rows.filter((e) => isActiveEvent(e));
-    if (archive === "archived")
-      rows = rows.filter((e) => e.status === "archived");
-    if (status) rows = rows.filter((e) => e.status === status);
-    else if (archive === "active") rows = rows.filter(isActiveEvent);
-    if (params.get("sort") === "title")
-      rows.sort((a, b) => a.title.localeCompare(b.title));
-    else if (params.get("sort") === "risk")
-      rows.sort((a, b) => b.riskFlags.length - a.riskFlags.length);
-    else
-      rows.sort(
-        (a, b) =>
-          new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime(),
-      );
-    return rows;
+    return filterEventsForList(events, {
+      q: params.get("q"),
+      archive: params.get("archive"),
+      status: params.get("status"),
+      sort: params.get("sort"),
+      date: params.get("date"),
+      risk: params.get("risk"),
+    });
   }, [events, params]);
   return (
     <div className="space-y-5">

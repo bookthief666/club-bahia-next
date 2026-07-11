@@ -99,3 +99,92 @@ describe("browser fixture repository", () => {
     expect(await repo.getEvent(created.id)).toBeNull();
   });
 });
+
+describe("venue-local date conversion", () => {
+  function venueWallClock(date: Date) {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Los_Angeles",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).formatToParts(date);
+    const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value;
+    return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")}`;
+  }
+
+  it("uses standard-time offset for winter Los Angeles events", async () => {
+    const { localDateToVenueDate } = await import("../lib/admin/date");
+    expect(localDateToVenueDate("2026-01-15", 21).toISOString()).toBe("2026-01-16T05:00:00.000Z");
+  });
+
+  it("uses daylight-time offset for summer Los Angeles events", async () => {
+    const { localDateToVenueDate } = await import("../lib/admin/date");
+    expect(localDateToVenueDate("2026-07-15", 21).toISOString()).toBe("2026-07-16T04:00:00.000Z");
+  });
+
+  it("round-trips the requested venue-local date and wall-clock time", async () => {
+    const { localDateToVenueDate, eventLocalDate } = await import("../lib/admin/date");
+    const instant = localDateToVenueDate("2026-11-01", 1, 30);
+    expect(eventLocalDate(instant.toISOString())).toBe("2026-11-01");
+    expect(venueWallClock(instant)).toBe("2026-11-01 01:30");
+  });
+});
+
+describe("repository status edge cases", () => {
+  beforeEach(() => {
+    const store = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        store.set(key, value);
+      },
+      removeItem: (key: string) => {
+        store.delete(key);
+      },
+      clear: () => {
+        store.clear();
+      },
+    });
+  });
+
+  it("preserves a cancellation reason when restoring cancelled archived events", async () => {
+    const repo = new BrowserFixtureEventRepository();
+    const created = await repo.createEvent({
+      title: "Cancelled Hold",
+      concept: "Weather hold",
+      date: "2026-09-01",
+      room: "Main",
+      owner: "QA",
+    });
+    await repo.updateEvent(created.id, { status: "cancelled", cancellationReason: "Artist travel cancelled" });
+    await repo.archiveEvent(created.id);
+    const restored = await repo.restoreEvent(created.id);
+    expect(restored.status).toBe("cancelled");
+    expect(restored.cancellationReason).toBe("Artist travel cancelled");
+  });
+
+  it("validates live status against the candidate edited date", async () => {
+    const repo = new BrowserFixtureEventRepository();
+    await expect(
+      repo.updateEvent(
+        "evt-sabado-caliente",
+        { date: "2026-08-09", status: "live" },
+        { now: new Date("2026-08-09T01:00:00.000Z") },
+      ),
+    ).rejects.toThrow(/Los Angeles/);
+  });
+
+  it("allows live when the submitted date matches the current venue date", async () => {
+    const repo = new BrowserFixtureEventRepository();
+    const live = await repo.updateEvent(
+      "evt-sabado-caliente",
+      { date: "2026-08-08", status: "live" },
+      { now: new Date("2026-08-09T01:00:00.000Z") },
+    );
+    expect(live.status).toBe("live");
+    expect(live.startsAt).toBe("2026-08-09T04:00:00.000Z");
+  });
+});
