@@ -12,7 +12,7 @@ import type {
   EventGrowthWorkspace,
   PublishingMode,
 } from './domain';
-import { FixtureCampaignGenerator } from './generator';
+import { ApiCampaignGenerator } from './api-generator';
 
 const STORAGE_KEY = 'club-bahia-growth-workspaces-v1';
 
@@ -163,6 +163,9 @@ function normalizeWorkspace(
     content,
     milestones: Array.isArray(stored.milestones) ? stored.milestones : [],
     generatedAt: stored.generatedAt,
+    generationProvider: stored.generationProvider,
+    generationModel: stored.generationModel,
+    generationWarning: stored.generationWarning,
     updatedAt: stored.updatedAt ?? new Date().toISOString(),
   };
 }
@@ -195,7 +198,7 @@ export interface GrowthWorkspaceRepository {
 }
 
 export class BrowserGrowthWorkspaceRepository implements GrowthWorkspaceRepository {
-  constructor(private readonly generator: CampaignGenerator = new FixtureCampaignGenerator()) {}
+  constructor(private readonly generator: CampaignGenerator = new ApiCampaignGenerator()) {}
 
   private readAll(): Record<string, StoredWorkspace> {
     if (typeof window === 'undefined') return {};
