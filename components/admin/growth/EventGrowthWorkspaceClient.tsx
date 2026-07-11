@@ -8,9 +8,13 @@ import type { OperationsEvent } from '@/lib/admin/domain';
 import { eventRepository } from '@/lib/admin/event-repository';
 import {
   CAMPAIGN_CHANNEL_LABELS,
+  CAMPAIGN_LANGUAGE_LABELS,
+  CAMPAIGN_OBJECTIVE_LABELS,
   type CampaignBrief,
   type CampaignContentItem,
   type CampaignItemStatus,
+  type CampaignLanguage,
+  type CampaignObjective,
   type EventGrowthWorkspace,
 } from '@/lib/admin/growth/domain';
 import { growthWorkspaceRepository } from '@/lib/admin/growth/repository';
@@ -29,7 +33,6 @@ const STATUS_CLASS: Record<CampaignItemStatus, string> = {
   approved: 'border-amber-200/25 bg-amber-200/10 text-amber-100',
   scheduled: 'border-sky-200/25 bg-sky-200/10 text-sky-100',
   published: 'border-emerald-200/25 bg-emerald-200/10 text-emerald-100',
-  manual: 'border-violet-200/25 bg-violet-200/10 text-violet-100',
 };
 
 function Metric({ label, value, detail }: { label: string; value: string; detail: string }) {
@@ -42,16 +45,50 @@ function Metric({ label, value, detail }: { label: string; value: string; detail
   );
 }
 
+function Field({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <label className="block text-sm text-white/70">
+      {label}
+      <input
+        value={value}
+        placeholder={placeholder}
+        onChange={(inputEvent) => onChange(inputEvent.target.value)}
+        className="mt-1 min-h-11 w-full rounded-xl border border-white/10 bg-black/25 px-3 text-white outline-none placeholder:text-white/25 focus:border-amber-200/45"
+      />
+    </label>
+  );
+}
+
 function ContentCard({
   item,
   pending,
-  onStatus,
+  onSave,
+  onRegenerate,
+  onAdvance,
 }: {
   item: CampaignContentItem;
   pending: boolean;
-  onStatus: (status: CampaignItemStatus) => void;
+  onSave: (body: string) => Promise<boolean>;
+  onRegenerate: () => Promise<void>;
+  onAdvance: (status: CampaignItemStatus) => Promise<void>;
 }) {
   const [copied, setCopied] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draftBody, setDraftBody] = useState(item.body);
+
+  useEffect(() => {
+    setDraftBody(item.body);
+  }, [item.body]);
 
   async function copyBody() {
     try {
@@ -63,6 +100,33 @@ function ContentCard({
     }
   }
 
+  async function saveEdit() {
+    const saved = await onSave(draftBody);
+    if (saved) setEditing(false);
+  }
+
+  const nextStatus: CampaignItemStatus | null =
+    item.status === 'draft'
+      ? 'approved'
+      : item.status === 'approved'
+        ? item.publishingMode === 'manual'
+          ? 'published'
+          : 'scheduled'
+        : item.status === 'scheduled'
+          ? 'published'
+          : null;
+
+  const nextLabel =
+    item.status === 'draft'
+      ? 'Approve'
+      : item.status === 'approved' && item.publishingMode === 'manual'
+        ? 'Mark published manually'
+        : item.status === 'approved'
+          ? 'Mark scheduled'
+          : item.status === 'scheduled'
+            ? 'Mark published'
+            : '';
+
   return (
     <article className="rounded-2xl border border-white/10 bg-[#141210]/75 p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -71,20 +135,29 @@ function ContentCard({
             {CAMPAIGN_CHANNEL_LABELS[item.channel]}
           </p>
           <h3 className="mt-1 text-base font-semibold text-white">{item.title}</h3>
-          {item.publishAt ? (
-            <p className="mt-1 text-xs text-white/50">
-              Suggested: {formatVenueDateTime(item.publishAt)}
-            </p>
-          ) : null}
+          <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-xs text-white/50">
+            {item.publishAt ? <span>Suggested: {formatVenueDateTime(item.publishAt)}</span> : null}
+            <span>·</span>
+            <span>{item.publishingMode === 'manual' ? 'Manual publishing' : 'Connector-ready'}</span>
+          </div>
         </div>
         <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold capitalize ${STATUS_CLASS[item.status]}`}>
           {item.status}
         </span>
       </div>
 
-      <div className="mt-4 whitespace-pre-wrap rounded-xl border border-white/10 bg-black/20 p-3 text-sm leading-6 text-white/72">
-        {item.body}
-      </div>
+      {editing ? (
+        <textarea
+          value={draftBody}
+          onChange={(inputEvent) => setDraftBody(inputEvent.target.value)}
+          rows={8}
+          className="mt-4 w-full rounded-xl border border-amber-200/25 bg-black/25 p-3 text-sm leading-6 text-white outline-none focus:border-amber-200/60"
+        />
+      ) : (
+        <div className="mt-4 whitespace-pre-wrap rounded-xl border border-white/10 bg-black/20 p-3 text-sm leading-6 text-white/72">
+          {item.body}
+        </div>
+      )}
 
       {item.assetPrompt ? (
         <details className="mt-3 rounded-xl border border-white/10 bg-black/15 p-3 text-sm">
@@ -94,37 +167,69 @@ function ContentCard({
       ) : null}
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={copyBody}
-          className="min-h-10 rounded-full border border-white/15 px-3 text-xs font-semibold text-white/75"
-        >
-          {copied ? 'Copied' : 'Copy'}
-        </button>
-        <button
-          type="button"
-          disabled={pending}
-          onClick={() => onStatus('approved')}
-          className="min-h-10 rounded-full bg-amber-300 px-3 text-xs font-bold text-black disabled:opacity-50"
-        >
-          Approve
-        </button>
-        <button
-          type="button"
-          disabled={pending}
-          onClick={() => onStatus('scheduled')}
-          className="min-h-10 rounded-full border border-sky-200/25 px-3 text-xs font-semibold text-sky-100 disabled:opacity-50"
-        >
-          Mark scheduled
-        </button>
-        <button
-          type="button"
-          disabled={pending}
-          onClick={() => onStatus('manual')}
-          className="min-h-10 rounded-full border border-violet-200/25 px-3 text-xs font-semibold text-violet-100 disabled:opacity-50"
-        >
-          Manual post
-        </button>
+        {editing ? (
+          <>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => void saveEdit()}
+              className="min-h-10 rounded-full bg-amber-300 px-4 text-xs font-bold text-black disabled:opacity-50"
+            >
+              Save changes
+            </button>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => {
+                setDraftBody(item.body);
+                setEditing(false);
+              }}
+              className="min-h-10 rounded-full border border-white/15 px-4 text-xs font-semibold text-white/70 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={() => void copyBody()}
+              className="min-h-10 rounded-full border border-white/15 px-3 text-xs font-semibold text-white/75"
+            >
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => setEditing(true)}
+              className="min-h-10 rounded-full border border-white/15 px-3 text-xs font-semibold text-white/75 disabled:opacity-50"
+            >
+              Edit
+            </button>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => void onRegenerate()}
+              className="min-h-10 rounded-full border border-violet-200/25 px-3 text-xs font-semibold text-violet-100 disabled:opacity-50"
+            >
+              Regenerate item
+            </button>
+            {nextStatus ? (
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => void onAdvance(nextStatus)}
+                className="min-h-10 rounded-full bg-amber-300 px-3 text-xs font-bold text-black disabled:opacity-50"
+              >
+                {nextLabel}
+              </button>
+            ) : (
+              <span className="inline-flex min-h-10 items-center rounded-full border border-emerald-200/20 px-3 text-xs font-semibold text-emerald-100">
+                Complete
+              </span>
+            )}
+          </>
+        )}
       </div>
     </article>
   );
@@ -135,6 +240,7 @@ export function EventGrowthWorkspaceClient({ eventId }: { eventId: string }) {
   const [workspace, setWorkspace] = useState<EventGrowthWorkspace | undefined>(undefined);
   const [brief, setBrief] = useState<CampaignBrief | undefined>(undefined);
   const [tab, setTab] = useState<WorkspaceTab>('overview');
+  const [briefOpen, setBriefOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -150,6 +256,7 @@ export function EventGrowthWorkspaceClient({ eventId }: { eventId: string }) {
       if (!active) return;
       setWorkspace(nextWorkspace);
       setBrief(nextWorkspace.brief);
+      setBriefOpen(nextWorkspace.content.length === 0);
     });
 
     return () => {
@@ -166,8 +273,9 @@ export function EventGrowthWorkspaceClient({ eventId }: { eventId: string }) {
       const next = await growthWorkspaceRepository.generateCampaign(event, brief);
       setWorkspace(next);
       setBrief(next.brief);
+      setBriefOpen(false);
       setTab('campaign');
-      setMessage('Campaign draft created. Review and approve each item before publishing.');
+      setMessage('Campaign draft created. Review, edit, and approve each item before publishing.');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Campaign generation failed.');
     } finally {
@@ -175,17 +283,62 @@ export function EventGrowthWorkspaceClient({ eventId }: { eventId: string }) {
     }
   }
 
-  async function updateStatus(contentItemId: string, status: CampaignItemStatus) {
+  async function updateStatus(
+    contentItemId: string,
+    status: CampaignItemStatus,
+  ): Promise<void> {
     if (!event) return;
     setPending(true);
     setMessage('');
 
     try {
-      const next = await growthWorkspaceRepository.updateContentStatus(event, contentItemId, status);
+      const next = await growthWorkspaceRepository.updateContentStatus(
+        event,
+        contentItemId,
+        status,
+      );
       setWorkspace(next);
       setMessage(`Content marked ${status}.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Could not update content.');
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function saveContent(contentItemId: string, body: string): Promise<boolean> {
+    if (!event) return false;
+    setPending(true);
+    setMessage('');
+
+    try {
+      const next = await growthWorkspaceRepository.updateContentItem(
+        event,
+        contentItemId,
+        body,
+      );
+      setWorkspace(next);
+      setMessage('Content saved and returned to draft for approval.');
+      return true;
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Could not save content.');
+      return false;
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function regenerateContent(contentItemId: string): Promise<void> {
+    if (!event) return;
+    setPending(true);
+    setMessage('');
+
+    try {
+      const next = await growthWorkspaceRepository.regenerateContentItem(event, contentItemId);
+      setWorkspace(next);
+      setMessage('This item was regenerated and returned to draft.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Could not regenerate content.');
     } finally {
       setPending(false);
     }
@@ -212,10 +365,11 @@ export function EventGrowthWorkspaceClient({ eventId }: { eventId: string }) {
     (item) => item.status === 'scheduled' || item.status === 'published',
   ).length;
   const activeCount = workspace.content.filter((item) => item.status !== 'draft').length;
+  const publishedCount = workspace.content.filter((item) => item.status === 'published').length;
   const assetItems = workspace.content.filter((item) => item.assetPrompt);
 
   return (
-    <div className="space-y-5 pb-24 lg:pb-8">
+    <div className="space-y-5 pb-40 lg:pb-12">
       <header className="rounded-2xl border border-white/10 bg-[#141210]/80 p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -277,44 +431,60 @@ export function EventGrowthWorkspaceClient({ eventId }: { eventId: string }) {
         <section className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <Metric label="Campaign assets" value={String(workspace.content.length)} detail="Generated pieces" />
-            <Metric label="Approved or scheduled" value={String(activeCount)} detail="Ready for execution" />
-            <Metric label="Scheduled" value={String(scheduledCount)} detail="Publishing queue" />
+            <Metric label="Approved or later" value={String(activeCount)} detail="Cleared by a human" />
+            <Metric label="Scheduled or live" value={String(scheduledCount)} detail={`${publishedCount} published`} />
             <Metric label="Promotion budget" value={`$${Math.round(brief.budgetCents / 100)}`} detail="Planning estimate" />
           </div>
 
           <div className="grid gap-4 lg:grid-cols-[1.35fr_0.65fr]">
             <div className="rounded-2xl border border-white/10 bg-[#141210]/75 p-4 sm:p-5">
-              <p className="text-xs uppercase tracking-[0.16em] text-white/45">Campaign brief</p>
-              <h2 className="mt-2 text-xl font-semibold">{brief.theme}</h2>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.16em] text-white/45">Campaign brief</p>
+                  <h2 className="mt-2 text-xl font-semibold">{brief.theme}</h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTab('campaign');
+                    setBriefOpen(true);
+                  }}
+                  className="min-h-9 rounded-full border border-white/15 px-3 text-xs font-semibold text-white/70"
+                >
+                  Edit brief
+                </button>
+              </div>
               <dl className="mt-4 grid gap-4 sm:grid-cols-2">
                 <div><dt className="text-xs text-white/45">Audience</dt><dd className="mt-1 text-sm text-white/75">{brief.targetAudience}</dd></div>
-                <div><dt className="text-xs text-white/45">Primary goal</dt><dd className="mt-1 text-sm text-white/75">{brief.primaryGoal}</dd></div>
-                <div><dt className="text-xs text-white/45">Tone</dt><dd className="mt-1 text-sm text-white/75">{brief.tone}</dd></div>
+                <div><dt className="text-xs text-white/45">Objective</dt><dd className="mt-1 text-sm text-white/75">{CAMPAIGN_OBJECTIVE_LABELS[brief.objective]}</dd></div>
+                <div><dt className="text-xs text-white/45">Language</dt><dd className="mt-1 text-sm text-white/75">{CAMPAIGN_LANGUAGE_LABELS[brief.language]}</dd></div>
                 <div><dt className="text-xs text-white/45">Offer / CTA</dt><dd className="mt-1 text-sm text-white/75">{brief.offer}</dd></div>
+                <div><dt className="text-xs text-white/45">Performers</dt><dd className="mt-1 text-sm text-white/75">{brief.performers || 'Not added'}</dd></div>
+                <div><dt className="text-xs text-white/45">Music</dt><dd className="mt-1 text-sm text-white/75">{brief.genres || 'Not added'}</dd></div>
               </dl>
             </div>
 
             <div className="rounded-2xl border border-amber-200/20 bg-gradient-to-br from-amber-200/10 to-transparent p-4 sm:p-5">
               <p className="text-xs uppercase tracking-[0.16em] text-amber-100/60">Next best action</p>
               <h2 className="mt-2 text-xl font-semibold text-white">
-                {workspace.content.length
-                  ? 'Approve the strongest launch post'
-                  : 'Generate the first campaign draft'}
+                {workspace.content.length ? 'Review the launch content' : 'Generate the first campaign draft'}
               </h2>
               <p className="mt-2 text-sm leading-6 text-white/60">
-                AI drafts the campaign. A human reviews every item before any connector can publish it.
+                Drafts remain editable. Approval unlocks the next legitimate publishing action for each channel.
               </p>
               <button
                 type="button"
                 disabled={pending}
-                onClick={generateCampaign}
+                onClick={() => {
+                  if (workspace.content.length) {
+                    setTab('campaign');
+                  } else {
+                    void generateCampaign();
+                  }
+                }}
                 className="mt-4 min-h-11 w-full rounded-full bg-amber-300 px-4 text-sm font-bold text-black disabled:opacity-50"
               >
-                {pending
-                  ? 'Generating…'
-                  : workspace.content.length
-                    ? 'Regenerate campaign'
-                    : 'Generate campaign'}
+                {workspace.content.length ? 'Review campaign' : pending ? 'Generating…' : 'Generate campaign'}
               </button>
             </div>
           </div>
@@ -322,72 +492,150 @@ export function EventGrowthWorkspaceClient({ eventId }: { eventId: string }) {
       ) : null}
 
       {tab === 'campaign' ? (
-        <section className="grid gap-4 xl:grid-cols-[0.72fr_1.28fr]">
-          <form
-            className="h-fit rounded-2xl border border-white/10 bg-[#141210]/75 p-4"
-            onSubmit={(formEvent) => {
-              formEvent.preventDefault();
-              void generateCampaign();
-            }}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs uppercase tracking-[0.16em] text-white/45">AI campaign brief</p>
-                <h2 className="mt-1 text-xl font-semibold">Direct the campaign</h2>
+        <section className="space-y-4">
+          {workspace.content.length > 0 && !briefOpen ? (
+            <div className="rounded-2xl border border-white/10 bg-[#141210]/75 p-4">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.16em] text-white/45">Campaign brief</p>
+                  <h2 className="mt-1 text-xl font-semibold">{brief.theme}</h2>
+                  <p className="mt-2 text-sm text-white/55">
+                    {brief.genres || 'Music details pending'} · {CAMPAIGN_LANGUAGE_LABELS[brief.language]} · {CAMPAIGN_OBJECTIVE_LABELS[brief.objective]}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setBriefOpen(true)}
+                    className="min-h-10 rounded-full border border-white/15 px-4 text-xs font-semibold text-white/75"
+                  >
+                    Edit brief
+                  </button>
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => void generateCampaign()}
+                    className="min-h-10 rounded-full border border-amber-200/25 px-4 text-xs font-semibold text-amber-100 disabled:opacity-50"
+                  >
+                    Regenerate all
+                  </button>
+                </div>
               </div>
-              <span className="rounded-full border border-white/10 px-2 py-1 text-[11px] text-white/50">Fixture AI</span>
             </div>
+          ) : (
+            <form
+              className="rounded-2xl border border-white/10 bg-[#141210]/75 p-4 sm:p-5"
+              onSubmit={(formEvent) => {
+                formEvent.preventDefault();
+                void generateCampaign();
+              }}
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.16em] text-white/45">Campaign brief</p>
+                  <h2 className="mt-1 text-xl font-semibold">Direct the campaign</h2>
+                </div>
+                <span className="rounded-full border border-white/10 px-2 py-1 text-[11px] text-white/50">Fixture AI</span>
+              </div>
 
-            <div className="mt-4 space-y-4">
-              <label className="block text-sm text-white/70">
-                Theme
-                <input value={brief.theme} onChange={(inputEvent) => setBrief({ ...brief, theme: inputEvent.target.value })} className="mt-1 min-h-11 w-full rounded-xl border border-white/10 bg-black/25 px-3 text-white outline-none focus:border-amber-200/45" />
-              </label>
-              <label className="block text-sm text-white/70">
-                Target audience
-                <textarea value={brief.targetAudience} onChange={(inputEvent) => setBrief({ ...brief, targetAudience: inputEvent.target.value })} rows={3} className="mt-1 w-full rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-white outline-none focus:border-amber-200/45" />
-              </label>
-              <label className="block text-sm text-white/70">
-                Primary goal
-                <input value={brief.primaryGoal} onChange={(inputEvent) => setBrief({ ...brief, primaryGoal: inputEvent.target.value })} className="mt-1 min-h-11 w-full rounded-xl border border-white/10 bg-black/25 px-3 text-white outline-none focus:border-amber-200/45" />
-              </label>
-              <label className="block text-sm text-white/70">
-                Tone
-                <input value={brief.tone} onChange={(inputEvent) => setBrief({ ...brief, tone: inputEvent.target.value })} className="mt-1 min-h-11 w-full rounded-xl border border-white/10 bg-black/25 px-3 text-white outline-none focus:border-amber-200/45" />
-              </label>
-              <label className="block text-sm text-white/70">
-                Offer / CTA
-                <input value={brief.offer} onChange={(inputEvent) => setBrief({ ...brief, offer: inputEvent.target.value })} className="mt-1 min-h-11 w-full rounded-xl border border-white/10 bg-black/25 px-3 text-white outline-none focus:border-amber-200/45" />
-              </label>
-              <label className="block text-sm text-white/70">
-                Promotion budget ($)
-                <input type="number" min="0" value={brief.budgetCents / 100} onChange={(inputEvent) => setBrief({ ...brief, budgetCents: Math.max(0, Math.round(Number(inputEvent.target.value || 0) * 100)) })} className="mt-1 min-h-11 w-full rounded-xl border border-white/10 bg-black/25 px-3 text-white outline-none focus:border-amber-200/45" />
-              </label>
-            </div>
+              <div className="mt-5 grid gap-4 md:grid-cols-2">
+                <Field label="Theme" value={brief.theme} onChange={(value) => setBrief({ ...brief, theme: value })} />
+                <Field label="Main attraction" value={brief.mainAttraction} onChange={(value) => setBrief({ ...brief, mainAttraction: value })} placeholder="What makes this night worth attending?" />
+                <Field label="Performers / DJs" value={brief.performers} onChange={(value) => setBrief({ ...brief, performers: value })} placeholder="DJ names, band, host" />
+                <Field label="Music genres" value={brief.genres} onChange={(value) => setBrief({ ...brief, genres: value })} placeholder="Salsa, bachata, cumbia" />
+                <label className="block text-sm text-white/70">
+                  Campaign objective
+                  <select
+                    value={brief.objective}
+                    onChange={(inputEvent) => setBrief({ ...brief, objective: inputEvent.target.value as CampaignObjective })}
+                    className="mt-1 min-h-11 w-full rounded-xl border border-white/10 bg-black/25 px-3 text-white outline-none focus:border-amber-200/45"
+                  >
+                    {Object.entries(CAMPAIGN_OBJECTIVE_LABELS).map(([value, label]) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block text-sm text-white/70">
+                  Campaign language
+                  <select
+                    value={brief.language}
+                    onChange={(inputEvent) => setBrief({ ...brief, language: inputEvent.target.value as CampaignLanguage })}
+                    className="mt-1 min-h-11 w-full rounded-xl border border-white/10 bg-black/25 px-3 text-white outline-none focus:border-amber-200/45"
+                  >
+                    {Object.entries(CAMPAIGN_LANGUAGE_LABELS).map(([value, label]) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
+                  </select>
+                </label>
+                <Field label="Target audience (internal)" value={brief.targetAudience} onChange={(value) => setBrief({ ...brief, targetAudience: value })} />
+                <Field label="Tone" value={brief.tone} onChange={(value) => setBrief({ ...brief, tone: value })} />
+                <Field label="Doors / show time" value={brief.doorsTime} onChange={(value) => setBrief({ ...brief, doorsTime: value })} placeholder="Doors 8 PM · show 9 PM" />
+                <Field label="Admission" value={brief.admission} onChange={(value) => setBrief({ ...brief, admission: value })} placeholder="$15 advance · $20 door" />
+                <Field label="Age restriction" value={brief.ageRestriction} onChange={(value) => setBrief({ ...brief, ageRestriction: value })} />
+                <Field label="Food / drink special" value={brief.foodDrinkSpecial} onChange={(value) => setBrief({ ...brief, foodDrinkSpecial: value })} placeholder="Kitchen late · drink special" />
+                <Field label="Offer / CTA" value={brief.offer} onChange={(value) => setBrief({ ...brief, offer: value })} />
+                <Field label="Reservation or ticket URL" value={brief.reservationUrl} onChange={(value) => setBrief({ ...brief, reservationUrl: value })} placeholder="https://…" />
+                <Field label="Venue address" value={brief.address} onChange={(value) => setBrief({ ...brief, address: value })} />
+                <label className="block text-sm text-white/70">
+                  Promotion budget ($)
+                  <input
+                    type="number"
+                    min="0"
+                    value={brief.budgetCents / 100}
+                    onChange={(inputEvent) => setBrief({
+                      ...brief,
+                      budgetCents: Math.max(0, Math.round(Number(inputEvent.target.value || 0) * 100)),
+                    })}
+                    className="mt-1 min-h-11 w-full rounded-xl border border-white/10 bg-black/25 px-3 text-white outline-none focus:border-amber-200/45"
+                  />
+                </label>
+              </div>
 
-            <button type="submit" disabled={pending} className="mt-5 min-h-11 w-full rounded-full bg-amber-300 px-4 text-sm font-bold text-black disabled:opacity-50">
-              {pending ? 'Generating…' : workspace.content.length ? 'Regenerate draft' : 'Generate campaign'}
-            </button>
-            <p className="mt-3 text-xs leading-5 text-white/45">
-              No social platform is connected yet. This creates reviewable drafts only.
-            </p>
-          </form>
+              <div className="mt-5 flex flex-wrap gap-2">
+                <button
+                  type="submit"
+                  disabled={pending}
+                  className="min-h-11 flex-1 rounded-full bg-amber-300 px-4 text-sm font-bold text-black disabled:opacity-50"
+                >
+                  {pending ? 'Generating…' : workspace.content.length ? 'Save and regenerate campaign' : 'Generate campaign'}
+                </button>
+                {workspace.content.length ? (
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => {
+                      setBrief(workspace.brief);
+                      setBriefOpen(false);
+                    }}
+                    className="min-h-11 rounded-full border border-white/15 px-4 text-sm font-semibold text-white/70 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                ) : null}
+              </div>
+              <p className="mt-3 text-xs leading-5 text-white/45">
+                Audience and strategy guide the writing but are not repeated as public-facing copy.
+              </p>
+            </form>
+          )}
 
-          <div className="space-y-3">
+          <div className="grid gap-3 xl:grid-cols-2">
             {workspace.content.length ? (
               workspace.content.map((item) => (
                 <ContentCard
                   key={item.id}
                   item={item}
                   pending={pending}
-                  onStatus={(status) => void updateStatus(item.id, status)}
+                  onSave={(body) => saveContent(item.id, body)}
+                  onRegenerate={() => regenerateContent(item.id)}
+                  onAdvance={(status) => updateStatus(item.id, status)}
                 />
               ))
             ) : (
-              <div className="rounded-2xl border border-dashed border-white/15 p-8 text-center">
+              <div className="rounded-2xl border border-dashed border-white/15 p-8 text-center xl:col-span-2">
                 <h2 className="text-xl font-semibold">No campaign generated yet</h2>
                 <p className="mt-2 text-sm text-white/55">
-                  Complete the brief and generate website, social, email, and SMS drafts.
+                  Complete the brief to create website, social, email, and SMS drafts.
                 </p>
               </div>
             )}
