@@ -13,18 +13,30 @@ export type CampaignItemStatus =
   | 'draft'
   | 'approved'
   | 'scheduled'
-  | 'published'
-  | 'manual';
+  | 'published';
 
 export type CampaignMilestoneStatus = 'todo' | 'ready' | 'complete';
+export type CampaignLanguage = 'english' | 'spanish' | 'bilingual';
+export type CampaignObjective = 'reservations' | 'ticket-sales' | 'attendance' | 'awareness';
+export type PublishingMode = 'automatic' | 'manual';
 
 export interface CampaignBrief {
   theme: string;
   targetAudience: string;
-  primaryGoal: string;
+  objective: CampaignObjective;
   tone: string;
   offer: string;
   budgetCents: number;
+  language: CampaignLanguage;
+  performers: string;
+  genres: string;
+  doorsTime: string;
+  admission: string;
+  ageRestriction: string;
+  foodDrinkSpecial: string;
+  reservationUrl: string;
+  address: string;
+  mainAttraction: string;
 }
 
 export interface CampaignContentItem {
@@ -33,9 +45,11 @@ export interface CampaignContentItem {
   title: string;
   body: string;
   status: CampaignItemStatus;
+  publishingMode: PublishingMode;
   publishAt?: string;
   callToAction?: string;
   assetPrompt?: string;
+  updatedAt: string;
 }
 
 export interface CampaignMilestone {
@@ -62,6 +76,11 @@ export interface CampaignGenerator {
     event: OperationsEvent,
     brief: CampaignBrief,
   ): Promise<Pick<EventGrowthWorkspace, 'content' | 'milestones' | 'readinessScore'>>;
+  generateItem(
+    event: OperationsEvent,
+    brief: CampaignBrief,
+    channel: CampaignChannel,
+  ): Promise<CampaignContentItem>;
 }
 
 export const CAMPAIGN_CHANNEL_LABELS: Record<CampaignChannel, string> = {
@@ -72,4 +91,17 @@ export const CAMPAIGN_CHANNEL_LABELS: Record<CampaignChannel, string> = {
   facebook: 'Facebook',
   email: 'Email',
   sms: 'SMS',
+};
+
+export const CAMPAIGN_OBJECTIVE_LABELS: Record<CampaignObjective, string> = {
+  reservations: 'Increase reservations',
+  'ticket-sales': 'Increase ticket sales',
+  attendance: 'Increase attendance',
+  awareness: 'Build awareness',
+};
+
+export const CAMPAIGN_LANGUAGE_LABELS: Record<CampaignLanguage, string> = {
+  english: 'English',
+  spanish: 'Spanish',
+  bilingual: 'Bilingual',
 };
