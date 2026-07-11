@@ -94,12 +94,12 @@ export interface CampaignGenerator {
   generate(
     event: OperationsEvent,
     brief: CampaignBrief,
-  ): Promise<CampaignGenerationResult>;
+  ): Promise<Pick<EventGrowthWorkspace, 'content' | 'milestones' | 'readinessScore'>>;
   generateItem(
     event: OperationsEvent,
     brief: CampaignBrief,
     channel: CampaignChannel,
-  ): Promise<CampaignItemGenerationResult>;
+  ): Promise<CampaignContentItem>;
 }
 
 export const CAMPAIGN_CHANNEL_LABELS: Record<CampaignChannel, string> = {
