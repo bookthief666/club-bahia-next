@@ -42,6 +42,12 @@ export function EventActions({ event }: { event: OperationsEvent }) {
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2">
         <Link
+          className="min-h-11 rounded-full bg-amber-300 px-4 py-3 text-sm font-bold text-black"
+          href={`/admin/events/${event.id}/growth`}
+        >
+          Open growth workspace
+        </Link>
+        <Link
           className="min-h-11 rounded-full border border-white/15 px-4 py-3 text-sm"
           href={`/admin/events/${event.id}/edit`}
         >
