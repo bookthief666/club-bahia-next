@@ -83,7 +83,11 @@ function generationInstructions(): string {
   ].join('\n');
 }
 
-function requestPayload(event: OperationsEvent, brief: CampaignBrief, channel?: CampaignChannel) {
+function requestPayload(
+  event: OperationsEvent,
+  brief: CampaignBrief,
+  channel?: CampaignChannel,
+): string {
   return JSON.stringify(
     {
       officialEvent: {
@@ -147,7 +151,9 @@ async function callOpenAI(
     const payload = (await response.json()) as OpenAIResponsePayload;
 
     if (!response.ok) {
-      const reason = payload.error?.message || `OpenAI request failed with status ${response.status}.`;
+      const reason =
+        payload.error?.message ||
+        `OpenAI request failed with status ${response.status}.`;
       throw new Error(reason);
     }
 
@@ -196,8 +202,6 @@ function mergeCampaignOutput(
 }
 
 function mergeItemOutput(
-  event: OperationsEvent,
-  brief: CampaignBrief,
   channel: CampaignChannel,
   aiOutput: unknown,
 ): CampaignItemGenerationResult {
@@ -206,7 +210,6 @@ function mergeItemOutput(
     throw new Error(`The AI returned ${parsed.channel} instead of ${channel}.`);
   }
 
-  const fixtureGenerator = new FixtureCampaignGenerator();
   return {
     item: {
       id: channel,
@@ -246,7 +249,7 @@ export async function generateCampaignItemWithOpenAI(
 
   const model = process.env.OPENAI_CAMPAIGN_MODEL || DEFAULT_MODEL;
   const output = await callOpenAI(apiKey, model, event, brief, channel);
-  const merged = mergeItemOutput(event, brief, channel, output);
+  const merged = mergeItemOutput(channel, output);
 
   const fixtureGenerator = new FixtureCampaignGenerator();
   const fixtureItem = await fixtureGenerator.generateItem(event, brief, channel);
