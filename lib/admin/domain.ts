@@ -1,6 +1,6 @@
 export type AdminRole = 'owner' | 'manager' | 'producer' | 'marketing' | 'door' | 'viewer';
 
-export type EventStatus = 'idea' | 'evaluating' | 'approved' | 'announced' | 'on-sale' | 'final-prep' | 'live' | 'completed' | 'reviewed' | 'archived';
+export type EventStatus = 'idea' | 'evaluating' | 'approved' | 'announced' | 'on-sale' | 'final-prep' | 'live' | 'completed' | 'reviewed' | 'cancelled' | 'archived';
 export type TaskPriority = 'low' | 'normal' | 'high' | 'urgent';
 export type ReservationStatus = 'new' | 'pending' | 'confirmed' | 'waitlist' | 'cancelled' | 'no-show' | 'completed';
 
@@ -26,6 +26,11 @@ export interface OperationsEvent {
   riskFlags: string[];
   revenueTarget: number;
   committedCosts: number;
+  archivedAt?: string;
+  cancelledAt?: string;
+  cancellationReason?: string;
+  completedAt?: string;
+  liveAt?: string;
 }
 
 export interface OperationsTask {
