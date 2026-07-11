@@ -1,3 +1,4 @@
+import { AiProviderBanner } from '@/components/admin/growth/AiProviderBanner';
 import { EventGrowthWorkspaceClient } from '@/components/admin/growth/EventGrowthWorkspaceClient';
 
 export default async function EventGrowthPage({
@@ -6,5 +7,11 @@ export default async function EventGrowthPage({
   params: Promise<{ eventId: string }>;
 }) {
   const { eventId } = await params;
-  return <EventGrowthWorkspaceClient eventId={eventId} />;
+
+  return (
+    <>
+      <AiProviderBanner />
+      <EventGrowthWorkspaceClient eventId={eventId} />
+    </>
+  );
 }
