@@ -87,6 +87,46 @@ export const AiCampaignSchema = z.object({
   content: z.array(AiCampaignItemSchema).length(7),
 });
 
+export const CampaignContentItemSchema = z.object({
+  id: z.string().trim().min(1).max(160),
+  channel: CampaignChannelSchema,
+  title: z.string().trim().min(1).max(300),
+  body: z.string().trim().min(1).max(7000),
+  status: z.enum(['draft', 'approved', 'scheduled', 'published']),
+  publishingMode: z.enum(['automatic', 'manual']),
+  publishAt: z.string().datetime().optional(),
+  callToAction: z.string().trim().max(300).optional(),
+  assetPrompt: z.string().trim().max(1600).optional(),
+  updatedAt: z.string().datetime(),
+});
+
+export const CampaignMilestoneSchema = z.object({
+  id: z.string().trim().min(1).max(200),
+  title: z.string().trim().min(1).max(500),
+  dueAt: z.string().datetime(),
+  status: z.enum(['todo', 'ready', 'complete']),
+  channel: CampaignChannelSchema.optional(),
+  contentItemId: z.string().trim().max(160).optional(),
+});
+
+const CampaignGenerationMetaSchema = z.object({
+  provider: z.enum(['openai', 'fixture']),
+  model: z.string().trim().max(200).optional(),
+  warning: z.string().trim().max(1000).optional(),
+});
+
+export const CampaignGenerationResultSchema = z
+  .object({
+    content: z.array(CampaignContentItemSchema).length(7),
+    milestones: z.array(CampaignMilestoneSchema).length(7),
+    readinessScore: z.number().int().min(0).max(100),
+  })
+  .and(CampaignGenerationMetaSchema);
+
+export const CampaignItemGenerationResultSchema = z
+  .object({ item: CampaignContentItemSchema })
+  .and(CampaignGenerationMetaSchema);
+
 export const CAMPAIGN_CHANNELS = CampaignChannelSchema.options;
 
 export const AI_CAMPAIGN_JSON_SCHEMA = {
