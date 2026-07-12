@@ -26,26 +26,21 @@ export interface ReservationAnalytics {
   topEvents: ReservationBreakdownItem[];
 }
 
-function startOfLosAngelesDay(now: Date): Date {
-  const parts = new Intl.DateTimeFormat('en-US', {
+function losAngelesDateKey(value: string | Date): string {
+  return new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/Los_Angeles',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-  }).formatToParts(now);
-  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-  return new Date(`${values.year}-${values.month}-${values.day}T00:00:00-07:00`);
+  }).format(typeof value === 'string' ? new Date(value) : value);
 }
 
-function startOfLosAngelesWeek(now: Date): Date {
-  const start = startOfLosAngelesDay(now);
-  const weekday = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/Los_Angeles',
-    weekday: 'short',
-  }).format(now);
-  const offset = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(weekday);
-  start.setUTCDate(start.getUTCDate() - Math.max(0, offset));
-  return start;
+function startOfLosAngelesWeekKey(now: Date): string {
+  const todayKey = losAngelesDateKey(now);
+  const [year, month, day] = todayKey.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  date.setUTCDate(date.getUTCDate() - date.getUTCDay());
+  return date.toISOString().slice(0, 10);
 }
 
 function buildBreakdown(
@@ -91,8 +86,8 @@ export function buildReservationAnalytics(
   const active = reservations.filter(
     (reservation) => !['cancelled', 'completed'].includes(reservation.status),
   );
-  const dayStart = startOfLosAngelesDay(now).getTime();
-  const weekStart = startOfLosAngelesWeek(now).getTime();
+  const todayKey = losAngelesDateKey(now);
+  const weekStartKey = startOfLosAngelesWeekKey(now);
 
   return {
     totalRequests: reservations.length,
@@ -111,11 +106,12 @@ export function buildReservationAnalytics(
       ? Math.round((confirmed.length / reservations.length) * 100)
       : 0,
     requestsToday: reservations.filter(
-      (reservation) => new Date(reservation.createdAt).getTime() >= dayStart,
+      (reservation) => losAngelesDateKey(reservation.createdAt) === todayKey,
     ).length,
-    requestsThisWeek: reservations.filter(
-      (reservation) => new Date(reservation.createdAt).getTime() >= weekStart,
-    ).length,
+    requestsThisWeek: reservations.filter((reservation) => {
+      const key = losAngelesDateKey(reservation.createdAt);
+      return key >= weekStartKey && key <= todayKey;
+    }).length,
     topSources: buildBreakdown(reservations, (reservation) =>
       sourceLabel(reservation.attribution),
     ),
