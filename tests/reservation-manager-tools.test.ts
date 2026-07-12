@@ -120,6 +120,19 @@ describe('manager follow-up messages', () => {
       'Waitlist update',
     );
   });
+
+  it('keeps general reservation wording natural when no event is selected', () => {
+    const reservation = storedReservation({
+      eventId: '',
+      eventSlug: '',
+      eventTitle: '',
+    });
+    const confirmed = reservationMessage(reservation, 'confirmed');
+    expect(confirmed).toContain(
+      'your Club Bahia reservation request on Saturday, August 8 for 4 guests is confirmed',
+    );
+    expect(confirmed).not.toContain('for your Club Bahia reservation');
+  });
 });
 
 describe('reservation CSV export', () => {
