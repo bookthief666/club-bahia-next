@@ -46,7 +46,7 @@ export function CampaignWorkflowNav({ eventId }: { eventId: string }) {
       >
         {steps.map((step, index) => {
           const isActive = step.id === active;
-          const isPast = index < activeIndex;
+          const isEarlier = index < activeIndex;
           const href = `/admin/events/${eventId}${step.suffix}`;
 
           return (
@@ -57,7 +57,7 @@ export function CampaignWorkflowNav({ eventId }: { eventId: string }) {
               className={`group flex min-w-[9.2rem] flex-1 items-center gap-3 rounded-2xl border px-3 py-3 transition sm:min-w-0 ${
                 isActive
                   ? 'border-amber-200/35 bg-[linear-gradient(135deg,rgba(246,183,60,.22),rgba(225,18,27,.09))] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.12),0_10px_30px_rgba(0,0,0,.22)]'
-                  : isPast
+                  : isEarlier
                     ? 'border-emerald-200/15 bg-emerald-200/[.06] text-white/72 hover:bg-emerald-200/[.09]'
                     : 'border-white/8 bg-black/15 text-white/48 hover:border-white/15 hover:text-white/70'
               }`}
@@ -66,15 +66,15 @@ export function CampaignWorkflowNav({ eventId }: { eventId: string }) {
                 className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${
                   isActive
                     ? 'border-amber-100/40 bg-amber-200 text-black'
-                    : isPast
+                    : isEarlier
                       ? 'border-emerald-100/25 bg-emerald-200/15 text-emerald-100'
                       : 'border-white/10 bg-white/5 text-white/45'
                 }`}
               >
-                {isPast ? '✓' : index + 1}
+                {index + 1}
               </span>
               <span className="min-w-0">
-                <span className="block truncate text-[10px] uppercase tracking-[.15em] text-current/55">
+                <span className={`block truncate text-[10px] uppercase tracking-[.15em] ${isActive ? 'text-white/58' : 'text-white/38'}`}>
                   {step.short}
                 </span>
                 <span className="mt-0.5 block truncate text-sm font-semibold">
