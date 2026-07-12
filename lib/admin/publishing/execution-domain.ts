@@ -46,6 +46,7 @@ export interface CampaignManifestItem {
   title: string;
   copy: string;
   publishAt?: string;
+  publishAtLosAngeles?: string;
   reservationUrl?: string;
   assetName?: string;
   assetUrl?: string;
@@ -137,6 +138,23 @@ export function summarizePublishingExecution(
   return summary;
 }
 
+export function formatLosAngelesDateTime(value?: string): string | undefined {
+  if (!value) return undefined;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return undefined;
+
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Los_Angeles',
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZoneName: 'short',
+  }).format(date);
+}
+
 export function buildCampaignManifest({
   eventId,
   eventTitle,
@@ -176,12 +194,14 @@ export function buildCampaignManifest({
       const packageReadiness = readiness.packages.find(
         (entry) => entry.contentItemId === item.id,
       );
+      const publishAt = executionItem?.scheduledFor ?? item.publishAt;
 
       return {
         channel: item.channel,
         title: item.title,
         copy: item.body,
-        publishAt: executionItem?.scheduledFor ?? item.publishAt,
+        publishAt,
+        publishAtLosAngeles: formatLosAngelesDateTime(publishAt),
         reservationUrl: brief.reservationUrl || undefined,
         assetName: primaryAsset?.name,
         assetUrl: primaryAsset?.url,
@@ -206,7 +226,8 @@ export function manifestToCsv(manifest: CampaignManifest): string {
     'Channel',
     'Title',
     'Status',
-    'Scheduled For',
+    'Scheduled For (ISO)',
+    'Scheduled For (Los Angeles)',
     'Copy',
     'Reservation URL',
     'Asset Name',
@@ -222,6 +243,7 @@ export function manifestToCsv(manifest: CampaignManifest): string {
       item.title,
       item.status,
       item.publishAt,
+      item.publishAtLosAngeles,
       item.copy,
       item.reservationUrl,
       item.assetName,
