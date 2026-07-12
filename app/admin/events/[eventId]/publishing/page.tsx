@@ -1,4 +1,5 @@
 import { CampaignPostAssemblyClient } from '@/components/admin/publishing/CampaignPostAssemblyClient';
+import { ConversionLinkQuickFixClient } from '@/components/admin/publishing/ConversionLinkQuickFixClient';
 
 export default async function EventPublishingPage({
   params,
@@ -6,5 +7,11 @@ export default async function EventPublishingPage({
   params: Promise<{ eventId: string }>;
 }) {
   const { eventId } = await params;
-  return <CampaignPostAssemblyClient eventId={eventId} />;
+
+  return (
+    <>
+      <ConversionLinkQuickFixClient eventId={eventId} />
+      <CampaignPostAssemblyClient eventId={eventId} />
+    </>
+  );
 }
