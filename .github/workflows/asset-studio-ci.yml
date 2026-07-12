@@ -5,10 +5,12 @@ on:
     branches:
       - codex/milestone-4a-asset-studio
       - codex/milestone-4b-post-assembly
+      - codex/milestone-4c-publishing-execution
   pull_request:
     branches:
       - codex/milestone-3e-review-optimization
       - codex/milestone-4a-asset-studio
+      - codex/milestone-4b-post-assembly
 
 permissions:
   contents: read
