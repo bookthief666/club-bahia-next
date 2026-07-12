@@ -1,4 +1,8 @@
 import { z } from 'zod';
+import {
+  ReservationAttributionSchema,
+  emptyReservationAttribution,
+} from '@/lib/attribution/domain';
 
 const phoneRegex = /^(?:\+?1[-.\s]?)?(?:\(?[2-9]\d{2}\)?[-.\s]?)[2-9]\d{2}[-.\s]?\d{4}$/;
 const isoDateRegex = /^\d{4}-\d{2}-\d{2}$/;
@@ -26,6 +30,9 @@ export const ReservationSubmissionSchema = z.object({
   eventId: z.string().trim().max(160).optional().default(''),
   eventSlug: z.string().trim().max(180).optional().default(''),
   eventTitle: z.string().trim().max(180).optional().default(''),
+  attribution: ReservationAttributionSchema.optional().default(
+    emptyReservationAttribution(),
+  ),
   consent: z.literal(true),
   website: z.string().max(0).optional().default(''),
   startedAt: z.number().int().positive(),
@@ -50,6 +57,9 @@ export const StoredReservationSchema = z.object({
   eventId: z.string().trim().max(160),
   eventSlug: z.string().trim().max(180),
   eventTitle: z.string().trim().max(180),
+  attribution: ReservationAttributionSchema.optional().default(
+    emptyReservationAttribution(),
+  ),
   consentAt: z.string().datetime(),
   contactedAt: z.string().datetime().optional(),
   confirmedAt: z.string().datetime().optional(),
