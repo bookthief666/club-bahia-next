@@ -1,4 +1,4 @@
-import { PrepareCampaignPostsClient } from '@/components/admin/publishing/PrepareCampaignPostsClient';
+import { PreparePostsClient } from '@/components/admin/publishing/PreparePostsClient';
 import { ConversionLinkQuickFixClient } from '@/components/admin/publishing/ConversionLinkQuickFixClient';
 import { CampaignWorkflowNav } from '@/components/admin/workflow/CampaignWorkflowNav';
 
@@ -13,7 +13,7 @@ export default async function EventPublishingPage({
     <>
       <CampaignWorkflowNav eventId={eventId} />
       <ConversionLinkQuickFixClient eventId={eventId} />
-      <PrepareCampaignPostsClient eventId={eventId} />
+      <PreparePostsClient eventId={eventId} />
     </>
   );
 }
