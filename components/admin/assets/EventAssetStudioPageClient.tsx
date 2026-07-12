@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import type { OperationsEvent } from '@/lib/admin/domain';
 import { eventRepository } from '@/lib/admin/event-repository';
 import { EventAssetStudioClient } from './EventAssetStudioClient';
+import { MediaSessionLockBridge } from './MediaSessionLockBridge';
 
 export function EventAssetStudioPageClient({ eventId }: { eventId: string }) {
   const [event, setEvent] = useState<OperationsEvent | null | undefined>(undefined);
@@ -46,6 +47,7 @@ export function EventAssetStudioPageClient({ eventId }: { eventId: string }) {
 
   return (
     <>
+      <MediaSessionLockBridge />
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <Link
           href={`/admin/events/${event.id}`}
