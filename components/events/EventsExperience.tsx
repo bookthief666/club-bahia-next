@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, useReducedMotion } from 'framer-motion';
+import { trackedReservationHref } from '@/lib/attribution/domain';
 import { bahiaAssets } from '@/lib/assets/bahia-assets';
 import type { PublicEventCard } from '@/lib/public-events/domain';
 import { BahiaSunsetLogo } from '@/components/experience/BahiaSunsetLogo';
@@ -29,6 +30,14 @@ const weeklyProgramming = [
 
 function eventActionHref(event: PublicEventCard): string {
   return event.ticketUrl || `/events/${event.slug}`;
+}
+
+function eventReservationHref(event: PublicEventCard, content: string): string {
+  return trackedReservationHref({
+    eventSlug: event.slug,
+    campaign: event.slug,
+    content,
+  });
 }
 
 function EventImage({ event, className }: { event: PublicEventCard; className: string }) {
@@ -76,7 +85,12 @@ export function EventsExperience({ events }: { events: PublicEventCard[] }) {
               Club Bahia
             </Link>
             <Link
-              href="/reservations"
+              href={trackedReservationHref({
+                source: 'club-bahia-website',
+                medium: 'owned',
+                campaign: 'general-reservations',
+                content: 'events-page-nav',
+              })}
               className="rounded-full bg-red-600 px-4 py-2 text-white shadow-[0_0_24px_rgba(225,18,27,0.32)] transition hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-400"
             >
               Request a Table
@@ -186,7 +200,10 @@ export function EventsExperience({ events }: { events: PublicEventCard[] }) {
                       {featuredEvent.ticketUrl ? 'Buy Tickets' : 'View Event'}
                     </Link>
                     <Link
-                      href={`/reservations?event=${featuredEvent.slug}`}
+                      href={eventReservationHref(
+                        featuredEvent,
+                        'events-page-featured-cta',
+                      )}
                       className="inline-flex min-h-12 items-center justify-center rounded-full border border-amber-100/24 px-5 text-xs font-semibold uppercase tracking-[0.18em] text-amber-100 transition hover:border-amber-100/60 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-400"
                     >
                       Request Reservation
@@ -300,7 +317,10 @@ export function EventsExperience({ events }: { events: PublicEventCard[] }) {
                           Details
                         </Link>
                         <Link
-                          href={`/reservations?event=${event.slug}`}
+                          href={eventReservationHref(
+                            event,
+                            'events-page-event-card',
+                          )}
                           className="inline-flex min-h-11 items-center justify-center rounded-full bg-red-600 px-4 text-xs font-semibold uppercase tracking-[0.15em] text-white"
                         >
                           Reserve
@@ -334,7 +354,12 @@ export function EventsExperience({ events }: { events: PublicEventCard[] }) {
                   Call Club Bahia
                 </a>
                 <Link
-                  href="/reservations"
+                  href={trackedReservationHref({
+                    source: 'club-bahia-website',
+                    medium: 'owned',
+                    campaign: 'general-reservations',
+                    content: 'events-page-footer-cta',
+                  })}
                   className="rounded-full border border-amber-100/25 px-5 py-3 text-center text-xs font-semibold uppercase tracking-[0.18em] text-amber-100"
                 >
                   Start Reservation
