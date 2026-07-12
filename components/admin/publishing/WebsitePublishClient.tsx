@@ -144,15 +144,23 @@ export function WebsitePublishClient({ eventId }: { eventId: string }) {
       websiteItem &&
         ['approved', 'scheduled', 'published'].includes(websiteItem.status),
     );
+    const hasTemporaryUrl = integrity.issues.some(
+      (issue) => issue.id === 'preview-url',
+    );
 
     return {
       websiteItem,
       image,
       integrity,
       websiteApproved,
+      hasTemporaryUrl,
       readyForPreview: Boolean(websiteItem && image),
       readyForPublic: Boolean(
-        websiteItem && image && websiteApproved && integrity.canPublish,
+        websiteItem &&
+          image &&
+          websiteApproved &&
+          integrity.canPublish &&
+          !hasTemporaryUrl,
       ),
     };
   }, [assembly, assets, event, workspace]);
@@ -170,6 +178,7 @@ export function WebsitePublishClient({ eventId }: { eventId: string }) {
     setMessage('');
     const now = new Date().toISOString();
     const slug = slugifyPublicEvent(event.title);
+    const isTicketed = workspace.brief.objective === 'ticket-sales';
     const snapshot: PublicEventSnapshot = {
       version: 1,
       id: event.id,
@@ -190,18 +199,14 @@ export function WebsitePublishClient({ eventId }: { eventId: string }) {
       foodDrinkSpecial: workspace.brief.foodDrinkSpecial,
       address:
         workspace.brief.address || '1130 Sunset Blvd, Los Angeles, CA 90012',
-      reservationUrl: workspace.brief.reservationUrl,
-      ticketUrl:
-        workspace.brief.objective === 'ticket-sales'
-          ? workspace.brief.reservationUrl
-          : '',
+      // Reservation campaigns intentionally route through the event-specific Club Bahia
+      // RSVP form. An external URL is used only when this is truly a ticketed event.
+      reservationUrl: '',
+      ticketUrl: isTicketed ? workspace.brief.reservationUrl : '',
       imageUrl: prepared.image.url,
       imageAlt:
         prepared.image.altText || `${event.title} at Club Bahia in Los Angeles`,
-      statusLabel:
-        workspace.brief.objective === 'ticket-sales'
-          ? 'Tickets available'
-          : 'Reservations available',
+      statusLabel: isTicketed ? 'Tickets available' : 'Reservations available',
       visibility,
       isFeatured: true,
       publishedAt: visibility === 'public' ? now : undefined,
@@ -211,7 +216,9 @@ export function WebsitePublishClient({ eventId }: { eventId: string }) {
     const validated = PublicEventSnapshotSchema.safeParse(snapshot);
     if (!validated.success) {
       setPending(undefined);
-      setMessage('The website listing is missing required information. Review the event, campaign brief, and website media.');
+      setMessage(
+        'The website listing is missing required information. Review the event, campaign brief, and website media.',
+      );
       return;
     }
 
@@ -232,11 +239,13 @@ export function WebsitePublishClient({ eventId }: { eventId: string }) {
       setLastSnapshot(result.event);
       setMessage(
         visibility === 'public'
-          ? 'The event is now published to the public website catalog.'
+          ? 'The event is now published to the public website catalog and its reservation button opens the event-specific Club Bahia RSVP form.'
           : 'Website preview snapshot saved. It can be reviewed in a Preview deployment before going live.',
       );
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Could not update the website event.');
+      setMessage(
+        error instanceof Error ? error.message : 'Could not update the website event.',
+      );
     } finally {
       setPending(undefined);
     }
@@ -258,7 +267,7 @@ export function WebsitePublishClient({ eventId }: { eventId: string }) {
               Send the approved campaign to Club Bahia’s public site
             </h2>
             <p className="mt-2 text-sm leading-6 text-white/56">
-              This creates the event listing guests see, carries over the approved website copy and image, and connects its reservation button to the event-specific RSVP page.
+              This creates the event listing guests see, carries over the approved website copy and image, and sends reservation campaigns into the correct event-specific RSVP form.
             </p>
           </div>
           <span
@@ -270,14 +279,18 @@ export function WebsitePublishClient({ eventId }: { eventId: string }) {
           >
             {prepared.readyForPublic
               ? 'Ready for website'
-              : `${unresolved} blocker${unresolved === 1 ? '' : 's'}`}
+              : `${unresolved + (prepared.hasTemporaryUrl ? 1 : 0)} item${
+                  unresolved + (prepared.hasTemporaryUrl ? 1 : 0) === 1 ? '' : 's'
+                } to review`}
           </span>
         </div>
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <div className="mt-4 grid gap-3 sm:grid-cols-4">
           <div className="rounded-xl border border-white/9 bg-black/20 p-3">
             <p className="text-xs font-semibold text-white">
-              {prepared.websiteApproved ? '✓ Website copy approved' : '○ Website copy needs approval'}
+              {prepared.websiteApproved
+                ? '✓ Website copy approved'
+                : '○ Website copy needs approval'}
             </p>
           </div>
           <div className="rounded-xl border border-white/9 bg-black/20 p-3">
@@ -289,7 +302,16 @@ export function WebsitePublishClient({ eventId }: { eventId: string }) {
             <p className="text-xs font-semibold text-white">
               {prepared.integrity.canPublish
                 ? '✓ Campaign checks passed'
-                : `○ Fix ${prepared.integrity.blockers} campaign issue${prepared.integrity.blockers === 1 ? '' : 's'}`}
+                : `○ Fix ${prepared.integrity.blockers} campaign issue${
+                    prepared.integrity.blockers === 1 ? '' : 's'
+                  }`}
+            </p>
+          </div>
+          <div className="rounded-xl border border-white/9 bg-black/20 p-3">
+            <p className="text-xs font-semibold text-white">
+              {prepared.hasTemporaryUrl
+                ? '○ Replace temporary Preview URL'
+                : '✓ Public links are safe'}
             </p>
           </div>
         </div>
@@ -331,7 +353,10 @@ export function WebsitePublishClient({ eventId }: { eventId: string }) {
         </div>
 
         {message ? (
-          <p role="status" className="mt-4 rounded-xl border border-amber-200/15 bg-amber-200/[.06] px-4 py-3 text-sm text-amber-50">
+          <p
+            role="status"
+            className="mt-4 rounded-xl border border-amber-200/15 bg-amber-200/[.06] px-4 py-3 text-sm text-amber-50"
+          >
             {message}
           </p>
         ) : null}
