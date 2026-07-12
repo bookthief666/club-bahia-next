@@ -12,6 +12,7 @@ export const CampaignChannelSchema = z.enum([
 
 export const CampaignBriefSchema = z.object({
   theme: z.string().trim().min(1).max(160),
+  publicSubtitle: z.string().trim().max(200),
   targetAudience: z.string().trim().min(1).max(500),
   objective: z.enum(['reservations', 'ticket-sales', 'attendance', 'awareness']),
   tone: z.string().trim().min(1).max(300),
