@@ -20,9 +20,11 @@ export type CampaignLanguage = 'english' | 'spanish' | 'bilingual';
 export type CampaignObjective = 'reservations' | 'ticket-sales' | 'attendance' | 'awareness';
 export type PublishingMode = 'automatic' | 'manual';
 export type CampaignGenerationProvider = 'openai' | 'fixture';
+export type CampaignQualitySeverity = 'error' | 'warning' | 'info';
 
 export interface CampaignBrief {
   theme: string;
+  publicSubtitle: string;
   targetAudience: string;
   objective: CampaignObjective;
   tone: string;
@@ -68,12 +70,36 @@ export interface CampaignGenerationMeta {
   warning?: string;
 }
 
+export interface CampaignRevision {
+  id: string;
+  generatedAt: string;
+  provider?: CampaignGenerationProvider;
+  model?: string;
+  brief: CampaignBrief;
+  content: CampaignContentItem[];
+}
+
+export interface CampaignQualityIssue {
+  id: string;
+  severity: CampaignQualitySeverity;
+  title: string;
+  detail: string;
+  channel?: CampaignChannel;
+}
+
+export interface CampaignQualityReport {
+  score: number;
+  titleConflict: boolean;
+  issues: CampaignQualityIssue[];
+}
+
 export interface EventGrowthWorkspace {
   eventId: string;
   brief: CampaignBrief;
   readinessScore: number;
   content: CampaignContentItem[];
   milestones: CampaignMilestone[];
+  history: CampaignRevision[];
   updatedAt: string;
   generatedAt?: string;
   generationProvider?: CampaignGenerationProvider;
