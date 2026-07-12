@@ -1,8 +1,13 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
+import {
+  ReservationAttributionSchema,
+  emptyReservationAttribution,
+  type ReservationAttribution,
+} from '@/lib/attribution/domain';
 import type { PublicEventCard } from '@/lib/public-events/domain';
 import type { ReservationReceipt } from '@/lib/reservations/domain';
 import {
@@ -34,15 +39,38 @@ function displayDate(value: string): string {
   }).format(new Date(Date.UTC(year, month - 1, day)));
 }
 
+function readAttribution(startedAt: number): ReservationAttribution {
+  if (typeof window === 'undefined') return emptyReservationAttribution();
+  const params = new URLSearchParams(window.location.search);
+  const parsed = ReservationAttributionSchema.safeParse({
+    source: params.get('utm_source') ?? '',
+    medium: params.get('utm_medium') ?? '',
+    campaign: params.get('utm_campaign') ?? '',
+    content: params.get('utm_content') ?? '',
+    term: params.get('utm_term') ?? '',
+    referrer: document.referrer,
+    landingPage: window.location.href,
+    firstTouchAt: new Date(startedAt).toISOString(),
+  });
+  return parsed.success ? parsed.data : emptyReservationAttribution();
+}
+
 export function ReservationForm({ event }: { event?: PublicEventCard | null }) {
   const eventDate = eventDateFromStart(event?.startsAt);
   const schema = useMemo(() => createReservationSchema(eventDate), [eventDate]);
   const startedAt = useRef(Date.now());
   const [website, setWebsite] = useState('');
+  const [attribution, setAttribution] = useState<ReservationAttribution>(
+    emptyReservationAttribution(),
+  );
   const [receipt, setReceipt] = useState<ReservationReceipt>();
   const [submittedValues, setSubmittedValues] = useState<ReservationFormValues>();
   const [serverError, setServerError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    setAttribution(readAttribution(startedAt.current));
+  }, []);
 
   const defaultValues: ReservationFormInput = {
     firstName: '',
@@ -84,6 +112,7 @@ export function ReservationForm({ event }: { event?: PublicEventCard | null }) {
           eventId: event?.id ?? '',
           eventSlug: event?.slug ?? '',
           eventTitle: event?.title ?? '',
+          attribution,
           website,
           startedAt: startedAt.current,
         }),
