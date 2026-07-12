@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { BahiaSunsetLogo } from '@/components/experience/BahiaSunsetLogo';
 import { Footer } from '@/components/layout/Footer';
+import { trackedReservationHref } from '@/lib/attribution/domain';
 import { getPublicEventCard } from '@/lib/public-events/server';
 
 export const dynamic = 'force-dynamic';
@@ -41,6 +42,17 @@ export default async function EventDetailPage({
   });
   if (!event) notFound();
 
+  const navReservationHref = trackedReservationHref({
+    eventSlug: event.slug,
+    campaign: event.slug,
+    content: 'event-page-nav',
+  });
+  const primaryReservationHref = trackedReservationHref({
+    eventSlug: event.slug,
+    campaign: event.slug,
+    content: 'event-page-primary-cta',
+  });
+
   const details = [
     ['Date', event.dateLabel],
     ['Time', event.timeLabel],
@@ -74,7 +86,7 @@ export default async function EventDetailPage({
               All Events
             </Link>
             <Link
-              href={`/reservations?event=${event.slug}`}
+              href={navReservationHref}
               className="rounded-full bg-red-600 px-4 py-2 text-white"
             >
               Request Reservation
@@ -164,7 +176,7 @@ export default async function EventDetailPage({
             </div>
             <div className="flex flex-col gap-3 sm:flex-row lg:flex-col xl:flex-row">
               <Link
-                href={`/reservations?event=${event.slug}`}
+                href={primaryReservationHref}
                 className="rounded-full bg-red-600 px-6 py-4 text-center text-xs font-semibold uppercase tracking-[0.18em] text-white"
               >
                 Request Reservation
