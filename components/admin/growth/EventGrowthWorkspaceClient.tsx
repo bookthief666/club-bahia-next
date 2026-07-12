@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StatusPill } from '@/components/admin/events/StatusPill';
 import { formatVenueDateTime } from '@/lib/admin/date';
 import type { OperationsEvent } from '@/lib/admin/domain';
@@ -17,15 +17,24 @@ import {
   type CampaignObjective,
   type EventGrowthWorkspace,
 } from '@/lib/admin/growth/domain';
+import { buildCampaignQualityReport } from '@/lib/admin/growth/quality';
 import { growthWorkspaceRepository } from '@/lib/admin/growth/repository';
 
 type WorkspaceTab = 'overview' | 'campaign' | 'timeline' | 'assets';
+type CampaignFilter = 'all' | 'draft' | 'approved' | 'published';
 
 const TABS: Array<{ id: WorkspaceTab; label: string }> = [
   { id: 'overview', label: 'Overview' },
   { id: 'campaign', label: 'Campaign' },
   { id: 'timeline', label: 'Timeline' },
   { id: 'assets', label: 'Assets' },
+];
+
+const FILTERS: Array<{ id: CampaignFilter; label: string }> = [
+  { id: 'all', label: 'All' },
+  { id: 'draft', label: 'Needs review' },
+  { id: 'approved', label: 'Approved' },
+  { id: 'published', label: 'Published' },
 ];
 
 const STATUS_CLASS: Record<CampaignItemStatus, string> = {
@@ -50,11 +59,15 @@ function Field({
   value,
   onChange,
   placeholder,
+  hint,
+  error,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  hint?: string;
+  error?: string;
 }) {
   return (
     <label className="block text-sm text-white/70">
@@ -62,28 +75,43 @@ function Field({
       <input
         value={value}
         placeholder={placeholder}
+        aria-invalid={Boolean(error)}
         onChange={(inputEvent) => onChange(inputEvent.target.value)}
-        className="mt-1 min-h-11 w-full rounded-xl border border-white/10 bg-black/25 px-3 text-white outline-none placeholder:text-white/25 focus:border-amber-200/45"
+        className={`mt-1 min-h-11 w-full rounded-xl border bg-black/25 px-3 text-white outline-none placeholder:text-white/25 ${
+          error
+            ? 'border-red-300/45 focus:border-red-300/75'
+            : 'border-white/10 focus:border-amber-200/45'
+        }`}
       />
+      {error ? <span className="mt-1 block text-xs leading-5 text-red-200">{error}</span> : null}
+      {!error && hint ? <span className="mt-1 block text-xs leading-5 text-white/40">{hint}</span> : null}
     </label>
   );
+}
+
+function previewText(body: string): string {
+  const compact = body.replace(/\s+/g, ' ').trim();
+  return compact.length > 190 ? `${compact.slice(0, 190).trimEnd()}…` : compact;
 }
 
 function ContentCard({
   item,
   pending,
+  blockingReason,
   onSave,
   onRegenerate,
   onAdvance,
 }: {
   item: CampaignContentItem;
   pending: boolean;
+  blockingReason?: string;
   onSave: (body: string) => Promise<boolean>;
   onRegenerate: () => Promise<void>;
   onAdvance: (status: CampaignItemStatus) => Promise<void>;
 }) {
   const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [draftBody, setDraftBody] = useState(item.body);
 
   useEffect(() => {
@@ -102,16 +130,22 @@ function ContentCard({
 
   async function saveEdit() {
     const saved = await onSave(draftBody);
-    if (saved) setEditing(false);
+    if (saved) {
+      setEditing(false);
+      setExpanded(true);
+    }
   }
+
+  const websiteUnconnected = item.channel === 'website';
+  const connectionLabel = websiteUnconnected
+    ? 'Website publishing not connected'
+    : 'Manual publishing';
 
   const nextStatus: CampaignItemStatus | null =
     item.status === 'draft'
       ? 'approved'
-      : item.status === 'approved'
-        ? item.publishingMode === 'manual'
-          ? 'published'
-          : 'scheduled'
+      : item.status === 'approved' && !websiteUnconnected
+        ? 'published'
         : item.status === 'scheduled'
           ? 'published'
           : null;
@@ -119,18 +153,16 @@ function ContentCard({
   const nextLabel =
     item.status === 'draft'
       ? 'Approve'
-      : item.status === 'approved' && item.publishingMode === 'manual'
+      : item.status === 'approved' && !websiteUnconnected
         ? 'Mark published manually'
-        : item.status === 'approved'
-          ? 'Mark scheduled'
-          : item.status === 'scheduled'
-            ? 'Mark published'
-            : '';
+        : item.status === 'scheduled'
+          ? 'Mark published'
+          : '';
 
   return (
     <article className="rounded-2xl border border-white/10 bg-[#141210]/75 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-100/75">
             {CAMPAIGN_CHANNEL_LABELS[item.channel]}
           </p>
@@ -138,10 +170,12 @@ function ContentCard({
           <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-xs text-white/50">
             {item.publishAt ? <span>Suggested: {formatVenueDateTime(item.publishAt)}</span> : null}
             <span>·</span>
-            <span>{item.publishingMode === 'manual' ? 'Manual publishing' : 'Connector-ready'}</span>
+            <span className={websiteUnconnected ? 'text-amber-100/70' : undefined}>
+              {connectionLabel}
+            </span>
           </div>
         </div>
-        <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold capitalize ${STATUS_CLASS[item.status]}`}>
+        <span className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold capitalize ${STATUS_CLASS[item.status]}`}>
           {item.status}
         </span>
       </div>
@@ -150,20 +184,41 @@ function ContentCard({
         <textarea
           value={draftBody}
           onChange={(inputEvent) => setDraftBody(inputEvent.target.value)}
-          rows={8}
+          rows={9}
           className="mt-4 w-full rounded-xl border border-amber-200/25 bg-black/25 p-3 text-sm leading-6 text-white outline-none focus:border-amber-200/60"
         />
-      ) : (
+      ) : expanded ? (
         <div className="mt-4 whitespace-pre-wrap rounded-xl border border-white/10 bg-black/20 p-3 text-sm leading-6 text-white/72">
           {item.body}
         </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          className="mt-4 block w-full rounded-xl border border-white/10 bg-black/20 p-3 text-left"
+        >
+          <span className="block text-sm leading-6 text-white/68">{previewText(item.body)}</span>
+          <span className="mt-2 block text-xs font-semibold text-amber-100/75">Open full copy</span>
+        </button>
       )}
 
-      {item.assetPrompt ? (
+      {expanded && !editing && item.assetPrompt ? (
         <details className="mt-3 rounded-xl border border-white/10 bg-black/15 p-3 text-sm">
           <summary className="cursor-pointer font-medium text-white/70">Visual prompt</summary>
           <p className="mt-2 text-white/55">{item.assetPrompt}</p>
         </details>
+      ) : null}
+
+      {blockingReason ? (
+        <p className="mt-3 rounded-xl border border-red-300/20 bg-red-300/8 px-3 py-2 text-xs leading-5 text-red-100">
+          Approval blocked: {blockingReason}
+        </p>
+      ) : null}
+
+      {websiteUnconnected && item.status === 'approved' ? (
+        <p className="mt-3 rounded-xl border border-amber-200/20 bg-amber-200/8 px-3 py-2 text-xs leading-5 text-amber-50">
+          Approved copy is ready, but it cannot be scheduled until the Club Bahia website connector is installed.
+        </p>
       ) : null}
 
       <div className="mt-4 flex flex-wrap gap-2">
@@ -201,7 +256,10 @@ function ContentCard({
             <button
               type="button"
               disabled={pending}
-              onClick={() => setEditing(true)}
+              onClick={() => {
+                setExpanded(true);
+                setEditing(true);
+              }}
               className="min-h-10 rounded-full border border-white/15 px-3 text-xs font-semibold text-white/75 disabled:opacity-50"
             >
               Edit
@@ -212,22 +270,31 @@ function ContentCard({
               onClick={() => void onRegenerate()}
               className="min-h-10 rounded-full border border-violet-200/25 px-3 text-xs font-semibold text-violet-100 disabled:opacity-50"
             >
-              Regenerate item
+              Improve item
             </button>
+            {expanded ? (
+              <button
+                type="button"
+                onClick={() => setExpanded(false)}
+                className="min-h-10 rounded-full border border-white/10 px-3 text-xs font-semibold text-white/55"
+              >
+                Collapse
+              </button>
+            ) : null}
             {nextStatus ? (
               <button
                 type="button"
-                disabled={pending}
+                disabled={pending || Boolean(blockingReason)}
                 onClick={() => void onAdvance(nextStatus)}
-                className="min-h-10 rounded-full bg-amber-300 px-3 text-xs font-bold text-black disabled:opacity-50"
+                className="min-h-10 rounded-full bg-amber-300 px-3 text-xs font-bold text-black disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {nextLabel}
               </button>
-            ) : (
+            ) : item.status === 'published' ? (
               <span className="inline-flex min-h-10 items-center rounded-full border border-emerald-200/20 px-3 text-xs font-semibold text-emerald-100">
                 Complete
               </span>
-            )}
+            ) : null}
           </>
         )}
       </div>
@@ -241,6 +308,7 @@ export function EventGrowthWorkspaceClient({ eventId }: { eventId: string }) {
   const [brief, setBrief] = useState<CampaignBrief | undefined>(undefined);
   const [tab, setTab] = useState<WorkspaceTab>('overview');
   const [briefOpen, setBriefOpen] = useState(false);
+  const [campaignFilter, setCampaignFilter] = useState<CampaignFilter>('all');
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -274,8 +342,9 @@ export function EventGrowthWorkspaceClient({ eventId }: { eventId: string }) {
       setWorkspace(next);
       setBrief(next.brief);
       setBriefOpen(false);
+      setCampaignFilter('draft');
       setTab('campaign');
-      setMessage('Campaign draft created. Review, edit, and approve each item before publishing.');
+      setMessage('Campaign improved. Review each draft before approving it.');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Campaign generation failed.');
     } finally {
@@ -336,9 +405,9 @@ export function EventGrowthWorkspaceClient({ eventId }: { eventId: string }) {
     try {
       const next = await growthWorkspaceRepository.regenerateContentItem(event, contentItemId);
       setWorkspace(next);
-      setMessage('This item was regenerated and returned to draft.');
+      setMessage('This item was improved and returned to draft.');
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Could not regenerate content.');
+      setMessage(error instanceof Error ? error.message : 'Could not improve content.');
     } finally {
       setPending(false);
     }
@@ -366,7 +435,33 @@ export function EventGrowthWorkspaceClient({ eventId }: { eventId: string }) {
   ).length;
   const activeCount = workspace.content.filter((item) => item.status !== 'draft').length;
   const publishedCount = workspace.content.filter((item) => item.status === 'published').length;
+  const draftCount = workspace.content.filter((item) => item.status === 'draft').length;
   const assetItems = workspace.content.filter((item) => item.assetPrompt);
+  const qualityReport = workspace.content.length
+    ? buildCampaignQualityReport(event, workspace)
+    : null;
+  const conversionUrlRequired = ['reservations', 'ticket-sales'].includes(brief.objective);
+  const reservationUrlError =
+    conversionUrlRequired && !brief.reservationUrl.trim()
+      ? 'Add a final public reservation or ticket link before generating a conversion campaign.'
+      : undefined;
+
+  const filteredContent = workspace.content.filter((item) => {
+    if (campaignFilter === 'all') return true;
+    if (campaignFilter === 'draft') return item.status === 'draft';
+    if (campaignFilter === 'approved') {
+      return item.status === 'approved' || item.status === 'scheduled';
+    }
+    return item.status === 'published';
+  });
+
+  function blockingReasonFor(item: CampaignContentItem): string | undefined {
+    if (!item.body.trim()) return 'The content is empty.';
+    if (item.channel === 'sms' && item.body.length > 300) {
+      return `The SMS is ${item.body.length} characters; the limit is 300.`;
+    }
+    return undefined;
+  }
 
   return (
     <div className="space-y-5 pb-40 lg:pb-12">
@@ -390,9 +485,17 @@ export function EventGrowthWorkspaceClient({ eventId }: { eventId: string }) {
               {formatVenueDateTime(event.startsAt)} · {event.room}
             </p>
           </div>
-          <div className="min-w-32 rounded-2xl border border-amber-200/20 bg-amber-200/10 p-3 text-right">
-            <p className="text-xs uppercase tracking-[0.16em] text-amber-100/60">Readiness</p>
-            <p className="mt-1 text-3xl font-semibold text-amber-100">{workspace.readinessScore}%</p>
+          <div className="flex gap-2">
+            {qualityReport ? (
+              <div className="min-w-28 rounded-2xl border border-white/10 bg-white/5 p-3 text-right">
+                <p className="text-xs uppercase tracking-[0.16em] text-white/45">Quality</p>
+                <p className="mt-1 text-2xl font-semibold text-white">{qualityReport.score}%</p>
+              </div>
+            ) : null}
+            <div className="min-w-28 rounded-2xl border border-amber-200/20 bg-amber-200/10 p-3 text-right">
+              <p className="text-xs uppercase tracking-[0.16em] text-amber-100/60">Readiness</p>
+              <p className="mt-1 text-2xl font-semibold text-amber-100">{workspace.readinessScore}%</p>
+            </div>
           </div>
         </div>
       </header>
@@ -431,8 +534,8 @@ export function EventGrowthWorkspaceClient({ eventId }: { eventId: string }) {
         <section className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <Metric label="Campaign assets" value={String(workspace.content.length)} detail="Generated pieces" />
-            <Metric label="Approved or later" value={String(activeCount)} detail="Cleared by a human" />
-            <Metric label="Scheduled or live" value={String(scheduledCount)} detail={`${publishedCount} published`} />
+            <Metric label="Needs review" value={String(draftCount)} detail="Drafts awaiting a human" />
+            <Metric label="Approved or later" value={String(activeCount)} detail={`${publishedCount} published`} />
             <Metric label="Promotion budget" value={`$${Math.round(brief.budgetCents / 100)}`} detail="Planning estimate" />
           </div>
 
@@ -440,7 +543,7 @@ export function EventGrowthWorkspaceClient({ eventId }: { eventId: string }) {
             <div className="rounded-2xl border border-white/10 bg-[#141210]/75 p-4 sm:p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.16em] text-white/45">Campaign brief</p>
+                  <p className="text-xs uppercase tracking-[0.16em] text-white/45">Campaign direction</p>
                   <h2 className="mt-2 text-xl font-semibold">{brief.theme}</h2>
                 </div>
                 <button
@@ -458,7 +561,7 @@ export function EventGrowthWorkspaceClient({ eventId }: { eventId: string }) {
                 <div><dt className="text-xs text-white/45">Audience</dt><dd className="mt-1 text-sm text-white/75">{brief.targetAudience}</dd></div>
                 <div><dt className="text-xs text-white/45">Objective</dt><dd className="mt-1 text-sm text-white/75">{CAMPAIGN_OBJECTIVE_LABELS[brief.objective]}</dd></div>
                 <div><dt className="text-xs text-white/45">Language</dt><dd className="mt-1 text-sm text-white/75">{CAMPAIGN_LANGUAGE_LABELS[brief.language]}</dd></div>
-                <div><dt className="text-xs text-white/45">Offer / CTA</dt><dd className="mt-1 text-sm text-white/75">{brief.offer}</dd></div>
+                <div><dt className="text-xs text-white/45">Conversion link</dt><dd className={`mt-1 text-sm ${brief.reservationUrl ? 'text-white/75' : 'text-amber-100'}`}>{brief.reservationUrl || 'Missing'}</dd></div>
                 <div><dt className="text-xs text-white/45">Performers</dt><dd className="mt-1 text-sm text-white/75">{brief.performers || 'Not added'}</dd></div>
                 <div><dt className="text-xs text-white/45">Music</dt><dd className="mt-1 text-sm text-white/75">{brief.genres || 'Not added'}</dd></div>
               </dl>
@@ -467,16 +570,21 @@ export function EventGrowthWorkspaceClient({ eventId }: { eventId: string }) {
             <div className="rounded-2xl border border-amber-200/20 bg-gradient-to-br from-amber-200/10 to-transparent p-4 sm:p-5">
               <p className="text-xs uppercase tracking-[0.16em] text-amber-100/60">Next best action</p>
               <h2 className="mt-2 text-xl font-semibold text-white">
-                {workspace.content.length ? 'Review the launch content' : 'Generate the first campaign draft'}
+                {workspace.content.length
+                  ? draftCount
+                    ? `Review ${draftCount} remaining draft${draftCount === 1 ? '' : 's'}`
+                    : 'Campaign review is complete'
+                  : 'Generate the first campaign draft'}
               </h2>
               <p className="mt-2 text-sm leading-6 text-white/60">
-                Drafts remain editable. Approval unlocks the next legitimate publishing action for each channel.
+                Keep the approval queue focused. Publishing remains manual until each connector is actually installed.
               </p>
               <button
                 type="button"
                 disabled={pending}
                 onClick={() => {
                   if (workspace.content.length) {
+                    setCampaignFilter('draft');
                     setTab('campaign');
                   } else {
                     void generateCampaign();
@@ -484,7 +592,7 @@ export function EventGrowthWorkspaceClient({ eventId }: { eventId: string }) {
                 }}
                 className="mt-4 min-h-11 w-full rounded-full bg-amber-300 px-4 text-sm font-bold text-black disabled:opacity-50"
               >
-                {workspace.content.length ? 'Review campaign' : pending ? 'Generating…' : 'Generate campaign'}
+                {workspace.content.length ? 'Open review queue' : pending ? 'Generating…' : 'Generate campaign'}
               </button>
             </div>
           </div>
@@ -497,11 +605,16 @@ export function EventGrowthWorkspaceClient({ eventId }: { eventId: string }) {
             <div className="rounded-2xl border border-white/10 bg-[#141210]/75 p-4">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.16em] text-white/45">Campaign brief</p>
+                  <p className="text-xs uppercase tracking-[0.16em] text-white/45">Campaign direction</p>
                   <h2 className="mt-1 text-xl font-semibold">{brief.theme}</h2>
                   <p className="mt-2 text-sm text-white/55">
                     {brief.genres || 'Music details pending'} · {CAMPAIGN_LANGUAGE_LABELS[brief.language]} · {CAMPAIGN_OBJECTIVE_LABELS[brief.objective]}
                   </p>
+                  {qualityReport?.issues.length ? (
+                    <p className="mt-2 text-xs text-amber-100/75">
+                      {qualityReport.issues.length} quality item{qualityReport.issues.length === 1 ? '' : 's'} detected above.
+                    </p>
+                  ) : null}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button
@@ -514,10 +627,15 @@ export function EventGrowthWorkspaceClient({ eventId }: { eventId: string }) {
                   <button
                     type="button"
                     disabled={pending}
-                    onClick={() => void generateCampaign()}
-                    className="min-h-10 rounded-full border border-amber-200/25 px-4 text-xs font-semibold text-amber-100 disabled:opacity-50"
+                    onClick={() => {
+                      const confirmed = window.confirm(
+                        'Improve the full campaign with AI? The current version will be saved in revision history.',
+                      );
+                      if (confirmed) void generateCampaign();
+                    }}
+                    className="min-h-10 rounded-full border border-violet-200/25 px-4 text-xs font-semibold text-violet-100 disabled:opacity-50"
                   >
-                    Regenerate all
+                    Improve all with AI
                   </button>
                 </div>
               </div>
@@ -535,11 +653,13 @@ export function EventGrowthWorkspaceClient({ eventId }: { eventId: string }) {
                   <p className="text-xs uppercase tracking-[0.16em] text-white/45">Campaign brief</p>
                   <h2 className="mt-1 text-xl font-semibold">Direct the campaign</h2>
                 </div>
-                <span className="rounded-full border border-white/10 px-2 py-1 text-[11px] text-white/50">Fixture AI</span>
+                <span className="rounded-full border border-violet-200/20 bg-violet-200/8 px-2 py-1 text-[11px] text-violet-100">
+                  AI-assisted
+                </span>
               </div>
 
               <div className="mt-5 grid gap-4 md:grid-cols-2">
-                <Field label="Theme" value={brief.theme} onChange={(value) => setBrief({ ...brief, theme: value })} />
+                <Field label="Internal campaign direction" value={brief.theme} onChange={(value) => setBrief({ ...brief, theme: value })} hint={`The public event name remains “${event.title}.”`} />
                 <Field label="Main attraction" value={brief.mainAttraction} onChange={(value) => setBrief({ ...brief, mainAttraction: value })} placeholder="What makes this night worth attending?" />
                 <Field label="Performers / DJs" value={brief.performers} onChange={(value) => setBrief({ ...brief, performers: value })} placeholder="DJ names, band, host" />
                 <Field label="Music genres" value={brief.genres} onChange={(value) => setBrief({ ...brief, genres: value })} placeholder="Salsa, bachata, cumbia" />
@@ -574,7 +694,14 @@ export function EventGrowthWorkspaceClient({ eventId }: { eventId: string }) {
                 <Field label="Age restriction" value={brief.ageRestriction} onChange={(value) => setBrief({ ...brief, ageRestriction: value })} />
                 <Field label="Food / drink special" value={brief.foodDrinkSpecial} onChange={(value) => setBrief({ ...brief, foodDrinkSpecial: value })} placeholder="Kitchen late · drink special" />
                 <Field label="Offer / CTA" value={brief.offer} onChange={(value) => setBrief({ ...brief, offer: value })} />
-                <Field label="Reservation or ticket URL" value={brief.reservationUrl} onChange={(value) => setBrief({ ...brief, reservationUrl: value })} placeholder="https://…" />
+                <Field
+                  label="Reservation or ticket URL"
+                  value={brief.reservationUrl}
+                  onChange={(value) => setBrief({ ...brief, reservationUrl: value })}
+                  placeholder="https://…"
+                  error={reservationUrlError}
+                  hint="Use the final public destination—not a temporary preview URL."
+                />
                 <Field label="Venue address" value={brief.address} onChange={(value) => setBrief({ ...brief, address: value })} />
                 <label className="block text-sm text-white/70">
                   Promotion budget ($)
@@ -594,10 +721,10 @@ export function EventGrowthWorkspaceClient({ eventId }: { eventId: string }) {
               <div className="mt-5 flex flex-wrap gap-2">
                 <button
                   type="submit"
-                  disabled={pending}
-                  className="min-h-11 flex-1 rounded-full bg-amber-300 px-4 text-sm font-bold text-black disabled:opacity-50"
+                  disabled={pending || Boolean(reservationUrlError)}
+                  className="min-h-11 flex-1 rounded-full bg-amber-300 px-4 text-sm font-bold text-black disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  {pending ? 'Generating…' : workspace.content.length ? 'Save and regenerate campaign' : 'Generate campaign'}
+                  {pending ? 'Generating…' : workspace.content.length ? 'Save and improve campaign' : 'Generate campaign'}
                 </button>
                 {workspace.content.length ? (
                   <button
@@ -614,23 +741,60 @@ export function EventGrowthWorkspaceClient({ eventId }: { eventId: string }) {
                 ) : null}
               </div>
               <p className="mt-3 text-xs leading-5 text-white/45">
-                Audience and strategy guide the writing but are not repeated as public-facing copy.
+                The event name comes from the event record. Audience and campaign direction guide the writing but are never published as internal notes.
               </p>
             </form>
           )}
 
+          {workspace.content.length ? (
+            <div className="sticky top-2 z-10 rounded-2xl border border-white/10 bg-[#0e0c0b]/95 p-2 shadow-xl backdrop-blur">
+              <div className="flex gap-1 overflow-x-auto" aria-label="Campaign content filters">
+                {FILTERS.map((filter) => {
+                  const count =
+                    filter.id === 'all'
+                      ? workspace.content.length
+                      : filter.id === 'draft'
+                        ? draftCount
+                        : filter.id === 'approved'
+                          ? workspace.content.filter((item) => item.status === 'approved' || item.status === 'scheduled').length
+                          : publishedCount;
+                  return (
+                    <button
+                      key={filter.id}
+                      type="button"
+                      onClick={() => setCampaignFilter(filter.id)}
+                      className={`min-h-9 shrink-0 rounded-full px-3 text-xs font-semibold ${
+                        campaignFilter === filter.id
+                          ? 'bg-amber-300 text-black'
+                          : 'border border-white/10 text-white/60'
+                      }`}
+                    >
+                      {filter.label} · {count}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+
           <div className="grid gap-3 xl:grid-cols-2">
-            {workspace.content.length ? (
-              workspace.content.map((item) => (
+            {filteredContent.length ? (
+              filteredContent.map((item) => (
                 <ContentCard
                   key={item.id}
                   item={item}
                   pending={pending}
+                  blockingReason={blockingReasonFor(item)}
                   onSave={(body) => saveContent(item.id, body)}
                   onRegenerate={() => regenerateContent(item.id)}
                   onAdvance={(status) => updateStatus(item.id, status)}
                 />
               ))
+            ) : workspace.content.length ? (
+              <div className="rounded-2xl border border-dashed border-white/15 p-8 text-center xl:col-span-2">
+                <h2 className="text-xl font-semibold">Nothing in this queue</h2>
+                <p className="mt-2 text-sm text-white/55">Choose another filter to continue reviewing the campaign.</p>
+              </div>
             ) : (
               <div className="rounded-2xl border border-dashed border-white/15 p-8 text-center xl:col-span-2">
                 <h2 className="text-xl font-semibold">No campaign generated yet</h2>
@@ -650,7 +814,7 @@ export function EventGrowthWorkspaceClient({ eventId }: { eventId: string }) {
               <p className="text-xs uppercase tracking-[0.16em] text-white/45">Campaign calendar</p>
               <h2 className="mt-1 text-xl font-semibold">What happens next</h2>
             </div>
-            <p className="text-xs text-white/45">Local planning state until connectors are added.</p>
+            <p className="text-xs text-white/45">Planning dates only; no publishing connector is active.</p>
           </div>
           <div className="mt-5 space-y-2">
             {workspace.milestones.length ? (
@@ -683,7 +847,7 @@ export function EventGrowthWorkspaceClient({ eventId }: { eventId: string }) {
                 <h2 className="mt-2 text-lg font-semibold">{item.title}</h2>
                 <p className="mt-3 text-sm leading-6 text-white/60">{item.assetPrompt}</p>
                 <div className="mt-4 rounded-xl border border-dashed border-white/15 bg-black/20 p-6 text-center text-xs text-white/45">
-                  Image and video generation connectors arrive in a later milestone.
+                  Image and video generation are not connected yet.
                 </div>
               </article>
             ))
