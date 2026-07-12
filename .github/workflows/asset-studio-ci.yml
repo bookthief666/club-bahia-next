@@ -8,12 +8,14 @@ on:
       - codex/milestone-4c-publishing-execution
       - codex/milestone-4d-integrity-ux
       - codex/milestone-5a-public-rsvp-funnel
+      - codex/milestone-5b-home-attribution-dashboard
   pull_request:
     branches:
       - codex/milestone-3e-review-optimization
       - codex/milestone-4a-asset-studio
       - codex/milestone-4b-post-assembly
       - codex/milestone-4d-integrity-ux
+      - codex/milestone-5a-public-rsvp-funnel
 
 permissions:
   contents: read
