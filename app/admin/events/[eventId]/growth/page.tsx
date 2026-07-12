@@ -1,4 +1,5 @@
 import { AiProviderBanner } from '@/components/admin/growth/AiProviderBanner';
+import { CampaignAuditPanelClient } from '@/components/admin/growth/CampaignAuditPanelClient';
 import { EventGrowthWorkspaceClient } from '@/components/admin/growth/EventGrowthWorkspaceClient';
 
 export default async function EventGrowthPage({
@@ -11,6 +12,7 @@ export default async function EventGrowthPage({
   return (
     <>
       <AiProviderBanner />
+      <CampaignAuditPanelClient eventId={eventId} />
       <EventGrowthWorkspaceClient eventId={eventId} />
     </>
   );
