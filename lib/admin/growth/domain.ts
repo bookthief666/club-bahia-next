@@ -24,7 +24,6 @@ export type CampaignQualitySeverity = 'error' | 'warning' | 'info';
 
 export interface CampaignBrief {
   theme: string;
-  publicSubtitle: string;
   targetAudience: string;
   objective: CampaignObjective;
   tone: string;
@@ -89,7 +88,6 @@ export interface CampaignQualityIssue {
 
 export interface CampaignQualityReport {
   score: number;
-  titleConflict: boolean;
   issues: CampaignQualityIssue[];
 }
 
