@@ -5,6 +5,7 @@ import {
   AssetSessionError,
   unlockAssetSession,
 } from '@/lib/admin/assets/client-session';
+import { reservationAttributionLabel } from '@/lib/attribution/domain';
 import {
   ReservationStatusSchema,
   reservationGuestName,
@@ -61,6 +62,15 @@ function displayReceived(value: string): string {
   }).format(new Date(value));
 }
 
+function hostname(value: string): string {
+  if (!value) return '';
+  try {
+    return new URL(value).hostname.replace(/^www\./, '');
+  } catch {
+    return value;
+  }
+}
+
 function UnlockInbox({ onUnlocked }: { onUnlocked: () => Promise<void> }) {
   const [code, setCode] = useState('');
   const [pending, setPending] = useState(false);
@@ -74,7 +84,9 @@ function UnlockInbox({ onUnlocked }: { onUnlocked: () => Promise<void> }) {
       setCode('');
       await onUnlocked();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Could not unlock requests.');
+      setMessage(
+        error instanceof Error ? error.message : 'Could not unlock requests.',
+      );
     } finally {
       setPending(false);
     }
@@ -89,7 +101,7 @@ function UnlockInbox({ onUnlocked }: { onUnlocked: () => Promise<void> }) {
         Unlock Reservation Requests
       </h1>
       <p className="mt-3 max-w-2xl text-sm leading-6 text-white/58">
-        Guest contact details are encrypted. Use the same private owner code as Event Media to open the inbox for this browser session.
+        Guest contact details and campaign-source data are encrypted. Use the same private owner code as Event Media to open the inbox for this browser session.
       </p>
       <form
         className="mt-5 flex flex-col gap-3 sm:flex-row"
@@ -133,6 +145,13 @@ function ReservationCard({
 }) {
   const [open, setOpen] = useState(reservation.status === 'new');
   const [staffNote, setStaffNote] = useState(reservation.staffNote ?? '');
+  const source = reservationAttributionLabel(reservation.attribution);
+  const sourceDetail = [
+    reservation.attribution.campaign,
+    reservation.attribution.content,
+  ]
+    .filter(Boolean)
+    .join(' · ');
   const textHref = `sms:${reservation.phone}`;
   const mailHref = `mailto:${reservation.email}?subject=${encodeURIComponent(
     `Club Bahia reservation request ${reservation.id}`,
@@ -150,14 +169,18 @@ function ReservationCard({
         className="flex w-full items-center justify-between gap-4 p-4 text-left sm:p-5"
       >
         <span className="min-w-0">
-          <span className="block text-[10px] font-semibold uppercase tracking-[.18em] text-amber-100/58">
-            {reservation.eventTitle || 'General reservation'}
+          <span className="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[.18em] text-amber-100/58">
+            <span>{reservation.eventTitle || 'General reservation'}</span>
+            <span className="rounded-full border border-sky-200/15 bg-sky-200/[.06] px-2 py-0.5 text-[9px] tracking-[.12em] text-sky-100/72">
+              {source}
+            </span>
           </span>
           <span className="mt-1 block truncate text-xl font-semibold text-white">
             {reservationGuestName(reservation)} · {reservation.guests} guests
           </span>
           <span className="mt-1 block text-xs text-white/42">
-            {displayReservationDate(reservation.date)} · received {displayReceived(reservation.createdAt)}
+            {displayReservationDate(reservation.date)} · received{' '}
+            {displayReceived(reservation.createdAt)}
           </span>
         </span>
         <span className="flex shrink-0 items-center gap-2">
@@ -174,33 +197,83 @@ function ReservationCard({
 
       {open ? (
         <div className="border-t border-white/8 p-4 sm:p-5">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
             <div className="rounded-xl border border-white/9 bg-black/20 p-3">
-              <p className="text-[10px] uppercase tracking-[.15em] text-white/38">Phone</p>
-              <a href={`tel:${reservation.phone}`} className="mt-1 block text-sm font-semibold text-amber-100">
+              <p className="text-[10px] uppercase tracking-[.15em] text-white/38">
+                Phone
+              </p>
+              <a
+                href={`tel:${reservation.phone}`}
+                className="mt-1 block text-sm font-semibold text-amber-100"
+              >
                 {reservation.phone}
               </a>
             </div>
             <div className="rounded-xl border border-white/9 bg-black/20 p-3">
-              <p className="text-[10px] uppercase tracking-[.15em] text-white/38">Email</p>
-              <a href={mailHref} className="mt-1 block truncate text-sm font-semibold text-amber-100">
+              <p className="text-[10px] uppercase tracking-[.15em] text-white/38">
+                Email
+              </p>
+              <a
+                href={mailHref}
+                className="mt-1 block truncate text-sm font-semibold text-amber-100"
+              >
                 {reservation.email}
               </a>
             </div>
             <div className="rounded-xl border border-white/9 bg-black/20 p-3">
-              <p className="text-[10px] uppercase tracking-[.15em] text-white/38">Occasion</p>
-              <p className="mt-1 text-sm text-white/72">{reservation.occasion || 'Not specified'}</p>
+              <p className="text-[10px] uppercase tracking-[.15em] text-white/38">
+                Occasion
+              </p>
+              <p className="mt-1 text-sm text-white/72">
+                {reservation.occasion || 'Not specified'}
+              </p>
+            </div>
+            <div className="rounded-xl border border-sky-200/12 bg-sky-200/[.045] p-3">
+              <p className="text-[10px] uppercase tracking-[.15em] text-sky-100/48">
+                Campaign source
+              </p>
+              <p className="mt-1 text-sm font-semibold text-sky-100">{source}</p>
+              {sourceDetail ? (
+                <p className="mt-1 truncate text-[11px] text-white/42">{sourceDetail}</p>
+              ) : null}
             </div>
             <div className="rounded-xl border border-white/9 bg-black/20 p-3">
-              <p className="text-[10px] uppercase tracking-[.15em] text-white/38">Request number</p>
+              <p className="text-[10px] uppercase tracking-[.15em] text-white/38">
+                Request number
+              </p>
               <p className="mt-1 font-mono text-xs text-white/72">{reservation.id}</p>
             </div>
           </div>
 
+          {reservation.attribution.referrer || reservation.attribution.landingPage ? (
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-white/8 bg-black/18 p-3">
+                <p className="text-[10px] uppercase tracking-[.15em] text-white/34">
+                  Referrer
+                </p>
+                <p className="mt-1 break-all text-xs text-white/52">
+                  {hostname(reservation.attribution.referrer) || 'Direct visit'}
+                </p>
+              </div>
+              <div className="rounded-xl border border-white/8 bg-black/18 p-3">
+                <p className="text-[10px] uppercase tracking-[.15em] text-white/34">
+                  Landing page
+                </p>
+                <p className="mt-1 break-all text-xs text-white/52">
+                  {reservation.attribution.landingPage || 'Not recorded'}
+                </p>
+              </div>
+            </div>
+          ) : null}
+
           {reservation.note ? (
             <div className="mt-3 rounded-xl border border-amber-200/12 bg-amber-200/[.045] p-4">
-              <p className="text-[10px] uppercase tracking-[.15em] text-amber-100/50">Guest note</p>
-              <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-white/68">{reservation.note}</p>
+              <p className="text-[10px] uppercase tracking-[.15em] text-amber-100/50">
+                Guest note
+              </p>
+              <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-white/68">
+                {reservation.note}
+              </p>
             </div>
           ) : null}
 
@@ -251,7 +324,9 @@ function ReservationCard({
                 type="button"
                 disabled={pending || status === reservation.status}
                 onClick={() => void onUpdate(status, staffNote)}
-                className={`min-h-10 rounded-full border px-4 text-xs font-semibold disabled:opacity-35 ${statusClass(status)}`}
+                className={`min-h-10 rounded-full border px-4 text-xs font-semibold disabled:opacity-35 ${statusClass(
+                  status,
+                )}`}
               >
                 Mark {STATUS_LABELS[status].toLowerCase()}
               </button>
@@ -295,7 +370,11 @@ export function ReservationInboxClient() {
       if (error instanceof AssetSessionError && error.status === 401) {
         setLocked(true);
       } else {
-        setMessage(error instanceof Error ? error.message : 'Could not load reservation requests.');
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : 'Could not load reservation requests.',
+        );
       }
     } finally {
       setLoading(false);
@@ -318,7 +397,9 @@ export function ReservationInboxClient() {
     };
     for (const reservation of reservations) {
       result[reservation.status] += 1;
-      if (!['cancelled', 'completed'].includes(reservation.status)) result.active += 1;
+      if (!['cancelled', 'completed'].includes(reservation.status)) {
+        result.active += 1;
+      }
     }
     return result;
   }, [reservations]);
@@ -361,7 +442,9 @@ export function ReservationInboxClient() {
       );
       setMessage(`Reservation marked ${STATUS_LABELS[status].toLowerCase()}.`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Could not update the request.');
+      setMessage(
+        error instanceof Error ? error.message : 'Could not update the request.',
+      );
     } finally {
       setPendingId(undefined);
     }
@@ -381,7 +464,7 @@ export function ReservationInboxClient() {
               Reservations Inbox
             </h1>
             <p className="mt-3 text-sm leading-6 text-white/58 sm:text-base">
-              Call, text, confirm, waitlist, or close website reservation requests without copying guest details into another system.
+              Follow up with guests and see which event, social post, Story, or QR code produced each request.
             </p>
           </div>
           <button
@@ -401,8 +484,13 @@ export function ReservationInboxClient() {
             ['Confirmed', counts.confirmed, 'text-emerald-100'],
             ['Waitlist', counts.waitlist, 'text-amber-100'],
           ].map(([label, value, color]) => (
-            <div key={String(label)} className="rounded-2xl border border-white/9 bg-black/22 p-3">
-              <p className="text-[10px] uppercase tracking-[.14em] text-white/38">{label}</p>
+            <div
+              key={String(label)}
+              className="rounded-2xl border border-white/9 bg-black/22 p-3"
+            >
+              <p className="text-[10px] uppercase tracking-[.14em] text-white/38">
+                {label}
+              </p>
               <p className={`mt-1 text-3xl font-semibold ${color}`}>{value}</p>
             </div>
           ))}
@@ -410,7 +498,10 @@ export function ReservationInboxClient() {
       </header>
 
       {message ? (
-        <p role="status" className="rounded-xl border border-amber-200/15 bg-amber-200/[.07] px-4 py-3 text-sm text-amber-50">
+        <p
+          role="status"
+          className="rounded-xl border border-amber-200/15 bg-amber-200/[.07] px-4 py-3 text-sm text-amber-50"
+        >
           {message}
         </p>
       ) : null}
@@ -428,7 +519,8 @@ export function ReservationInboxClient() {
                   : 'border-white/10 text-white/52'
               }`}
             >
-              {status === 'active' ? 'Active' : STATUS_LABELS[status]} · {counts[status]}
+              {status === 'active' ? 'Active' : STATUS_LABELS[status]} ·{' '}
+              {counts[status]}
             </button>
           ))}
         </div>
