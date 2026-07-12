@@ -39,27 +39,29 @@ async function listAllMetadata(eventId: string): Promise<EventAsset[]> {
     cursor = result.hasMore ? result.cursor : undefined;
   } while (cursor && metadataBlobs.length < 500);
 
-  const assets = await Promise.all(
-    metadataBlobs.map(async ({ url }) => {
+  const assets: Array<EventAsset | null> = await Promise.all(
+    metadataBlobs.map(async ({ url }): Promise<EventAsset | null> => {
       try {
         const response = await fetch(`${url}?v=${Date.now()}`, {
           cache: 'no-store',
         });
         if (!response.ok) return null;
         const parsed = EventAssetSchema.safeParse(await response.json());
-        return parsed.success ? parsed.data : null;
+        return parsed.success ? (parsed.data as EventAsset) : null;
       } catch {
         return null;
       }
     }),
   );
 
-  return assets
-    .filter((asset): asset is EventAsset => Boolean(asset))
-    .sort(
-      (left, right) =>
-        new Date(right.uploadedAt).getTime() - new Date(left.uploadedAt).getTime(),
-    );
+  const validAssets = assets.filter(
+    (asset): asset is EventAsset => asset !== null,
+  );
+
+  return validAssets.sort(
+    (left, right) =>
+      new Date(right.uploadedAt).getTime() - new Date(left.uploadedAt).getTime(),
+  );
 }
 
 export async function GET(request: Request) {
