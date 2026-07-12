@@ -24,6 +24,8 @@ export type CampaignQualitySeverity = 'error' | 'warning' | 'info';
 
 export interface CampaignBrief {
   theme: string;
+  /** Legacy preview-only field retained solely to migrate old browser records. */
+  publicSubtitle?: string;
   targetAudience: string;
   objective: CampaignObjective;
   tone: string;
