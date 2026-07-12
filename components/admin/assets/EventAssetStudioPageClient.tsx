@@ -59,6 +59,12 @@ export function EventAssetStudioPageClient({ eventId }: { eventId: string }) {
         >
           Growth campaign
         </Link>
+        <Link
+          href={`/admin/events/${event.id}/publishing`}
+          className="inline-flex min-h-10 items-center rounded-full border border-emerald-200/20 bg-emerald-200/8 px-4 text-xs font-semibold text-emerald-100"
+        >
+          Assemble posts
+        </Link>
       </div>
       <EventAssetStudioClient eventId={event.id} eventTitle={event.title} />
     </>
