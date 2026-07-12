@@ -7,10 +7,15 @@ import type { AdminUser } from '@/lib/admin/domain';
 const nav = [
   { label: 'Home', href: '/admin', icon: '◆', description: 'Today’s priorities' },
   { label: 'Events', href: '/admin/events', icon: '◐', description: 'Plan and promote' },
+  { label: 'Reservations', href: '/admin/reservations', icon: '✦', description: 'Guest requests' },
   { label: 'Calendar', href: '/admin/calendar', icon: '◷', description: 'See the schedule' },
 ];
 
-function pageIdentity(pathname: string): { eyebrow: string; title: string; subtitle: string } {
+function pageIdentity(pathname: string): {
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+} {
   if (pathname.includes('/publishing/execute')) {
     return {
       eyebrow: 'Campaign workflow · Step 5',
@@ -37,6 +42,13 @@ function pageIdentity(pathname: string): { eyebrow: string; title: string; subti
       eyebrow: 'Campaign workflow · Step 2',
       title: 'Create campaign',
       subtitle: 'Generate and approve the promotional plan and channel copy.',
+    };
+  }
+  if (pathname.startsWith('/admin/reservations')) {
+    return {
+      eyebrow: 'Club Bahia guest operations',
+      title: 'Reservations',
+      subtitle: 'Review new website requests and follow up with guests.',
     };
   }
   if (pathname.startsWith('/admin/calendar')) {
@@ -100,23 +112,30 @@ export function AdminShell({
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-[1580px] flex-col pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:flex-row md:pb-0">
         <aside className="hidden w-72 shrink-0 border-r border-white/8 bg-[linear-gradient(180deg,rgba(12,16,14,.94),rgba(10,9,8,.9))] px-5 py-6 backdrop-blur-2xl md:flex md:flex-col">
-          <Link href="/admin" className="block rounded-2xl p-2 outline-none focus-visible:ring-2 focus-visible:ring-emerald-200/50">
+          <Link
+            href="/admin"
+            className="block rounded-2xl p-2 outline-none focus-visible:ring-2 focus-visible:ring-emerald-200/50"
+          >
             <p className="text-[11px] font-black uppercase tracking-[.28em] text-emerald-200 [text-shadow:0_0_12px_rgba(52,211,153,.65)]">
               Club Bahia
             </p>
             <h1 className="mt-1 font-serif text-3xl text-white">Growth OS</h1>
             <p className="mt-2 text-xs leading-5 text-white/42">
-              Events, promotion, media, and publishing in one place.
+              Events, promotion, reservations, and publishing in one place.
             </p>
           </Link>
 
           <div className="mt-5 rounded-2xl border border-amber-200/15 bg-[linear-gradient(145deg,rgba(246,183,60,.11),rgba(225,18,27,.05))] p-3">
             <div className="flex items-center justify-between gap-3">
-              <span className="text-[10px] font-semibold uppercase tracking-[.17em] text-amber-100/65">Workspace</span>
-              <span className="rounded-full border border-amber-200/20 bg-black/20 px-2 py-0.5 text-[10px] font-bold text-amber-100">DEMO</span>
+              <span className="text-[10px] font-semibold uppercase tracking-[.17em] text-amber-100/65">
+                Workspace
+              </span>
+              <span className="rounded-full border border-amber-200/20 bg-black/20 px-2 py-0.5 text-[10px] font-bold text-amber-100">
+                DEMO
+              </span>
             </div>
             <p className="mt-2 text-xs leading-5 text-white/48">
-              Publishing actions are recorded here but still completed manually on each platform.
+              Website publishing and reservation intake are connected for review, while social delivery remains manual.
             </p>
           </div>
 
@@ -137,12 +156,20 @@ export function AdminShell({
                       : 'border-transparent text-white/55 hover:border-white/8 hover:bg-white/[.04] hover:text-white'
                   }`}
                 >
-                  <span className={`flex h-9 w-9 items-center justify-center rounded-xl border text-base ${active ? 'border-amber-200/25 bg-amber-200/10 text-amber-100' : 'border-white/8 bg-black/15 text-white/45'}`}>
+                  <span
+                    className={`flex h-9 w-9 items-center justify-center rounded-xl border text-base ${
+                      active
+                        ? 'border-amber-200/25 bg-amber-200/10 text-amber-100'
+                        : 'border-white/8 bg-black/15 text-white/45'
+                    }`}
+                  >
                     {item.icon}
                   </span>
                   <span>
                     <span className="block text-sm font-semibold">{item.label}</span>
-                    <span className="mt-0.5 block text-[11px] text-white/35">{item.description}</span>
+                    <span className="mt-0.5 block text-[11px] text-white/35">
+                      {item.description}
+                    </span>
                   </span>
                 </Link>
               );
@@ -150,9 +177,11 @@ export function AdminShell({
           </nav>
 
           <div className="mt-auto rounded-2xl border border-emerald-200/12 bg-emerald-200/[.045] p-4">
-            <p className="text-[10px] font-semibold uppercase tracking-[.18em] text-emerald-100/60">Simple rule</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[.18em] text-emerald-100/60">
+              Simple rule
+            </p>
             <p className="mt-2 text-xs leading-5 text-white/48">
-              Green means ready. Amber needs review. Red must be fixed before publishing.
+              Green means ready. Amber needs review. Red must be fixed before publishing or confirming.
             </p>
           </div>
         </aside>
@@ -183,7 +212,7 @@ export function AdminShell({
         </main>
 
         <nav
-          className="fixed inset-x-3 bottom-2 z-30 grid h-[calc(4.35rem+env(safe-area-inset-bottom))] grid-cols-3 gap-1 rounded-[1.35rem] border border-white/10 bg-[linear-gradient(180deg,rgba(15,14,13,.96),rgba(8,8,8,.97))] p-1.5 pb-[calc(.375rem+env(safe-area-inset-bottom))] text-center text-[11px] shadow-[0_20px_70px_rgba(0,0,0,.6)] backdrop-blur-2xl md:hidden"
+          className="fixed inset-x-3 bottom-2 z-30 grid h-[calc(4.35rem+env(safe-area-inset-bottom))] grid-cols-4 gap-1 rounded-[1.35rem] border border-white/10 bg-[linear-gradient(180deg,rgba(15,14,13,.96),rgba(8,8,8,.97))] p-1.5 pb-[calc(.375rem+env(safe-area-inset-bottom))] text-center text-[10px] shadow-[0_20px_70px_rgba(0,0,0,.6)] backdrop-blur-2xl md:hidden"
           aria-label="Mobile navigation"
         >
           {nav.map((item) => {
@@ -196,14 +225,14 @@ export function AdminShell({
                 key={item.href}
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
-                className={`flex flex-col items-center justify-center rounded-2xl px-2 py-1 outline-none focus:ring-2 focus:ring-amber-200/50 ${
+                className={`flex flex-col items-center justify-center rounded-2xl px-1 py-1 outline-none focus:ring-2 focus:ring-amber-200/50 ${
                   active
                     ? 'bg-[linear-gradient(135deg,rgba(246,183,60,.16),rgba(18,120,106,.08))] text-amber-100'
                     : 'text-white/58'
                 }`}
               >
                 <span className="text-base">{item.icon}</span>
-                <span className="mt-0.5 font-semibold">{item.label}</span>
+                <span className="mt-0.5 truncate font-semibold">{item.label}</span>
               </Link>
             );
           })}
