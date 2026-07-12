@@ -25,6 +25,7 @@ const event: OperationsEvent = {
 
 const brief: CampaignBrief = {
   theme: '80s goth and darkwave',
+  publicSubtitle: 'Noche Oscura',
   targetAudience: 'goth, post-punk, and alternative music fans in Los Angeles',
   objective: 'reservations',
   tone: 'cinematic, nocturnal, and welcoming',
