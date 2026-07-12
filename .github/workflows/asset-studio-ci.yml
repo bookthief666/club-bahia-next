@@ -6,6 +6,7 @@ on:
       - codex/milestone-4a-asset-studio
       - codex/milestone-4b-post-assembly
       - codex/milestone-4c-publishing-execution
+      - codex/milestone-4d-integrity-ux
   pull_request:
     branches:
       - codex/milestone-3e-review-optimization
