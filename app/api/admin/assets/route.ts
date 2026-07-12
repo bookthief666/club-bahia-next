@@ -1,0 +1,196 @@
+import { del, list, put } from '@vercel/blob';
+import { NextResponse } from 'next/server';
+import { isMockAdminEnabled } from '@/lib/admin/mock-auth';
+import type { EventAsset } from '@/lib/admin/assets/domain';
+import {
+  eventAssetMetadataPath,
+  eventAssetPrefix,
+  requireAssetAccess,
+} from '@/lib/admin/assets/server';
+import {
+  EventAssetDeleteSchema,
+  EventAssetSchema,
+} from '@/lib/admin/assets/validation';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+const NO_STORE_HEADERS = { 'Cache-Control': 'no-store, max-age=0' };
+
+function unauthorized() {
+  return NextResponse.json(
+    { error: 'Event media access is not authorized.' },
+    { status: 401, headers: NO_STORE_HEADERS },
+  );
+}
+
+async function listAllMetadata(eventId: string): Promise<EventAsset[]> {
+  const prefix = eventAssetPrefix(eventId);
+  const metadataBlobs: Array<{ url: string }> = [];
+  let cursor: string | undefined;
+
+  do {
+    const result = await list({ prefix, limit: 1000, cursor });
+    metadataBlobs.push(
+      ...result.blobs
+        .filter((blob) => blob.pathname.endsWith('/metadata.json'))
+        .map((blob) => ({ url: blob.url })),
+    );
+    cursor = result.hasMore ? result.cursor : undefined;
+  } while (cursor && metadataBlobs.length < 500);
+
+  const assets = await Promise.all(
+    metadataBlobs.map(async ({ url }) => {
+      try {
+        const response = await fetch(`${url}?v=${Date.now()}`, {
+          cache: 'no-store',
+        });
+        if (!response.ok) return null;
+        const parsed = EventAssetSchema.safeParse(await response.json());
+        return parsed.success ? parsed.data : null;
+      } catch {
+        return null;
+      }
+    }),
+  );
+
+  return assets
+    .filter((asset): asset is EventAsset => Boolean(asset))
+    .sort(
+      (left, right) =>
+        new Date(right.uploadedAt).getTime() - new Date(left.uploadedAt).getTime(),
+    );
+}
+
+export async function GET(request: Request) {
+  if (!isMockAdminEnabled) return unauthorized();
+
+  try {
+    requireAssetAccess(request);
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Unauthorized.' },
+      { status: 401, headers: NO_STORE_HEADERS },
+    );
+  }
+
+  const eventId = new URL(request.url).searchParams.get('eventId')?.trim() ?? '';
+  if (!/^[a-zA-Z0-9_-]{1,160}$/.test(eventId)) {
+    return NextResponse.json(
+      { error: 'A valid eventId is required.' },
+      { status: 400, headers: NO_STORE_HEADERS },
+    );
+  }
+
+  try {
+    const assets = await listAllMetadata(eventId);
+    return NextResponse.json({ assets }, { headers: NO_STORE_HEADERS });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Could not load event media.' },
+      { status: 500, headers: NO_STORE_HEADERS },
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  if (!isMockAdminEnabled) return unauthorized();
+
+  try {
+    requireAssetAccess(request);
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Unauthorized.' },
+      { status: 401, headers: NO_STORE_HEADERS },
+    );
+  }
+
+  let rawBody: unknown;
+  try {
+    rawBody = await request.json();
+  } catch {
+    return NextResponse.json(
+      { error: 'Asset metadata must be valid JSON.' },
+      { status: 400, headers: NO_STORE_HEADERS },
+    );
+  }
+
+  const parsed = EventAssetSchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: 'Asset metadata failed validation.', details: parsed.error.flatten() },
+      { status: 400, headers: NO_STORE_HEADERS },
+    );
+  }
+
+  try {
+    const metadataPath = eventAssetMetadataPath(parsed.data.eventId, parsed.data.id);
+    const metadataBlob = await put(metadataPath, JSON.stringify(parsed.data), {
+      access: 'public',
+      addRandomSuffix: false,
+      allowOverwrite: true,
+      contentType: 'application/json',
+      cacheControlMaxAge: 60,
+    });
+
+    return NextResponse.json(
+      { asset: parsed.data, metadataUrl: metadataBlob.url },
+      { headers: NO_STORE_HEADERS },
+    );
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Could not save asset metadata.' },
+      { status: 500, headers: NO_STORE_HEADERS },
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  if (!isMockAdminEnabled) return unauthorized();
+
+  try {
+    requireAssetAccess(request);
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Unauthorized.' },
+      { status: 401, headers: NO_STORE_HEADERS },
+    );
+  }
+
+  let rawBody: unknown;
+  try {
+    rawBody = await request.json();
+  } catch {
+    return NextResponse.json(
+      { error: 'Delete request must be valid JSON.' },
+      { status: 400, headers: NO_STORE_HEADERS },
+    );
+  }
+
+  const parsed = EventAssetDeleteSchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: 'Delete request failed validation.' },
+      { status: 400, headers: NO_STORE_HEADERS },
+    );
+  }
+
+  try {
+    const metadataPath = eventAssetMetadataPath(
+      parsed.data.eventId,
+      parsed.data.assetId,
+    );
+    const metadataList = await list({ prefix: metadataPath, limit: 10 });
+    const metadataUrl = metadataList.blobs.find(
+      (blob) => blob.pathname === metadataPath,
+    )?.url;
+
+    await del([parsed.data.fileUrl, ...(metadataUrl ? [metadataUrl] : [])]);
+    return NextResponse.json({ deleted: true }, { headers: NO_STORE_HEADERS });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Could not delete event media.' },
+      { status: 500, headers: NO_STORE_HEADERS },
+    );
+  }
+}
