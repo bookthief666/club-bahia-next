@@ -3,9 +3,11 @@ import {
   ReservationSubmissionSchema,
   type ReservationReceipt,
 } from '@/lib/reservations/domain';
+import { findRecentDuplicateReservation } from '@/lib/reservations/dedupe';
 import {
   createStoredReservation,
   isReservationStorageConfigured,
+  listStoredReservations,
 } from '@/lib/reservations/server';
 import { getPublicEventCard } from '@/lib/public-events/server';
 
@@ -28,6 +30,22 @@ function isFridayOrSaturday(value: string): boolean {
   const date = new Date(Date.UTC(year, month - 1, day));
   const weekday = date.getUTCDay();
   return weekday === 5 || weekday === 6;
+}
+
+function receiptFromReservation(reservation: {
+  id: string;
+  createdAt: string;
+  eventTitle: string;
+  date: string;
+  guests: number;
+}): ReservationReceipt {
+  return {
+    id: reservation.id,
+    receivedAt: reservation.createdAt,
+    eventTitle: reservation.eventTitle || undefined,
+    date: reservation.date,
+    guests: reservation.guests,
+  };
 }
 
 export async function POST(request: Request) {
@@ -140,21 +158,26 @@ export async function POST(request: Request) {
   }
 
   try {
-    const reservation = await createStoredReservation({
+    const canonicalSubmission = {
       ...submission,
       eventTitle: canonicalEventTitle,
       eventId: canonicalEventId,
-    });
-    const receipt: ReservationReceipt = {
-      id: reservation.id,
-      receivedAt: reservation.createdAt,
-      eventTitle: reservation.eventTitle || undefined,
-      date: reservation.date,
-      guests: reservation.guests,
     };
+    const recentReservations = await listStoredReservations();
+    const duplicate = findRecentDuplicateReservation(
+      recentReservations,
+      canonicalSubmission,
+    );
+    if (duplicate) {
+      return NextResponse.json(
+        { receipt: receiptFromReservation(duplicate), duplicate: true },
+        { status: 200, headers: NO_STORE_HEADERS },
+      );
+    }
 
+    const reservation = await createStoredReservation(canonicalSubmission);
     return NextResponse.json(
-      { receipt },
+      { receipt: receiptFromReservation(reservation), duplicate: false },
       { status: 201, headers: NO_STORE_HEADERS },
     );
   } catch (error) {
