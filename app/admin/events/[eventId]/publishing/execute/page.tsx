@@ -1,4 +1,5 @@
-import { PublishingExecutionClient } from '@/components/admin/publishing/PublishingExecutionClient';
+import { CampaignLaunchClient } from '@/components/admin/publishing/CampaignLaunchClient';
+import { CampaignWorkflowNav } from '@/components/admin/workflow/CampaignWorkflowNav';
 
 export default async function EventPublishingExecutionPage({
   params,
@@ -6,5 +7,11 @@ export default async function EventPublishingExecutionPage({
   params: Promise<{ eventId: string }>;
 }) {
   const { eventId } = await params;
-  return <PublishingExecutionClient eventId={eventId} />;
+
+  return (
+    <>
+      <CampaignWorkflowNav eventId={eventId} />
+      <CampaignLaunchClient eventId={eventId} />
+    </>
+  );
 }
