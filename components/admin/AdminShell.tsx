@@ -5,10 +5,34 @@ import { usePathname } from 'next/navigation';
 import type { AdminUser } from '@/lib/admin/domain';
 
 const nav = [
-  { label: 'Home', href: '/admin', icon: '◆', description: 'Today’s priorities' },
-  { label: 'Events', href: '/admin/events', icon: '◐', description: 'Plan and promote' },
-  { label: 'Reservations', href: '/admin/reservations', icon: '✦', description: 'Guest requests' },
-  { label: 'Calendar', href: '/admin/calendar', icon: '◷', description: 'See the schedule' },
+  {
+    label: 'Home',
+    mobileLabel: 'Home',
+    href: '/admin',
+    icon: '◆',
+    description: 'Today’s priorities',
+  },
+  {
+    label: 'Events',
+    mobileLabel: 'Events',
+    href: '/admin/events',
+    icon: '◐',
+    description: 'Plan and promote',
+  },
+  {
+    label: 'Reservations',
+    mobileLabel: 'Guests',
+    href: '/admin/reservations',
+    icon: '✦',
+    description: 'Guest requests',
+  },
+  {
+    label: 'Calendar',
+    mobileLabel: 'Calendar',
+    href: '/admin/calendar',
+    icon: '◷',
+    description: 'See the schedule',
+  },
 ];
 
 function pageIdentity(pathname: string): {
@@ -46,9 +70,9 @@ function pageIdentity(pathname: string): {
   }
   if (pathname.startsWith('/admin/reservations')) {
     return {
-      eyebrow: 'Club Bahia guest operations',
-      title: 'Reservations',
-      subtitle: 'Review new website requests and follow up with guests.',
+      eyebrow: 'Club Bahia operations',
+      title: 'Guest operations',
+      subtitle: 'Review website requests and follow up with guests.',
     };
   }
   if (pathname.startsWith('/admin/calendar')) {
@@ -110,8 +134,8 @@ export function AdminShell({
         <div className="absolute inset-0 opacity-[.035] [background-image:linear-gradient(rgba(255,255,255,.25)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.2)_1px,transparent_1px)] [background-size:48px_48px] [mask-image:radial-gradient(circle_at_center,black,transparent_86%)]" />
       </div>
 
-      <div className="relative mx-auto flex min-h-screen w-full max-w-[1580px] flex-col pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:flex-row md:pb-0">
-        <aside className="hidden w-72 shrink-0 border-r border-white/8 bg-[linear-gradient(180deg,rgba(12,16,14,.94),rgba(10,9,8,.9))] px-5 py-6 backdrop-blur-2xl md:flex md:flex-col">
+      <div className="relative mx-auto flex min-h-screen w-full max-w-[1580px] flex-col pb-[calc(7rem+env(safe-area-inset-bottom))] lg:flex-row lg:pb-0">
+        <aside className="hidden w-64 shrink-0 border-r border-white/8 bg-[linear-gradient(180deg,rgba(12,16,14,.94),rgba(10,9,8,.9))] px-4 py-5 backdrop-blur-2xl lg:flex lg:flex-col xl:w-72 xl:px-5 xl:py-6">
           <Link
             href="/admin"
             className="block rounded-2xl p-2 outline-none focus-visible:ring-2 focus-visible:ring-emerald-200/50"
@@ -186,13 +210,13 @@ export function AdminShell({
           </div>
         </aside>
 
-        <main className="min-w-0 flex-1 px-3 py-3 min-[390px]:px-4 sm:px-6 sm:py-5 lg:px-8">
-          <header className="sticky top-2 z-10 mb-5 flex items-center justify-between gap-3 rounded-[1.35rem] border border-white/10 bg-[linear-gradient(135deg,rgba(16,18,16,.9),rgba(19,13,11,.88))] px-4 py-3 shadow-[0_20px_55px_rgba(0,0,0,.28)] backdrop-blur-2xl sm:px-5 sm:py-4">
+        <main className="min-w-0 flex-1 px-3 py-3 min-[390px]:px-4 sm:px-5 sm:py-4 md:px-6 lg:px-7 lg:py-5 xl:px-8">
+          <header className="sticky top-2 z-10 mb-4 flex items-center justify-between gap-3 rounded-[1.2rem] border border-white/10 bg-[linear-gradient(135deg,rgba(16,18,16,.9),rgba(19,13,11,.88))] px-3 py-2.5 shadow-[0_20px_55px_rgba(0,0,0,.28)] backdrop-blur-2xl sm:mb-5 sm:rounded-[1.35rem] sm:px-5 sm:py-4">
             <div className="min-w-0">
-              <p className="truncate text-[10px] font-semibold uppercase tracking-[.2em] text-emerald-200/62">
+              <p className="truncate text-[9px] font-semibold uppercase tracking-[.18em] text-emerald-200/62 sm:text-[10px] sm:tracking-[.2em]">
                 {identity.eyebrow}
               </p>
-              <h2 className="mt-1 truncate font-serif text-2xl text-white sm:text-3xl">
+              <h2 className="mt-0.5 truncate font-serif text-xl text-white sm:mt-1 sm:text-3xl">
                 {identity.title}
               </h2>
               <p className="mt-1 hidden truncate text-xs text-white/40 sm:block">
@@ -200,7 +224,7 @@ export function AdminShell({
               </p>
             </div>
             <div
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-amber-200/25 bg-[radial-gradient(circle_at_35%_25%,rgba(246,183,60,.2),rgba(15,13,11,.95))] text-xs font-bold text-amber-100 shadow-[0_0_24px_rgba(246,183,60,.08)]"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-amber-200/25 bg-[radial-gradient(circle_at_35%_25%,rgba(246,183,60,.2),rgba(15,13,11,.95))] text-[10px] font-bold text-amber-100 shadow-[0_0_24px_rgba(246,183,60,.08)] sm:h-11 sm:w-11 sm:text-xs"
               aria-label={`${user.name}, ${user.role}`}
               title={`${user.name} · ${user.role}`}
             >
@@ -212,7 +236,7 @@ export function AdminShell({
         </main>
 
         <nav
-          className="fixed inset-x-3 bottom-2 z-30 grid h-[calc(4.35rem+env(safe-area-inset-bottom))] grid-cols-4 gap-1 rounded-[1.35rem] border border-white/10 bg-[linear-gradient(180deg,rgba(15,14,13,.96),rgba(8,8,8,.97))] p-1.5 pb-[calc(.375rem+env(safe-area-inset-bottom))] text-center text-[10px] shadow-[0_20px_70px_rgba(0,0,0,.6)] backdrop-blur-2xl md:hidden"
+          className="fixed inset-x-2 bottom-2 z-30 mx-auto grid h-[calc(4rem+env(safe-area-inset-bottom))] max-w-2xl grid-cols-4 gap-1 rounded-[1.2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(15,14,13,.96),rgba(8,8,8,.97))] p-1.5 pb-[calc(.375rem+env(safe-area-inset-bottom))] text-center text-[9px] shadow-[0_20px_70px_rgba(0,0,0,.6)] backdrop-blur-2xl sm:inset-x-4 sm:h-[calc(4.25rem+env(safe-area-inset-bottom))] sm:rounded-[1.35rem] sm:text-[10px] lg:hidden"
           aria-label="Mobile navigation"
         >
           {nav.map((item) => {
@@ -225,14 +249,16 @@ export function AdminShell({
                 key={item.href}
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
-                className={`flex flex-col items-center justify-center rounded-2xl px-1 py-1 outline-none focus:ring-2 focus:ring-amber-200/50 ${
+                className={`flex min-w-0 flex-col items-center justify-center rounded-xl px-1 py-1 outline-none focus:ring-2 focus:ring-amber-200/50 sm:rounded-2xl ${
                   active
                     ? 'bg-[linear-gradient(135deg,rgba(246,183,60,.16),rgba(18,120,106,.08))] text-amber-100'
                     : 'text-white/58'
                 }`}
               >
-                <span className="text-base">{item.icon}</span>
-                <span className="mt-0.5 truncate font-semibold">{item.label}</span>
+                <span className="text-sm sm:text-base">{item.icon}</span>
+                <span className="mt-0.5 max-w-full truncate font-semibold">
+                  {item.mobileLabel}
+                </span>
               </Link>
             );
           })}
