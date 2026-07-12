@@ -6,6 +6,7 @@ import {
   eventAssetMetadataPath,
   eventAssetPrefix,
   requireAssetAccess,
+  setAssetSessionCookie,
 } from '@/lib/admin/assets/server';
 import {
   EventAssetDeleteSchema,
@@ -22,6 +23,15 @@ function unauthorized() {
     { error: 'Event media access is not authorized.' },
     { status: 401, headers: NO_STORE_HEADERS },
   );
+}
+
+function authorizedJson(body: unknown, init?: { status?: number }) {
+  const response = NextResponse.json(body, {
+    status: init?.status,
+    headers: NO_STORE_HEADERS,
+  });
+  setAssetSessionCookie(response);
+  return response;
 }
 
 async function listAllMetadata(eventId: string): Promise<EventAsset[]> {
@@ -86,7 +96,7 @@ export async function GET(request: Request) {
 
   try {
     const assets = await listAllMetadata(eventId);
-    return NextResponse.json({ assets }, { headers: NO_STORE_HEADERS });
+    return authorizedJson({ assets });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Could not load event media.' },
@@ -135,10 +145,7 @@ export async function POST(request: Request) {
       cacheControlMaxAge: 60,
     });
 
-    return NextResponse.json(
-      { asset: parsed.data, metadataUrl: metadataBlob.url },
-      { headers: NO_STORE_HEADERS },
-    );
+    return authorizedJson({ asset: parsed.data, metadataUrl: metadataBlob.url });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Could not save asset metadata.' },
@@ -188,7 +195,7 @@ export async function DELETE(request: Request) {
     )?.url;
 
     await del([parsed.data.fileUrl, ...(metadataUrl ? [metadataUrl] : [])]);
-    return NextResponse.json({ deleted: true }, { headers: NO_STORE_HEADERS });
+    return authorizedJson({ deleted: true });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Could not delete event media.' },
