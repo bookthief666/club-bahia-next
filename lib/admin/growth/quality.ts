@@ -6,58 +6,6 @@ import type {
   EventGrowthWorkspace,
 } from '@/lib/admin/growth/domain';
 
-const STOP_WORDS = new Set([
-  'a',
-  'an',
-  'and',
-  'at',
-  'club',
-  'de',
-  'del',
-  'el',
-  'en',
-  'for',
-  'la',
-  'las',
-  'los',
-  'night',
-  'of',
-  'the',
-  'y',
-]);
-
-function normalizedTokens(value: string): Set<string> {
-  return new Set(
-    value
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, ' ')
-      .split(/\s+/)
-      .map((token) => token.trim())
-      .filter((token) => token.length > 2 && !STOP_WORDS.has(token)),
-  );
-}
-
-function overlapRatio(left: string, right: string): number {
-  const a = normalizedTokens(left);
-  const b = normalizedTokens(right);
-  if (!a.size || !b.size) return 0;
-
-  const intersection = [...a].filter((token) => b.has(token)).length;
-  return intersection / Math.min(a.size, b.size);
-}
-
-export function hasCampaignIdentityConflict(
-  eventTitle: string,
-  theme: string,
-  publicSubtitle: string,
-): boolean {
-  if (publicSubtitle.trim()) return false;
-  if (!theme.trim() || eventTitle.trim().toLowerCase() === theme.trim().toLowerCase()) return false;
-  return overlapRatio(eventTitle, theme) < 0.25;
-}
-
 function issue(
   id: string,
   severity: CampaignQualityIssue['severity'],
@@ -95,30 +43,36 @@ function repeatedPublicLines(workspace: EventGrowthWorkspace): string[] {
     .slice(0, 3);
 }
 
+function spanishSections(workspace: EventGrowthWorkspace): string {
+  return workspace.content
+    .map((item) => {
+      const parts = item.body.split(/—\s*Español\s*—/i);
+      return parts.length > 1 ? parts.slice(1).join('\n') : '';
+    })
+    .filter(Boolean)
+    .join('\n')
+    .toLowerCase();
+}
+
 export function buildCampaignQualityReport(
   event: OperationsEvent,
   workspace: EventGrowthWorkspace,
 ): CampaignQualityReport {
   const issues: CampaignQualityIssue[] = [];
-  const titleConflict = hasCampaignIdentityConflict(
-    event.title,
-    workspace.brief.theme,
-    workspace.brief.publicSubtitle,
-  );
+  const combinedCopy = workspace.content.map((item) => item.body).join('\n').toLowerCase();
+  const internalAudience = workspace.brief.targetAudience.trim().toLowerCase();
 
-  if (titleConflict) {
+  if (!combinedCopy.includes(event.title.toLowerCase())) {
     issues.push(
       issue(
-        'identity-conflict',
+        'missing-public-event-name',
         'warning',
-        'Event identity needs clarification',
-        `The official title “${event.title}” and campaign theme “${workspace.brief.theme}” read like different events. Add a public subtitle or rename the event before publishing.`,
+        'Public event name is missing from the campaign',
+        `Use “${event.title}” consistently. The campaign theme is internal creative direction, not a second event name.`,
       ),
     );
   }
 
-  const combinedCopy = workspace.content.map((item) => item.body).join('\n').toLowerCase();
-  const internalAudience = workspace.brief.targetAudience.trim().toLowerCase();
   if (internalAudience.length >= 20 && combinedCopy.includes(internalAudience)) {
     issues.push(
       issue(
@@ -141,9 +95,10 @@ export function buildCampaignQualityReport(
     );
   }
 
+  const englishCtaPattern = /\b(reserve now|buy tickets|learn more|book now)\b/i;
   if (
     workspace.brief.language === 'spanish' &&
-    /\b(reserve now|buy tickets|learn more|book now)\b/i.test(combinedCopy)
+    englishCtaPattern.test(combinedCopy)
   ) {
     issues.push(
       issue(
@@ -151,6 +106,20 @@ export function buildCampaignQualityReport(
         'warning',
         'English CTA found in a Spanish-only campaign',
         'Translate the call to action naturally before approval.',
+      ),
+    );
+  }
+
+  if (
+    workspace.brief.language === 'bilingual' &&
+    englishCtaPattern.test(spanishSections(workspace))
+  ) {
+    issues.push(
+      issue(
+        'bilingual-spanish-cta',
+        'warning',
+        'English CTA found inside a Spanish section',
+        'Keep English and Spanish calls to action inside their respective language sections.',
       ),
     );
   }
@@ -216,7 +185,6 @@ export function buildCampaignQualityReport(
 
   return {
     score: Math.max(0, 100 - penalty),
-    titleConflict,
     issues,
   };
 }
