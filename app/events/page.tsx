@@ -1,18 +1,25 @@
-import type { Metadata } from "next";
-import { EventsExperience } from "@/components/events/EventsExperience";
+import type { Metadata } from 'next';
+import { EventsExperience } from '@/components/events/EventsExperience';
+import { listPublicEventCards } from '@/lib/public-events/server';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: "Upcoming Events",
+  title: 'Upcoming Events',
   description:
-    "Explore Club Bahia programming for live music, dance nights, private events, birthdays, and reservation inquiries.",
+    'Explore upcoming Club Bahia events, live music, dance nights, birthdays, private events, and online reservation requests.',
   openGraph: {
-    title: "Upcoming Events | Club Bahia",
+    title: 'Upcoming Events | Club Bahia',
     description:
-      "Upcoming Club Bahia programming, private events, birthdays, and reservations on Sunset Boulevard.",
-    url: "/events",
+      'Upcoming Club Bahia programming and reservation-ready events on Sunset Boulevard in Los Angeles.',
+    url: '/events',
   },
 };
 
-export default function EventsPage() {
-  return <EventsExperience />;
+export default async function EventsPage() {
+  const events = await listPublicEventCards({
+    includePreview: process.env.VERCEL_ENV === 'preview',
+  });
+
+  return <EventsExperience events={events} />;
 }
