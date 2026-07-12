@@ -9,20 +9,28 @@ import type {
   CampaignItemStatus,
   CampaignMilestone,
   CampaignMilestoneStatus,
+  CampaignRevision,
   EventGrowthWorkspace,
   PublishingMode,
 } from './domain';
 import { ApiCampaignGenerator } from './api-generator';
 
 const STORAGE_KEY = 'club-bahia-growth-workspaces-v1';
+export const GROWTH_WORKSPACE_UPDATED_EVENT = 'club-bahia-growth-workspace-updated';
+const MAX_REVISIONS = 5;
 
 type StoredBrief = Partial<CampaignBrief> & { primaryGoal?: string };
 type StoredContentItem = Omit<Partial<CampaignContentItem>, 'status'> & {
   status?: CampaignItemStatus | 'manual';
 };
-type StoredWorkspace = Omit<Partial<EventGrowthWorkspace>, 'brief' | 'content'> & {
+type StoredRevision = Omit<Partial<CampaignRevision>, 'brief' | 'content'> & {
   brief?: StoredBrief;
   content?: StoredContentItem[];
+};
+type StoredWorkspace = Omit<Partial<EventGrowthWorkspace>, 'brief' | 'content' | 'history'> & {
+  brief?: StoredBrief;
+  content?: StoredContentItem[];
+  history?: StoredRevision[];
 };
 
 function clone<T>(value: T): T {
@@ -32,6 +40,7 @@ function clone<T>(value: T): T {
 function defaultBrief(event: OperationsEvent): CampaignBrief {
   return {
     theme: event.title,
+    publicSubtitle: '',
     targetAudience: 'Club Bahia regulars and nearby Los Angeles nightlife audiences',
     objective: 'reservations',
     tone: 'energetic, stylish, and welcoming',
@@ -65,6 +74,7 @@ function normalizeBrief(event: OperationsEvent, stored?: StoredBrief): CampaignB
   return {
     ...defaults,
     ...stored,
+    publicSubtitle: stored.publicSubtitle ?? '',
     objective: stored.objective ?? objectiveFromLegacy(stored.primaryGoal),
     language: stored.language ?? defaults.language,
   };
@@ -113,6 +123,28 @@ function normalizeContentItem(item: StoredContentItem): CampaignContentItem | nu
   };
 }
 
+function normalizeRevision(
+  event: OperationsEvent,
+  stored: StoredRevision,
+): CampaignRevision | null {
+  if (!stored.id || !stored.generatedAt || !stored.brief) return null;
+
+  const content = (stored.content ?? [])
+    .map(normalizeContentItem)
+    .filter((item): item is CampaignContentItem => item !== null);
+
+  if (!content.length) return null;
+
+  return {
+    id: stored.id,
+    generatedAt: stored.generatedAt,
+    provider: stored.provider,
+    model: stored.model,
+    brief: normalizeBrief(event, stored.brief),
+    content,
+  };
+}
+
 function emptyWorkspace(event: OperationsEvent): EventGrowthWorkspace {
   return {
     eventId: event.id,
@@ -120,6 +152,7 @@ function emptyWorkspace(event: OperationsEvent): EventGrowthWorkspace {
     readinessScore: 18,
     content: [],
     milestones: [],
+    history: [],
     updatedAt: new Date().toISOString(),
   };
 }
@@ -146,6 +179,17 @@ function milestoneStatusForContent(status: CampaignItemStatus): CampaignMileston
   return 'ready';
 }
 
+function milestonesForContent(content: CampaignContentItem[]): CampaignMilestone[] {
+  return content.map((item) => ({
+    id: `milestone-${item.id}`,
+    title: `Review ${item.title.toLowerCase()}`,
+    dueAt: item.publishAt ?? new Date().toISOString(),
+    status: milestoneStatusForContent(item.status),
+    channel: item.channel,
+    contentItemId: item.id,
+  }));
+}
+
 function normalizeWorkspace(
   event: OperationsEvent,
   stored?: StoredWorkspace,
@@ -155,18 +199,36 @@ function normalizeWorkspace(
   const content = (stored.content ?? [])
     .map(normalizeContentItem)
     .filter((item): item is CampaignContentItem => item !== null);
+  const history = (stored.history ?? [])
+    .map((revision) => normalizeRevision(event, revision))
+    .filter((revision): revision is CampaignRevision => revision !== null)
+    .slice(0, MAX_REVISIONS);
 
   return {
     eventId: event.id,
     brief: normalizeBrief(event, stored.brief),
     readinessScore: content.length ? calculateReadiness(content) : 18,
     content,
-    milestones: Array.isArray(stored.milestones) ? stored.milestones : [],
+    milestones: Array.isArray(stored.milestones)
+      ? stored.milestones
+      : milestonesForContent(content),
+    history,
     generatedAt: stored.generatedAt,
     generationProvider: stored.generationProvider,
     generationModel: stored.generationModel,
     generationWarning: stored.generationWarning,
     updatedAt: stored.updatedAt ?? new Date().toISOString(),
+  };
+}
+
+function snapshotWorkspace(workspace: EventGrowthWorkspace): CampaignRevision {
+  return {
+    id: `revision-${Date.now()}`,
+    generatedAt: workspace.generatedAt ?? workspace.updatedAt,
+    provider: workspace.generationProvider,
+    model: workspace.generationModel,
+    brief: clone(workspace.brief),
+    content: clone(workspace.content),
   };
 }
 
@@ -195,6 +257,7 @@ export interface GrowthWorkspaceRepository {
     contentItemId: string,
     status: CampaignItemStatus,
   ): Promise<EventGrowthWorkspace>;
+  restoreRevision(event: OperationsEvent, revisionId: string): Promise<EventGrowthWorkspace>;
 }
 
 export class BrowserGrowthWorkspaceRepository implements GrowthWorkspaceRepository {
@@ -218,6 +281,13 @@ export class BrowserGrowthWorkspaceRepository implements GrowthWorkspaceReposito
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(workspaces));
   }
 
+  private notify(eventId: string): void {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(
+      new CustomEvent(GROWTH_WORKSPACE_UPDATED_EVENT, { detail: { eventId } }),
+    );
+  }
+
   private save(workspace: EventGrowthWorkspace): EventGrowthWorkspace {
     const all = this.readAll();
     const next: EventGrowthWorkspace = {
@@ -227,6 +297,7 @@ export class BrowserGrowthWorkspaceRepository implements GrowthWorkspaceReposito
 
     all[workspace.eventId] = next;
     this.writeAll(all);
+    this.notify(workspace.eventId);
     return clone(next);
   }
 
@@ -246,12 +317,21 @@ export class BrowserGrowthWorkspaceRepository implements GrowthWorkspaceReposito
     event: OperationsEvent,
     brief: CampaignBrief,
   ): Promise<EventGrowthWorkspace> {
+    const current = await this.getWorkspace(event);
     const generated = await this.generator.generate(event, brief);
+    const generationMeta = generated as Partial<EventGrowthWorkspace>;
+    const history = current.content.length
+      ? [snapshotWorkspace(current), ...current.history].slice(0, MAX_REVISIONS)
+      : current.history;
 
     return this.save({
       eventId: event.id,
       brief,
       ...generated,
+      history,
+      generationProvider: generationMeta.generationProvider,
+      generationModel: generationMeta.generationModel,
+      generationWarning: generationMeta.generationWarning,
       generatedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     });
@@ -350,6 +430,40 @@ export class BrowserGrowthWorkspaceRepository implements GrowthWorkspaceReposito
       content,
       milestones,
       readinessScore: calculateReadiness(content),
+    });
+  }
+
+  async restoreRevision(
+    event: OperationsEvent,
+    revisionId: string,
+  ): Promise<EventGrowthWorkspace> {
+    const current = await this.getWorkspace(event);
+    const revision = current.history.find((item) => item.id === revisionId);
+    if (!revision) throw new Error('Campaign revision not found.');
+
+    const currentSnapshot = current.content.length ? snapshotWorkspace(current) : null;
+    const remainingHistory = current.history.filter((item) => item.id !== revisionId);
+    const history = [
+      ...(currentSnapshot ? [currentSnapshot] : []),
+      ...remainingHistory,
+    ].slice(0, MAX_REVISIONS);
+    const content = clone(revision.content).map((item) => ({
+      ...item,
+      status: 'draft' as const,
+      updatedAt: new Date().toISOString(),
+    }));
+
+    return this.save({
+      ...current,
+      brief: clone(revision.brief),
+      content,
+      milestones: milestonesForContent(content),
+      readinessScore: calculateReadiness(content),
+      history,
+      generatedAt: revision.generatedAt,
+      generationProvider: revision.provider,
+      generationModel: revision.model,
+      generationWarning: undefined,
     });
   }
 }
