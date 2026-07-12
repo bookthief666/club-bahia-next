@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "latest",
+    "@vercel/blob": "^2.6.1",
     "framer-motion": "latest",
     "next": "^15.5.20",
     "react": "latest",
