@@ -93,7 +93,7 @@ function normalize(value: string): string {
     .trim();
 }
 
-function issue(
+function makeIssue(
   id: string,
   severity: CampaignIntegritySeverity,
   title: string,
@@ -103,50 +103,48 @@ function issue(
   return { id, severity, title, detail, ...options };
 }
 
-function selectedAssets(
-  assembly: EventPostAssembly,
-  assets: EventAsset[],
-): Array<{ asset: EventAsset; channels: CampaignChannel[] }> {
-  const map = new Map<string, Set<CampaignChannel>>();
-  for (const postPackage of assembly.packages) {
-    if (!postPackage.primaryAssetId) continue;
-    const channels = map.get(postPackage.primaryAssetId) ?? new Set<CampaignChannel>();
-    channels.add(postPackage.channel);
-    map.set(postPackage.primaryAssetId, channels);
+function eventLocalMonthDay(startsAt: string): { month: number; day: number } {
+  const match = startsAt.match(/^\d{4}-(\d{2})-(\d{2})/);
+  if (match) {
+    return { month: Number(match[1]), day: Number(match[2]) };
   }
-
-  return [...map.entries()]
-    .map(([assetId, channels]) => {
-      const asset = assets.find((item) => item.id === assetId);
-      return asset ? { asset, channels: [...channels] } : null;
-    })
-    .filter(
-      (entry): entry is { asset: EventAsset; channels: CampaignChannel[] } =>
-        entry !== null,
-    );
+  const date = new Date(startsAt);
+  return { month: date.getUTCMonth() + 1, day: date.getUTCDate() };
 }
 
-function dateMentions(text: string): Array<{ month: number; day: number }> {
-  const matches: Array<{ month: number; day: number }> = [];
+function extractAge(text: string): string | undefined {
+  return text.match(/\b(18|21)\s*\+/i)?.[1];
+}
+
+function extractDates(text: string): Array<{ month: number; day: number }> {
+  const found: Array<{ month: number; day: number }> = [];
   const monthPattern = Object.keys(MONTHS).join('|');
-  const regex = new RegExp(`\\b(${monthPattern})\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b`, 'gi');
+  const regex = new RegExp(
+    `\\b(${monthPattern})\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b`,
+    'gi',
+  );
   let match: RegExpExecArray | null;
   while ((match = regex.exec(text))) {
     const month = MONTHS[match[1].toLowerCase()];
     const day = Number(match[2]);
-    if (month && day >= 1 && day <= 31) matches.push({ month, day });
+    if (month && day >= 1 && day <= 31) found.push({ month, day });
   }
-  return matches;
+  return found;
 }
 
-function genreMentions(text: string): string[] {
+function extractGenres(text: string): string[] {
   const normalized = normalize(text);
-  return KNOWN_GENRES.filter((genre) => normalized.includes(normalize(genre)));
+  return KNOWN_GENRES.filter((genre) => normalized.includes(normalize(genre))).map(
+    normalize,
+  );
 }
 
-function briefGenreSet(workspace: EventGrowthWorkspace): Set<string> {
-  const source = `${workspace.brief.genres} ${workspace.brief.theme} ${workspace.brief.mainAttraction}`;
-  return new Set(genreMentions(source).map(normalize));
+function campaignGenres(workspace: EventGrowthWorkspace): Set<string> {
+  return new Set(
+    extractGenres(
+      `${workspace.brief.genres} ${workspace.brief.theme} ${workspace.brief.mainAttraction}`,
+    ),
+  );
 }
 
 function splitPerformers(value: string): string[] {
@@ -161,8 +159,27 @@ function spanishSection(item: CampaignContentItem): string {
   return parts.length > 1 ? parts.slice(1).join('\n') : '';
 }
 
-function channelsForAssetText(channels: CampaignChannel[]): string {
-  return channels.join(', ');
+function selectedAssets(
+  assembly: EventPostAssembly,
+  assets: EventAsset[],
+): Array<{ asset: EventAsset; channels: CampaignChannel[] }> {
+  const channelMap = new Map<string, Set<CampaignChannel>>();
+  for (const postPackage of assembly.packages) {
+    if (!postPackage.primaryAssetId) continue;
+    const channels = channelMap.get(postPackage.primaryAssetId) ?? new Set();
+    channels.add(postPackage.channel);
+    channelMap.set(postPackage.primaryAssetId, channels);
+  }
+
+  return [...channelMap.entries()]
+    .map(([assetId, channels]) => {
+      const asset = assets.find((candidate) => candidate.id === assetId);
+      return asset ? { asset, channels: [...channels] } : null;
+    })
+    .filter(
+      (entry): entry is { asset: EventAsset; channels: CampaignChannel[] } =>
+        entry !== null,
+    );
 }
 
 export function buildCampaignIntegrityReport({
@@ -179,37 +196,35 @@ export function buildCampaignIntegrityReport({
   execution?: EventPublishingExecution;
 }): CampaignIntegrityReport {
   const issues: CampaignIntegrityIssue[] = [];
-  const eventDate = new Date(event.startsAt);
-  const eventMonth = eventDate.getMonth() + 1;
-  const eventDay = eventDate.getDate();
-  const briefAge = workspace.brief.ageRestriction.match(/\b(18|21)\+?\b/)?.[1];
-  const campaignGenres = briefGenreSet(workspace);
-  const performerNames = splitPerformers(workspace.brief.performers);
+  const eventDate = eventLocalMonthDay(event.startsAt);
+  const briefAge = extractAge(workspace.brief.ageRestriction);
+  const briefGenres = campaignGenres(workspace);
+  const performers = splitPerformers(workspace.brief.performers);
+  const chosenAssets = selectedAssets(assembly, assets);
 
-  const selected = selectedAssets(assembly, assets);
-  for (const { asset, channels } of selected) {
-    const text = `${asset.name}\n${asset.altText}\n${asset.notes}`;
-    const normalizedText = normalize(text);
-    const mentionedDates = dateMentions(text);
-    const mentionedAge = text.match(/\b(18|21)\+\b/)?.[1];
-    const assetGenres = genreMentions(text).map(normalize);
+  for (const { asset, channels } of chosenAssets) {
+    const assetText = `${asset.name}\n${asset.altText}\n${asset.notes}`;
+    const normalizedAssetText = normalize(assetText);
+    const dates = extractDates(assetText);
+    const assetAge = extractAge(assetText);
+    const assetGenres = extractGenres(assetText);
+    const destinations = channels.join(', ');
 
     if (
-      mentionedDates.length > 0 &&
-      !mentionedDates.some(
-        (mentioned) => mentioned.month === eventMonth && mentioned.day === eventDay,
+      dates.length > 0 &&
+      !dates.some(
+        (date) => date.month === eventDate.month && date.day === eventDate.day,
       )
     ) {
-      const first = mentionedDates[0];
+      const first = dates[0];
       issues.push(
-        issue(
+        makeIssue(
           `asset-date-${asset.id}`,
           'blocker',
           'The assigned media appears to show a different event date',
-          `“${asset.name}” mentions ${first.month}/${first.day}, while this event is scheduled for ${eventMonth}/${eventDay}. Check the flyer before publishing to ${channelsForAssetText(channels)}.`,
+          `“${asset.name}” mentions ${first.month}/${first.day}, while this event is scheduled for ${eventDate.month}/${eventDate.day}. It is assigned to ${destinations}.`,
           {
             assetId: asset.id,
-            channel: channels[0],
             actionHref: `/admin/events/${event.id}/assets`,
             actionLabel: 'Review event media',
           },
@@ -217,16 +232,15 @@ export function buildCampaignIntegrityReport({
       );
     }
 
-    if (briefAge && mentionedAge && briefAge !== mentionedAge) {
+    if (briefAge && assetAge && briefAge !== assetAge) {
       issues.push(
-        issue(
+        makeIssue(
           `asset-age-${asset.id}`,
           'blocker',
           'Age restriction conflicts with the assigned media',
-          `The campaign says ${briefAge}+, but “${asset.name}” appears to say ${mentionedAge}+.`,
+          `The campaign says ${briefAge}+, but “${asset.name}” appears to say ${assetAge}+.`,
           {
             assetId: asset.id,
-            channel: channels[0],
             actionHref: `/admin/events/${event.id}/assets`,
             actionLabel: 'Review event media',
           },
@@ -236,18 +250,17 @@ export function buildCampaignIntegrityReport({
 
     if (
       assetGenres.length > 0 &&
-      campaignGenres.size > 0 &&
-      !assetGenres.some((genre) => campaignGenres.has(genre))
+      briefGenres.size > 0 &&
+      !assetGenres.some((genre) => briefGenres.has(genre))
     ) {
       issues.push(
-        issue(
+        makeIssue(
           `asset-genre-${asset.id}`,
           'blocker',
           'The assigned media promotes a different music concept',
           `The campaign emphasizes ${workspace.brief.genres || workspace.brief.theme}, while “${asset.name}” is described as ${assetGenres.join(', ')}.`,
           {
             assetId: asset.id,
-            channel: channels[0],
             actionHref: `/admin/events/${event.id}/assets`,
             actionLabel: 'Choose matching media',
           },
@@ -256,21 +269,20 @@ export function buildCampaignIntegrityReport({
     }
 
     if (
-      performerNames.length > 0 &&
-      /\b(featuring|feat\.?|with|dj)\b/i.test(text) &&
-      !performerNames.some((performer) =>
-        normalizedText.includes(normalize(performer)),
+      performers.length > 0 &&
+      /\b(featuring|feat\.?|with|dj)\b/i.test(assetText) &&
+      !performers.some((performer) =>
+        normalizedAssetText.includes(normalize(performer)),
       )
     ) {
       issues.push(
-        issue(
+        makeIssue(
           `asset-performer-${asset.id}`,
           'warning',
           'The performer information may not match the campaign brief',
           `Verify that the names shown in “${asset.name}” match ${workspace.brief.performers}.`,
           {
             assetId: asset.id,
-            channel: channels[0],
             actionHref: `/admin/events/${event.id}/assets`,
             actionLabel: 'Check performer names',
           },
@@ -280,14 +292,13 @@ export function buildCampaignIntegrityReport({
 
     if (asset.kind === 'image' && !asset.altText.trim()) {
       issues.push(
-        issue(
+        makeIssue(
           `missing-alt-${asset.id}`,
           'warning',
           'An assigned image is missing alt text',
           `Add a useful visual description to “${asset.name}” before publishing.`,
           {
             assetId: asset.id,
-            channel: channels[0],
             actionHref: `/admin/events/${event.id}/assets`,
             actionLabel: 'Add alt text',
           },
@@ -297,41 +308,44 @@ export function buildCampaignIntegrityReport({
   }
 
   for (const item of workspace.content) {
-    if (workspace.brief.language === 'bilingual') {
-      const spanish = spanishSection(item);
-      if (spanish && /\b(reserve now|buy tickets|book now|learn more)\b/i.test(spanish)) {
-        issues.push(
-          issue(
-            `spanish-cta-${item.id}`,
-            'blocker',
-            'The Spanish section still contains an English call to action',
-            'Replace “Reserve now” or similar English CTA language with natural Spanish such as “Reserva ahora.”',
-            {
-              channel: item.channel,
-              actionHref: `/admin/events/${event.id}/growth`,
-              actionLabel: 'Edit campaign copy',
-            },
-          ),
-        );
-      }
-      if (
-        spanish &&
-        /\b(and late-night|late-night kitchen push|featuring|doors at|the night)\b/i.test(spanish)
-      ) {
-        issues.push(
-          issue(
-            `mixed-spanish-${item.id}`,
-            'warning',
-            'The Spanish section appears partially untranslated',
-            'Rewrite the remaining English phrase into natural Spanish before the campaign goes live.',
-            {
-              channel: item.channel,
-              actionHref: `/admin/events/${event.id}/growth`,
-              actionLabel: 'Edit campaign copy',
-            },
-          ),
-        );
-      }
+    if (workspace.brief.language !== 'bilingual') continue;
+    const spanish = spanishSection(item);
+    if (!spanish) continue;
+
+    if (/\b(reserve now|buy tickets|book now|learn more)\b/i.test(spanish)) {
+      issues.push(
+        makeIssue(
+          `spanish-cta-${item.id}`,
+          'blocker',
+          'The Spanish section still contains an English call to action',
+          'Replace the English CTA with natural Spanish such as “Reserva ahora.”',
+          {
+            channel: item.channel,
+            actionHref: `/admin/events/${event.id}/growth`,
+            actionLabel: 'Edit campaign copy',
+          },
+        ),
+      );
+    }
+
+    if (
+      /\b(and late-night|late-night kitchen push|featuring|doors at|the night)\b/i.test(
+        spanish,
+      )
+    ) {
+      issues.push(
+        makeIssue(
+          `mixed-spanish-${item.id}`,
+          'warning',
+          'The Spanish section appears partially untranslated',
+          'Rewrite the remaining English phrase into natural Spanish before launch.',
+          {
+            channel: item.channel,
+            actionHref: `/admin/events/${event.id}/growth`,
+            actionLabel: 'Edit campaign copy',
+          },
+        ),
+      );
     }
   }
 
@@ -343,7 +357,7 @@ export function buildCampaignIntegrityReport({
     )
   ) {
     issues.push(
-      issue(
+      makeIssue(
         'sms-opt-out',
         'blocker',
         'The SMS is missing opt-out language',
@@ -360,11 +374,11 @@ export function buildCampaignIntegrityReport({
   const publicCopy = workspace.content.map((item) => item.body).join('\n');
   if (/localhost|127\.0\.0\.1|vercel\.app|git-[a-z0-9-]+-/i.test(publicCopy)) {
     issues.push(
-      issue(
+      makeIssue(
         'preview-url',
         'warning',
         'Campaign copy contains a temporary Preview URL',
-        'Replace the branch-preview link with Club Bahia’s permanent public reservation or ticket URL before launch.',
+        'Replace the branch-preview link with Club Bahia’s permanent reservation or ticket URL before launch.',
         {
           actionHref: `/admin/events/${event.id}/growth`,
           actionLabel: 'Replace temporary link',
@@ -377,10 +391,12 @@ export function buildCampaignIntegrityReport({
     for (const item of execution.items) {
       if (
         item.notes &&
-        /\b(h+m+|ye+e+\s*bo+i+|test(?:ing)?|placeholder|lorem|asdf)\b/i.test(item.notes)
+        /\b(h+m+|ye+e+\s*bo+i+|test(?:ing)?|placeholder|lorem|asdf)\b/i.test(
+          item.notes,
+        )
       ) {
         issues.push(
-          issue(
+          makeIssue(
             `test-note-${item.contentItemId}`,
             'warning',
             'A publishing note looks like test content',
@@ -389,9 +405,10 @@ export function buildCampaignIntegrityReport({
           ),
         );
       }
+
       if (item.status === 'published' && !item.externalUrl?.trim()) {
         issues.push(
-          issue(
+          makeIssue(
             `published-url-${item.contentItemId}`,
             'warning',
             'A published item has no live URL recorded',
@@ -403,9 +420,9 @@ export function buildCampaignIntegrityReport({
     }
   }
 
-  if (!selected.length) {
+  if (!chosenAssets.length) {
     issues.push(
-      issue(
+      makeIssue(
         'no-selected-media',
         'blocker',
         'No approved campaign media is attached',
@@ -419,11 +436,11 @@ export function buildCampaignIntegrityReport({
   }
 
   issues.push(
-    issue(
+    makeIssue(
       'technical-media-validation',
       'tip',
-      'Automatic crop and duration checks are still limited',
-      'Visually confirm Story/Reel safe zones, video duration, audio rights, and final mobile playback before publishing.',
+      'Do one final visual playback check',
+      'Confirm Story/Reel safe zones, video duration, audio rights, and mobile playback before publishing.',
       {
         actionHref: `/admin/events/${event.id}/assets`,
         actionLabel: 'Review media',
@@ -434,10 +451,9 @@ export function buildCampaignIntegrityReport({
   const blockers = issues.filter((item) => item.severity === 'blocker').length;
   const warnings = issues.filter((item) => item.severity === 'warning').length;
   const tips = issues.filter((item) => item.severity === 'tip').length;
-  const penalty = blockers * 18 + warnings * 7 + tips * 2;
 
   return {
-    score: Math.max(0, 100 - penalty),
+    score: Math.max(0, 100 - blockers * 18 - warnings * 7),
     canPublish: blockers === 0,
     blockers,
     warnings,
