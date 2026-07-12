@@ -61,6 +61,7 @@ export function buildCampaignQualityReport(
   const issues: CampaignQualityIssue[] = [];
   const combinedCopy = workspace.content.map((item) => item.body).join('\n').toLowerCase();
   const internalAudience = workspace.brief.targetAudience.trim().toLowerCase();
+  const spanishCopy = spanishSections(workspace);
 
   if (!combinedCopy.includes(event.title.toLowerCase())) {
     issues.push(
@@ -112,14 +113,30 @@ export function buildCampaignQualityReport(
 
   if (
     workspace.brief.language === 'bilingual' &&
-    englishCtaPattern.test(spanishSections(workspace))
+    englishCtaPattern.test(spanishCopy)
   ) {
     issues.push(
       issue(
         'bilingual-spanish-cta',
-        'warning',
+        'error',
         'English CTA found inside a Spanish section',
-        'Keep English and Spanish calls to action inside their respective language sections.',
+        'Use a natural Spanish call to action such as “Reserva ahora.”',
+      ),
+    );
+  }
+
+  if (
+    workspace.brief.language === 'bilingual' &&
+    /\b(and late-night|late-night kitchen push|featuring|doors at|the night)\b/i.test(
+      spanishCopy,
+    )
+  ) {
+    issues.push(
+      issue(
+        'partially-untranslated-spanish',
+        'warning',
+        'Some Spanish sections still contain English phrases',
+        'Rewrite the remaining English language into natural Spanish before approval.',
       ),
     );
   }
@@ -138,6 +155,23 @@ export function buildCampaignQualityReport(
   }
 
   if (
+    sms &&
+    !/\b(reply|text|responde)\s+(stop|alto|cancel|cancelar)\b|\bopt\s*out\b|\bdarse\s+de\s+baja\b/i.test(
+      sms.body,
+    )
+  ) {
+    issues.push(
+      issue(
+        'sms-opt-out',
+        'error',
+        'SMS is missing opt-out language',
+        'Add a clear instruction such as “Reply STOP to opt out” before approval.',
+        'sms',
+      ),
+    );
+  }
+
+  if (
     ['reservations', 'ticket-sales'].includes(workspace.brief.objective) &&
     !workspace.brief.reservationUrl.trim()
   ) {
@@ -147,6 +181,17 @@ export function buildCampaignQualityReport(
         'warning',
         'No reservation or ticket URL is set',
         'The campaign objective asks people to convert, but there is no destination link.',
+      ),
+    );
+  }
+
+  if (/localhost|127\.0\.0\.1|vercel\.app|git-[a-z0-9-]+-/i.test(combinedCopy)) {
+    issues.push(
+      issue(
+        'temporary-public-url',
+        'warning',
+        'Campaign copy contains a temporary Preview URL',
+        'Replace it with Club Bahia’s permanent public reservation or ticket link before launch.',
       ),
     );
   }
