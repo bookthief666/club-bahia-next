@@ -25,10 +25,42 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --silent
 
-      - name: Run tests
-        run: npm test
+      - name: Run tests and capture output
+        shell: bash
+        run: |
+          set +e
+          npm test > test.log 2>&1
+          echo "$?" > test.exit
+          exit 0
 
-      - name: Run production build
-        run: npm run build
+      - name: Run production build and capture output
+        shell: bash
+        run: |
+          set +e
+          npm run build > build.log 2>&1
+          echo "$?" > build.exit
+          exit 0
+
+      - name: Upload verification logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: asset-studio-verification-logs
+          path: |
+            test.log
+            build.log
+            test.exit
+            build.exit
+          retention-days: 3
+
+      - name: Report verification result
+        shell: bash
+        run: |
+          echo "Test exit: $(cat test.exit)"
+          echo "Build exit: $(cat build.exit)"
+          if [ "$(cat test.exit)" != "0" ] || [ "$(cat build.exit)" != "0" ]; then
+            echo "Verification failed. Download the uploaded logs for details."
+            exit 1
+          fi
