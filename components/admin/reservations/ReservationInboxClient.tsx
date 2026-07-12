@@ -12,6 +12,11 @@ import {
   type ReservationStatus,
   type StoredReservation,
 } from '@/lib/reservations/domain';
+import {
+  reservationEmailSubject,
+  reservationMessage,
+  type ReservationMessageKind,
+} from '@/lib/reservations/messages';
 
 const STATUS_LABELS: Record<ReservationStatus, string> = {
   new: 'New',
@@ -20,6 +25,13 @@ const STATUS_LABELS: Record<ReservationStatus, string> = {
   waitlist: 'Waitlist',
   cancelled: 'Cancelled',
   completed: 'Completed',
+};
+
+const MESSAGE_LABELS: Record<ReservationMessageKind, string> = {
+  received: 'Request received',
+  confirmed: 'Confirmation',
+  waitlist: 'Waitlist update',
+  'change-request': 'Need more information',
 };
 
 function statusClass(status: ReservationStatus): string {
@@ -145,6 +157,7 @@ function ReservationCard({
 }) {
   const [open, setOpen] = useState(reservation.status === 'new');
   const [staffNote, setStaffNote] = useState(reservation.staffNote ?? '');
+  const [copiedKind, setCopiedKind] = useState<ReservationMessageKind>();
   const source = reservationAttributionLabel(reservation.attribution);
   const sourceDetail = [
     reservation.attribution.campaign,
@@ -152,14 +165,35 @@ function ReservationCard({
   ]
     .filter(Boolean)
     .join(' · ');
-  const textHref = `sms:${reservation.phone}`;
-  const mailHref = `mailto:${reservation.email}?subject=${encodeURIComponent(
+  const basicMailHref = `mailto:${reservation.email}?subject=${encodeURIComponent(
     `Club Bahia reservation request ${reservation.id}`,
   )}`;
 
   useEffect(() => {
     setStaffNote(reservation.staffNote ?? '');
   }, [reservation.staffNote]);
+
+  function smsHref(kind: ReservationMessageKind): string {
+    return `sms:${reservation.phone}?body=${encodeURIComponent(
+      reservationMessage(reservation, kind),
+    )}`;
+  }
+
+  function emailHref(kind: ReservationMessageKind): string {
+    return `mailto:${reservation.email}?subject=${encodeURIComponent(
+      reservationEmailSubject(reservation, kind),
+    )}&body=${encodeURIComponent(reservationMessage(reservation, kind))}`;
+  }
+
+  async function copyTemplate(kind: ReservationMessageKind) {
+    try {
+      await navigator.clipboard.writeText(reservationMessage(reservation, kind));
+      setCopiedKind(kind);
+      window.setTimeout(() => setCopiedKind(undefined), 1800);
+    } catch {
+      setCopiedKind(undefined);
+    }
+  }
 
   return (
     <article className="overflow-hidden rounded-[1.45rem] border border-white/10 bg-[linear-gradient(145deg,rgba(18,19,16,.94),rgba(18,14,12,.96))] shadow-[0_20px_60px_rgba(0,0,0,.25)]">
@@ -214,7 +248,7 @@ function ReservationCard({
                 Email
               </p>
               <a
-                href={mailHref}
+                href={basicMailHref}
                 className="mt-1 block truncate text-sm font-semibold text-amber-100"
               >
                 {reservation.email}
@@ -277,6 +311,65 @@ function ReservationCard({
             </div>
           ) : null}
 
+          <section className="mt-4 rounded-2xl border border-emerald-200/12 bg-emerald-200/[.045] p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[.18em] text-emerald-100/58">
+                  Guest follow-up
+                </p>
+                <h3 className="mt-1 text-base font-semibold text-white">
+                  Ready-to-send messages
+                </h3>
+              </div>
+              <p className="max-w-md text-xs leading-5 text-white/42">
+                Review the message before sending. Confirmation templates should only be used after availability is actually approved.
+              </p>
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {(
+                [
+                  'received',
+                  'change-request',
+                  'confirmed',
+                  'waitlist',
+                ] as ReservationMessageKind[]
+              ).map((kind) => (
+                <article
+                  key={kind}
+                  className="rounded-xl border border-white/9 bg-black/22 p-3"
+                >
+                  <p className="text-xs font-semibold text-white">
+                    {MESSAGE_LABELS[kind]}
+                  </p>
+                  <p className="mt-2 line-clamp-3 text-xs leading-5 text-white/46">
+                    {reservationMessage(reservation, kind)}
+                  </p>
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    <a
+                      href={smsHref(kind)}
+                      className="inline-flex min-h-9 items-center justify-center rounded-full border border-sky-200/18 bg-sky-200/[.06] px-2 text-[10px] font-semibold text-sky-100"
+                    >
+                      Text
+                    </a>
+                    <a
+                      href={emailHref(kind)}
+                      className="inline-flex min-h-9 items-center justify-center rounded-full border border-white/12 px-2 text-[10px] font-semibold text-white/68"
+                    >
+                      Email
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => void copyTemplate(kind)}
+                      className="min-h-9 rounded-full border border-amber-200/16 bg-amber-200/[.05] px-2 text-[10px] font-semibold text-amber-100"
+                    >
+                      {copiedKind === kind ? 'Copied ✓' : 'Copy'}
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+
           <label className="mt-4 block text-sm font-medium text-white/65">
             Staff note
             <textarea
@@ -294,18 +387,6 @@ function ReservationCard({
               className="inline-flex min-h-11 items-center rounded-full bg-amber-300 px-5 text-xs font-bold text-black"
             >
               Call guest
-            </a>
-            <a
-              href={textHref}
-              className="inline-flex min-h-11 items-center rounded-full border border-sky-200/20 bg-sky-200/[.07] px-5 text-xs font-semibold text-sky-100"
-            >
-              Text guest
-            </a>
-            <a
-              href={mailHref}
-              className="inline-flex min-h-11 items-center rounded-full border border-white/15 px-5 text-xs font-semibold text-white/70"
-            >
-              Email guest
             </a>
             <button
               type="button"
@@ -464,17 +545,25 @@ export function ReservationInboxClient() {
               Reservations Inbox
             </h1>
             <p className="mt-3 text-sm leading-6 text-white/58 sm:text-base">
-              Follow up with guests and see which event, social post, Story, or QR code produced each request.
+              Follow up with guests, record outcomes, export the list, and see which promotion produced each request.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => void load()}
-            disabled={loading}
-            className="min-h-11 rounded-full border border-white/15 bg-black/18 px-5 text-sm font-semibold text-white/70 disabled:opacity-40"
-          >
-            {loading ? 'Refreshing…' : 'Refresh requests'}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <a
+              href="/api/admin/reservations/export"
+              className="inline-flex min-h-11 items-center rounded-full border border-emerald-200/18 bg-emerald-200/[.07] px-5 text-sm font-semibold text-emerald-100"
+            >
+              Export CSV
+            </a>
+            <button
+              type="button"
+              onClick={() => void load()}
+              disabled={loading}
+              className="min-h-11 rounded-full border border-white/15 bg-black/18 px-5 text-sm font-semibold text-white/70 disabled:opacity-40"
+            >
+              {loading ? 'Refreshing…' : 'Refresh requests'}
+            </button>
+          </div>
         </div>
 
         <div className="relative mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
