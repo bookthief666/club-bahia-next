@@ -2,10 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { OperationsEvent } from '../lib/admin/domain';
 import type { CampaignBrief, EventGrowthWorkspace } from '../lib/admin/growth/domain';
 import { buildFixtureCampaign } from '../lib/admin/growth/generator';
-import {
-  buildCampaignQualityReport,
-  hasCampaignIdentityConflict,
-} from '../lib/admin/growth/quality';
+import { buildCampaignQualityReport } from '../lib/admin/growth/quality';
 
 const event: OperationsEvent = {
   id: 'evt-quality',
@@ -26,7 +23,6 @@ const event: OperationsEvent = {
 
 const brief: CampaignBrief = {
   theme: 'Darkwave Goth Night',
-  publicSubtitle: '',
   targetAudience: 'alternative nightlife audiences in Los Angeles',
   objective: 'ticket-sales',
   tone: 'cinematic and nocturnal',
@@ -58,19 +54,24 @@ function workspace(overrides: Partial<EventGrowthWorkspace> = {}): EventGrowthWo
 }
 
 describe('campaign quality checks', () => {
-  it('detects a title/theme conflict until a public subtitle is set', () => {
-    expect(hasCampaignIdentityConflict(event.title, brief.theme, '')).toBe(true);
-    expect(hasCampaignIdentityConflict(event.title, brief.theme, 'Noche Oscura')).toBe(false);
-  });
-
   it('flags missing conversion URL and mixed-language CTA', () => {
     const report = buildCampaignQualityReport(event, workspace());
     const ids = report.issues.map((item) => item.id);
 
-    expect(ids).toContain('identity-conflict');
     expect(ids).toContain('missing-conversion-url');
     expect(ids).toContain('mixed-language-cta');
     expect(report.score).toBeLessThan(100);
+  });
+
+  it('flags campaigns that omit the single public event name', () => {
+    const current = workspace();
+    const content = current.content.map((item) => ({
+      ...item,
+      body: item.body.replaceAll(event.title, 'A Different Name'),
+    }));
+    const report = buildCampaignQualityReport(event, { ...current, content });
+
+    expect(report.issues.some((item) => item.id === 'missing-public-event-name')).toBe(true);
   });
 
   it('flags an overlong SMS', () => {
