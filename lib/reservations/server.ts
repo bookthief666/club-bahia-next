@@ -143,6 +143,7 @@ export async function createStoredReservation(
     eventId: submission.eventId,
     eventSlug: submission.eventSlug,
     eventTitle: submission.eventTitle,
+    attribution: submission.attribution,
     consentAt: now,
     staffNote: '',
   });
@@ -163,10 +164,10 @@ async function loadEncryptedBlob(url: string): Promise<StoredReservation | null>
   }
 }
 
-export async function listStoredReservations(): Promise<StoredReservation[]> {
-  if (!isReservationStorageConfigured()) return [];
-
-  const blobs: Array<{ url: string }> = [];
+async function listReservationBlobs(): Promise<
+  Array<{ pathname: string; url: string }>
+> {
+  const blobs: Array<{ pathname: string; url: string }> = [];
   let cursor: string | undefined;
   do {
     const result = await list({
@@ -177,11 +178,17 @@ export async function listStoredReservations(): Promise<StoredReservation[]> {
     blobs.push(
       ...result.blobs
         .filter((blob) => blob.pathname.endsWith('.json.enc'))
-        .map((blob) => ({ url: blob.url })),
+        .map((blob) => ({ pathname: blob.pathname, url: blob.url })),
     );
     cursor = result.hasMore ? result.cursor : undefined;
   } while (cursor && blobs.length < 5000);
+  return blobs;
+}
 
+export async function listStoredReservations(): Promise<StoredReservation[]> {
+  if (!isReservationStorageConfigured()) return [];
+
+  const blobs = await listReservationBlobs();
   const reservations = await Promise.all(
     blobs.map(({ url }) => loadEncryptedBlob(url)),
   );
@@ -202,8 +209,8 @@ export async function updateStoredReservation(input: {
     throw new Error('Online reservation intake is not configured.');
   }
 
-  const result = await list({ prefix: RESERVATION_PREFIX, limit: 1000 });
-  const match = result.blobs.find((blob) =>
+  const blobs = await listReservationBlobs();
+  const match = blobs.find((blob) =>
     blob.pathname.endsWith(`/${input.id}.json.enc`),
   );
   if (!match) throw new Error('Reservation request not found.');
