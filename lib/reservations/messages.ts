@@ -16,8 +16,8 @@ function readableDate(value: string): string {
   }).format(new Date(Date.UTC(year, month - 1, day)));
 }
 
-function subject(reservation: StoredReservation): string {
-  return reservation.eventTitle || 'your Club Bahia reservation';
+function eventPhrase(reservation: StoredReservation): string {
+  return reservation.eventTitle ? ` for ${reservation.eventTitle}` : '';
 }
 
 export function reservationMessage(
@@ -26,22 +26,22 @@ export function reservationMessage(
 ): string {
   const firstName = reservation.firstName;
   const date = readableDate(reservation.date);
-  const event = subject(reservation);
+  const event = eventPhrase(reservation);
   const party = `${reservation.guests} guest${reservation.guests === 1 ? '' : 's'}`;
 
   if (kind === 'confirmed') {
-    return `Hi ${firstName}, your Club Bahia reservation request for ${event} on ${date} for ${party} is confirmed. Please bring valid 21+ identification and let us know if your party size changes. We look forward to seeing you.`;
+    return `Hi ${firstName}, your Club Bahia reservation request${event} on ${date} for ${party} is confirmed. Please bring valid 21+ identification and let us know if your party size changes. We look forward to seeing you.`;
   }
 
   if (kind === 'waitlist') {
-    return `Hi ${firstName}, thank you for your Club Bahia reservation request for ${event} on ${date} for ${party}. We do not have a confirmed table available yet, but we have added your request to the waitlist and will contact you if availability opens.`;
+    return `Hi ${firstName}, thank you for your Club Bahia reservation request${event} on ${date} for ${party}. We do not have a confirmed table available yet, but we have added your request to the waitlist and will contact you if availability opens.`;
   }
 
   if (kind === 'change-request') {
-    return `Hi ${firstName}, this is Club Bahia regarding your reservation request for ${event} on ${date} for ${party}. We need a little more information before we can confirm it. Please reply with your preferred arrival time and any changes to your party size.`;
+    return `Hi ${firstName}, this is Club Bahia regarding your reservation request${event} on ${date} for ${party}. We need a little more information before we can confirm it. Please reply with your preferred arrival time and any changes to your party size.`;
   }
 
-  return `Hi ${firstName}, this is Club Bahia. We received your reservation request for ${event} on ${date} for ${party}. Our team is reviewing availability and will follow up shortly. This message is not yet a final table confirmation.`;
+  return `Hi ${firstName}, this is Club Bahia. We received your reservation request${event} on ${date} for ${party}. Our team is reviewing availability and will follow up shortly. This message is not yet a final table confirmation.`;
 }
 
 export function reservationEmailSubject(
