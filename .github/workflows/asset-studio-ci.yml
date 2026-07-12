@@ -9,6 +9,7 @@ on:
       - codex/milestone-4d-integrity-ux
       - codex/milestone-5a-public-rsvp-funnel
       - codex/milestone-5b-home-attribution-dashboard
+      - codex/milestone-5c-manager-followup-tools
   pull_request:
     branches:
       - codex/milestone-3e-review-optimization
@@ -16,6 +17,7 @@ on:
       - codex/milestone-4b-post-assembly
       - codex/milestone-4d-integrity-ux
       - codex/milestone-5a-public-rsvp-funnel
+      - codex/milestone-5b-home-attribution-dashboard
 
 permissions:
   contents: read
