@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { requireAssetAccess, setAssetSessionCookie } from '@/lib/admin/assets/server';
-import { isMockAdminEnabled } from '@/lib/admin/mock-auth';
+import { setAssetSessionCookie } from '@/lib/admin/assets/server';
+import { requireAdminResourceAccess } from '@/lib/admin/auth/resource-access';
 import { reservationsToCsv } from '@/lib/reservations/csv';
 import {
   ReservationStatusSchema,
@@ -52,12 +52,8 @@ function filterReservations(
 }
 
 export async function GET(request: Request) {
-  if (!isMockAdminEnabled) {
-    return unauthorized('Reservation administration is disabled in this environment.');
-  }
-
   try {
-    requireAssetAccess(request);
+    requireAdminResourceAccess(request);
   } catch (error) {
     return unauthorized(error instanceof Error ? error.message : 'Unauthorized.');
   }
