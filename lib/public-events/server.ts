@@ -74,34 +74,50 @@ function snapshotToCard(snapshot: PublicEventSnapshot): PublicEventCard {
 function fallbackCards(): PublicEventCard[] {
   return bahiaEvents
     .filter((event) => event.isPublished)
-    .map((event) => ({
-      id: `fallback-${event.slug}`,
-      slug: event.slug,
-      title: event.title,
-      eyebrow: event.eyebrow,
-      category: event.category,
-      programType: event.programType,
-      summary: event.description,
-      description: event.description,
-      dateLabel: event.dateLabel,
-      timeLabel: event.timeLabel,
-      room: event.room,
-      performers: event.performers,
-      genres: event.genres,
-      doorsTime: event.doorsTime,
-      admission: event.admission,
-      ageRestriction: event.ageRestriction,
-      foodDrinkSpecial: event.foodDrinkSpecial,
-      address: event.address,
-      reservationHref: event.reservationHref,
-      ticketUrl: event.ticketUrl,
-      imageUrl: event.image.src,
-      imageAlt: event.image.alt,
-      status: event.status,
-      ctaLabel: event.ctaLabel,
-      isFeatured: event.isFeatured,
-      source: 'fallback' as const,
-    }));
+    .map((event) => {
+      const isAzucar = event.slug === 'azucar-la-live-weekends';
+      const imageUrl =
+        (isAzucar ? process.env.NEXT_PUBLIC_AZUCAR_LA_NIGHT_IMAGE_URL : '') ||
+        event.image.src;
+      const secondaryImageUrl =
+        (isAzucar ? process.env.NEXT_PUBLIC_AZUCAR_LA_DAY_IMAGE_URL : '') ||
+        event.secondaryImage?.src;
+
+      return {
+        id: `fallback-${event.slug}`,
+        slug: event.slug,
+        title: event.title,
+        eyebrow: event.eyebrow,
+        category: event.category,
+        programType: event.programType,
+        summary: event.description,
+        description: event.description,
+        dateLabel: event.dateLabel,
+        timeLabel: event.timeLabel,
+        room: event.room,
+        performers: event.performers,
+        genres: event.genres,
+        doorsTime: event.doorsTime,
+        admission: event.admission,
+        ageRestriction: event.ageRestriction,
+        foodDrinkSpecial: event.foodDrinkSpecial,
+        address: event.address,
+        reservationHref: event.reservationHref,
+        ticketUrl: event.ticketUrl,
+        imageUrl,
+        imageAlt: isAzucar
+          ? 'Club Bahia marquee announcing resident group Azucar LA'
+          : event.image.alt,
+        secondaryImageUrl,
+        secondaryImageAlt: isAzucar
+          ? 'Club Bahia marquee and Los Angeles palm trees during the day'
+          : event.secondaryImage?.alt,
+        status: event.status,
+        ctaLabel: event.ctaLabel,
+        isFeatured: event.isFeatured,
+        source: 'fallback' as const,
+      };
+    });
 }
 
 async function fetchSnapshot(url: string): Promise<PublicEventSnapshot | null> {
