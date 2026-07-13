@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { isMockAdminEnabled } from '@/lib/admin/mock-auth';
+import { requireAdminRequest } from '@/lib/admin/auth/session';
 import {
   buildFixtureCampaign,
   FixtureCampaignGenerator,
@@ -56,9 +56,11 @@ async function fixtureItem(
 }
 
 export async function POST(request: Request) {
-  if (!isMockAdminEnabled) {
+  try {
+    requireAdminRequest(request);
+  } catch (error) {
     return NextResponse.json(
-      { error: 'Admin campaign generation is not enabled in this environment.' },
+      { error: error instanceof Error ? error.message : 'Unauthorized.' },
       { status: 401, headers: NO_STORE_HEADERS },
     );
   }
