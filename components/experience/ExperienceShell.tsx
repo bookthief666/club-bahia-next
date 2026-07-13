@@ -8,6 +8,8 @@ import { ExperienceNav } from './ExperienceNav';
 import { FloatingBahiaMark } from './FloatingBahiaMark';
 import { HeroScene } from './HeroScene';
 import { FeaturedEventScene } from './FeaturedEventScene';
+import { UpcomingDefaultScene } from './UpcomingDefaultScene';
+import { ResidentWeekendScene } from './ResidentWeekendScene';
 import { MantraScene } from './MantraScene';
 import { InsideBahiaScene } from './InsideBahiaScene';
 import { TextureLayer } from './TextureLayer';
@@ -19,8 +21,10 @@ import { Footer } from '@/components/layout/Footer';
 
 export function ExperienceShell({
   featuredEvent,
+  residentProgram,
 }: {
   featuredEvent?: PublicEventCard | null;
+  residentProgram?: PublicEventCard | null;
 }) {
   const [overlay, setOverlay] = useState<ExperienceOverlay | null>(null);
   const closeOverlay = useCallback(() => setOverlay(null), []);
@@ -30,7 +34,14 @@ export function ExperienceShell({
       <TextureLayer />
       <ExperienceNav onOpen={setOverlay} />
       <HeroScene />
-      {featuredEvent ? <FeaturedEventScene event={featuredEvent} /> : null}
+      {featuredEvent ? (
+        <FeaturedEventScene event={featuredEvent} />
+      ) : (
+        <UpcomingDefaultScene residentProgram={residentProgram} />
+      )}
+      {residentProgram ? (
+        <ResidentWeekendScene program={residentProgram} />
+      ) : null}
       <MantraScene />
       <InsideBahiaScene />
       <Footer />
