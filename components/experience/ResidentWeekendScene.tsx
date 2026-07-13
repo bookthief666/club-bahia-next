@@ -53,7 +53,7 @@ export function ResidentWeekendScene({
               Azucar LA
             </p>
             <p className="mt-3 text-sm leading-6 text-amber-50/68">
-              Most Friday and Saturday nights on Sunset Boulevard.
+              Live weekends on Sunset Boulevard.
             </p>
           </div>
         </div>
@@ -64,12 +64,12 @@ export function ResidentWeekendScene({
               Resident live music
             </span>
             <span className="rounded-full border border-amber-100/18 px-3 py-1.5">
-              Most Fri & Sat
+              Reservations available
             </span>
           </div>
 
           <p className="mt-6 text-[0.65rem] font-semibold uppercase tracking-[0.32em] text-red-200">
-            Every weekend at Bahia
+            Resident series
           </p>
           <h2
             id="resident-weekend-title"
@@ -77,8 +77,8 @@ export function ResidentWeekendScene({
           >
             Live Latin Weekends
           </h2>
-          <p className="mt-5 text-base leading-8 text-amber-50/72 sm:text-lg">
-            Azucar LA brings live cumbia, merengue, salsa, bachata, and Latin dance music to Club Bahia’s historic main room. Come for dinner, dancing, birthdays, and late-night celebrations.
+          <p className="mt-5 max-w-2xl text-base leading-8 text-amber-50/72 sm:text-lg">
+            Azucar LA brings live cumbia, merengue, salsa, bachata, and Latin dance music to Club Bahia.
           </p>
 
           <dl className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -100,10 +100,10 @@ export function ResidentWeekendScene({
             </div>
             <div className="rounded-2xl border border-amber-100/10 bg-black/22 p-4 sm:col-span-2">
               <dt className="text-[0.6rem] uppercase tracking-[0.2em] text-amber-200/55">
-                Before you go
+                Note
               </dt>
               <dd className="mt-2 text-sm leading-6 text-amber-50/76">
-                Exact hours, cover, and age policy may vary. Check the latest weekend listing or call the venue before making plans.
+                Some nights, hours, cover, and age policy may vary. Call ahead to confirm.
               </dd>
             </div>
           </dl>
@@ -113,7 +113,7 @@ export function ResidentWeekendScene({
               href={`/events/${program.slug}`}
               className="inline-flex min-h-12 items-center justify-center rounded-full border border-amber-100/24 px-5 text-xs font-semibold uppercase tracking-[0.18em] text-amber-100 transition hover:border-amber-100/60 hover:bg-amber-100/[.06] hover:text-white focus:outline-none focus:ring-2 focus:ring-red-400"
             >
-              See Weekend Details
+              Weekend Details
             </Link>
             <Link
               href={reservationHref}
