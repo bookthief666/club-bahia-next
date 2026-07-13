@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
 export const PublicEventVisibilitySchema = z.enum(['preview', 'public']);
+export const PublicProgramTypeSchema = z.enum([
+  'scheduled',
+  'resident',
+  'evergreen',
+]);
 
 export const PublicEventSnapshotSchema = z.object({
   version: z.literal(1),
@@ -14,6 +19,7 @@ export const PublicEventSnapshotSchema = z.object({
   title: z.string().trim().min(2).max(180),
   eyebrow: z.string().trim().max(100).default('Upcoming at Bahia'),
   category: z.string().trim().max(80).default('Live event'),
+  programType: PublicProgramTypeSchema.default('scheduled'),
   summary: z.string().trim().min(20).max(700),
   websiteCopy: z.string().trim().min(20).max(8000),
   startsAt: z.string().datetime(),
@@ -39,6 +45,7 @@ export const PublicEventSnapshotSchema = z.object({
 
 export type PublicEventSnapshot = z.infer<typeof PublicEventSnapshotSchema>;
 export type PublicEventVisibility = z.infer<typeof PublicEventVisibilitySchema>;
+export type PublicProgramType = z.infer<typeof PublicProgramTypeSchema>;
 
 export interface PublicEventCard {
   id: string;
@@ -46,6 +53,7 @@ export interface PublicEventCard {
   title: string;
   eyebrow: string;
   category: string;
+  programType: PublicProgramType;
   summary: string;
   description: string;
   startsAt?: string;
