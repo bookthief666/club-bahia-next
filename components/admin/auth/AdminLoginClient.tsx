@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { AdminLoginRole } from '@/lib/admin/auth/session';
+import type { AdminLoginRole } from '@/lib/admin/auth/domain';
 
 export function AdminLoginClient({
   nextPath,
