@@ -1,28 +1,41 @@
 import { del, list, put } from '@vercel/blob';
 import { NextResponse } from 'next/server';
-import { isMockAdminEnabled } from '@/lib/admin/mock-auth';
 import type { EventAsset } from '@/lib/admin/assets/domain';
 import {
   eventAssetMetadataPath,
   eventAssetPrefix,
-  requireAssetAccess,
   setAssetSessionCookie,
 } from '@/lib/admin/assets/server';
 import {
   EventAssetDeleteSchema,
   EventAssetSchema,
 } from '@/lib/admin/assets/validation';
+import { requireAdminResourceAccess } from '@/lib/admin/auth/resource-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const NO_STORE_HEADERS = { 'Cache-Control': 'no-store, max-age=0' };
 
-function unauthorized() {
+function unauthorized(error?: unknown) {
   return NextResponse.json(
-    { error: 'Event media access is not authorized.' },
+    {
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Event media access is not authorized.',
+    },
     { status: 401, headers: NO_STORE_HEADERS },
   );
+}
+
+function authorize(request: Request): NextResponse | null {
+  try {
+    requireAdminResourceAccess(request);
+    return null;
+  } catch (error) {
+    return unauthorized(error);
+  }
 }
 
 function authorizedJson(body: unknown, init?: { status?: number }) {
@@ -75,16 +88,8 @@ async function listAllMetadata(eventId: string): Promise<EventAsset[]> {
 }
 
 export async function GET(request: Request) {
-  if (!isMockAdminEnabled) return unauthorized();
-
-  try {
-    requireAssetAccess(request);
-  } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unauthorized.' },
-      { status: 401, headers: NO_STORE_HEADERS },
-    );
-  }
+  const unauthorizedResponse = authorize(request);
+  if (unauthorizedResponse) return unauthorizedResponse;
 
   const eventId = new URL(request.url).searchParams.get('eventId')?.trim() ?? '';
   if (!/^[a-zA-Z0-9_-]{1,160}$/.test(eventId)) {
@@ -106,16 +111,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  if (!isMockAdminEnabled) return unauthorized();
-
-  try {
-    requireAssetAccess(request);
-  } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unauthorized.' },
-      { status: 401, headers: NO_STORE_HEADERS },
-    );
-  }
+  const unauthorizedResponse = authorize(request);
+  if (unauthorizedResponse) return unauthorizedResponse;
 
   let rawBody: unknown;
   try {
@@ -155,16 +152,8 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  if (!isMockAdminEnabled) return unauthorized();
-
-  try {
-    requireAssetAccess(request);
-  } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unauthorized.' },
-      { status: 401, headers: NO_STORE_HEADERS },
-    );
-  }
+  const unauthorizedResponse = authorize(request);
+  if (unauthorizedResponse) return unauthorizedResponse;
 
   let rawBody: unknown;
   try {
