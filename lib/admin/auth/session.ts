@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import type { NextResponse } from 'next/server';
 import type { AdminRole, AdminUser } from '@/lib/admin/domain';
+import { shouldAllowMockAdmin } from '@/lib/admin/auth/domain';
 import {
   ADMIN_SESSION_TTL_SECONDS,
   authenticateAdminCredential,
@@ -46,11 +47,11 @@ function initialsForName(name: string): string {
 }
 
 function mockAdminAllowed(): boolean {
-  return (
-    process.env.NODE_ENV !== 'production' ||
-    process.env.VERCEL_ENV === 'preview' ||
-    process.env.ADMIN_DEV_AUTH_ENABLED === 'true'
-  );
+  return shouldAllowMockAdmin({
+    nodeEnv: process.env.NODE_ENV,
+    vercelEnv: process.env.VERCEL_ENV,
+    devAuthEnabled: process.env.ADMIN_DEV_AUTH_ENABLED,
+  });
 }
 
 function mockAdminUser(): AdminUser {
