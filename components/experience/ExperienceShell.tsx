@@ -34,6 +34,8 @@ export function ExperienceShell({
       <TextureLayer />
       <ExperienceNav onOpen={setOverlay} />
       <HeroScene />
+      <MantraScene />
+      <InsideBahiaScene />
       {featuredEvent ? (
         <FeaturedEventScene event={featuredEvent} />
       ) : (
@@ -42,8 +44,6 @@ export function ExperienceShell({
       {residentProgram ? (
         <ResidentWeekendScene program={residentProgram} />
       ) : null}
-      <MantraScene />
-      <InsideBahiaScene />
       <Footer />
       <FloatingBahiaMark />
       <AnimatePresence mode="wait">
