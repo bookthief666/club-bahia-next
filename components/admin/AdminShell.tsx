@@ -117,6 +117,23 @@ function pageIdentity(pathname: string): {
   };
 }
 
+function SignOutButton({ compact = false }: { compact?: boolean }) {
+  return (
+    <form action="/api/admin/auth/logout" method="post">
+      <button
+        type="submit"
+        className={
+          compact
+            ? 'min-h-9 rounded-full border border-white/10 px-3 text-[10px] font-semibold uppercase tracking-[.12em] text-white/45 transition hover:border-white/20 hover:text-white'
+            : 'mt-3 min-h-10 w-full rounded-full border border-white/10 bg-black/18 px-4 text-xs font-semibold text-white/50 transition hover:border-white/20 hover:text-white'
+        }
+      >
+        Sign out
+      </button>
+    </form>
+  );
+}
+
 export function AdminShell({
   user,
   children,
@@ -152,14 +169,17 @@ export function AdminShell({
           <div className="mt-5 rounded-2xl border border-amber-200/15 bg-[linear-gradient(145deg,rgba(246,183,60,.11),rgba(225,18,27,.05))] p-3">
             <div className="flex items-center justify-between gap-3">
               <span className="text-[10px] font-semibold uppercase tracking-[.17em] text-amber-100/65">
-                Workspace
+                Signed in
               </span>
-              <span className="rounded-full border border-amber-200/20 bg-black/20 px-2 py-0.5 text-[10px] font-bold text-amber-100">
-                DEMO
+              <span className="rounded-full border border-amber-200/20 bg-black/20 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-100">
+                {user.role}
               </span>
             </div>
-            <p className="mt-2 text-xs leading-5 text-white/48">
-              Website publishing and reservation intake are connected for review, while social delivery remains manual.
+            <p className="mt-2 truncate text-sm font-semibold text-white/74">
+              {user.name}
+            </p>
+            <p className="mt-1 text-xs leading-5 text-white/42">
+              Private workspace session. Social delivery remains manual until provider connections are activated.
             </p>
           </div>
 
@@ -207,6 +227,7 @@ export function AdminShell({
             <p className="mt-2 text-xs leading-5 text-white/48">
               Green means ready. Amber needs review. Red must be fixed before publishing or confirming.
             </p>
+            <SignOutButton />
           </div>
         </aside>
 
@@ -223,12 +244,17 @@ export function AdminShell({
                 {identity.subtitle}
               </p>
             </div>
-            <div
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-amber-200/25 bg-[radial-gradient(circle_at_35%_25%,rgba(246,183,60,.2),rgba(15,13,11,.95))] text-[10px] font-bold text-amber-100 shadow-[0_0_24px_rgba(246,183,60,.08)] sm:h-11 sm:w-11 sm:text-xs"
-              aria-label={`${user.name}, ${user.role}`}
-              title={`${user.name} · ${user.role}`}
-            >
-              {user.avatarInitials}
+            <div className="flex shrink-0 items-center gap-2">
+              <div
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-amber-200/25 bg-[radial-gradient(circle_at_35%_25%,rgba(246,183,60,.2),rgba(15,13,11,.95))] text-[10px] font-bold text-amber-100 shadow-[0_0_24px_rgba(246,183,60,.08)] sm:h-11 sm:w-11 sm:text-xs"
+                aria-label={`${user.name}, ${user.role}`}
+                title={`${user.name} · ${user.role}`}
+              >
+                {user.avatarInitials}
+              </div>
+              <div className="lg:hidden">
+                <SignOutButton compact />
+              </div>
             </div>
           </header>
 
