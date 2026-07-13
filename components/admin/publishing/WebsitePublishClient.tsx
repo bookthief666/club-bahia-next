@@ -186,6 +186,7 @@ export function WebsitePublishClient({ eventId }: { eventId: string }) {
       title: event.title,
       eyebrow: visibility === 'public' ? 'Upcoming at Bahia' : 'Website preview',
       category: workspace.brief.genres || 'Live event',
+      programType: 'scheduled',
       summary: summaryFromCopy(event.concept || prepared.websiteItem.body),
       websiteCopy: prepared.websiteItem.body,
       startsAt: event.startsAt,
@@ -337,28 +338,30 @@ export function WebsitePublishClient({ eventId }: { eventId: string }) {
           </button>
           <Link
             href={`/admin/events/${eventId}/growth`}
-            className="inline-flex min-h-11 items-center rounded-full border border-white/15 px-5 text-sm font-semibold text-white/68"
+            className="inline-flex min-h-11 items-center rounded-full border border-white/12 px-5 text-sm font-semibold text-white/64"
           >
             Review website copy
           </Link>
-          {lastSnapshot ? (
-            <Link
-              href={`/events/${lastSnapshot.slug}`}
-              target="_blank"
-              className="inline-flex min-h-11 items-center rounded-full border border-amber-200/20 bg-amber-200/[.07] px-5 text-sm font-semibold text-amber-100"
-            >
-              Open event page ↗
-            </Link>
-          ) : null}
         </div>
 
         {message ? (
-          <p
-            role="status"
-            className="mt-4 rounded-xl border border-amber-200/15 bg-amber-200/[.06] px-4 py-3 text-sm text-amber-50"
-          >
+          <p className="mt-4 rounded-xl border border-white/9 bg-black/20 p-3 text-sm leading-6 text-white/68">
             {message}
           </p>
+        ) : null}
+
+        {lastSnapshot ? (
+          <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-emerald-200/14 bg-emerald-200/[.05] p-3">
+            <p className="text-sm text-emerald-100/76">
+              Saved {lastSnapshot.visibility} listing: {lastSnapshot.title}
+            </p>
+            <Link
+              href={`/events/${lastSnapshot.slug}`}
+              className="rounded-full border border-emerald-200/20 px-3 py-1.5 text-xs font-semibold text-emerald-100"
+            >
+              Open event page
+            </Link>
+          </div>
         ) : null}
       </div>
     </section>
