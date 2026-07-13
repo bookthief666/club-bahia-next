@@ -1,25 +1,33 @@
 import type { Metadata } from 'next';
 import { EventsExperience } from '@/components/events/EventsExperience';
+import { buildPublicProgramCatalog } from '@/lib/public-events/catalog';
 import { listPublicEventCards } from '@/lib/public-events/server';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Upcoming Events',
+  title: 'Live Music & Upcoming Events',
   description:
-    'Explore upcoming Club Bahia events, live music, dance nights, birthdays, private events, and online reservation requests.',
+    'See confirmed Club Bahia events, Azucar LA live Latin weekends, dancing, birthdays, private events, and online reservation requests.',
   openGraph: {
-    title: 'Upcoming Events | Club Bahia',
+    title: 'Live Music & Upcoming Events | Club Bahia',
     description:
-      'Upcoming Club Bahia programming and reservation-ready events on Sunset Boulevard in Los Angeles.',
+      'Confirmed special events and Azucar LA resident live weekends at Club Bahia on Sunset Boulevard in Los Angeles.',
     url: '/events',
   },
 };
 
 export default async function EventsPage() {
-  const events = await listPublicEventCards({
+  const cards = await listPublicEventCards({
     includePreview: process.env.VERCEL_ENV === 'preview',
   });
+  const catalog = buildPublicProgramCatalog(cards);
 
-  return <EventsExperience events={events} />;
+  return (
+    <EventsExperience
+      scheduledEvents={catalog.scheduledEvents}
+      residentPrograms={catalog.residentPrograms}
+      evergreenPrograms={catalog.evergreenPrograms}
+    />
+  );
 }
