@@ -10,6 +10,7 @@ export type BahiaEvent = {
   dateLabel: string;
   timeLabel: string;
   image: BahiaImageAsset;
+  secondaryImage?: BahiaImageAsset;
   description: string;
   status: string;
   ctaLabel: string;
@@ -37,6 +38,7 @@ export const bahiaEvents: BahiaEvent[] = [
     dateLabel: 'Most Fridays & Saturdays',
     timeLabel: 'Evening sets · schedule may vary',
     image: bahiaAssets.exteriorNightFacade,
+    secondaryImage: bahiaAssets.sunsetLineExteriorDay,
     description:
       'Club Bahia resident group Azucar LA brings live cumbia, merengue, salsa, bachata, and Latin dance music to the historic Sunset Boulevard stage most Friday and Saturday nights. Come for dinner, live music, dancing, birthdays, and late-night celebrations. Weekend schedules may vary, so check the latest listing or call the venue before making plans.',
     status: 'Weekend reservations available',
