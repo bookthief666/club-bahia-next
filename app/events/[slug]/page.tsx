@@ -42,6 +42,7 @@ export default async function EventDetailPage({
   });
   if (!event) notFound();
 
+  const isResident = event.programType === 'resident';
   const navReservationHref = trackedReservationHref({
     eventSlug: event.slug,
     campaign: event.slug,
@@ -54,7 +55,7 @@ export default async function EventDetailPage({
   });
 
   const details = [
-    [event.programType === 'resident' ? 'Schedule' : 'Date', event.dateLabel],
+    [isResident ? 'Schedule' : 'Date', event.dateLabel],
     ['Time', event.timeLabel],
     ['Location', event.address || '1130 Sunset Blvd, Los Angeles, CA 90012'],
     ['Age', event.ageRestriction || '21+'],
@@ -108,7 +109,7 @@ export default async function EventDetailPage({
                 <span className="rounded-full border border-emerald-200/20 bg-emerald-400/10 px-3 py-1.5 text-emerald-100">
                   {event.status}
                 </span>
-                {event.genres ? (
+                {!isResident && event.genres ? (
                   <span className="rounded-full border border-red-300/20 bg-red-600/10 px-3 py-1.5 text-red-100">
                     {event.genres}
                   </span>
@@ -139,7 +140,7 @@ export default async function EventDetailPage({
                     </div>
                   ))}
                 </dl>
-                {event.performers ? (
+                {!isResident && event.performers ? (
                   <div className="mt-4 rounded-2xl border border-emerald-200/14 bg-emerald-200/[.05] p-4">
                     <p className="text-[0.6rem] uppercase tracking-[0.2em] text-emerald-200/60">
                       Featuring
