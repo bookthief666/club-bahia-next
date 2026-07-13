@@ -1,27 +1,17 @@
 import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
 import { NextResponse } from 'next/server';
-import { isMockAdminEnabled } from '@/lib/admin/mock-auth';
 import {
   EVENT_ASSET_ALLOWED_CONTENT_TYPES,
   EVENT_ASSET_MAX_SIZE_BYTES,
 } from '@/lib/admin/assets/domain';
-import {
-  eventAssetFolder,
-  requireAssetAccess,
-} from '@/lib/admin/assets/server';
+import { eventAssetFolder } from '@/lib/admin/assets/server';
 import { EventAssetUploadPayloadSchema } from '@/lib/admin/assets/validation';
+import { requireAdminResourceAccess } from '@/lib/admin/auth/resource-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request): Promise<NextResponse> {
-  if (!isMockAdminEnabled) {
-    return NextResponse.json(
-      { error: 'Asset uploads are disabled in this environment.' },
-      { status: 401 },
-    );
-  }
-
   let body: HandleUploadBody;
   try {
     body = (await request.json()) as HandleUploadBody;
@@ -29,11 +19,18 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'Invalid upload request.' }, { status: 400 });
   }
 
-  try {
-    if (body.type === 'blob.generate-client-token') {
-      requireAssetAccess(request);
+  if (body.type === 'blob.generate-client-token') {
+    try {
+      requireAdminResourceAccess(request);
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Unauthorized.' },
+        { status: 401 },
+      );
     }
+  }
 
+  try {
     const response = await handleUpload({
       body,
       request,
