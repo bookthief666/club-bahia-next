@@ -72,6 +72,8 @@ export interface PublicEventCard {
   ticketUrl: string;
   imageUrl: string;
   imageAlt: string;
+  secondaryImageUrl?: string;
+  secondaryImageAlt?: string;
   status: string;
   ctaLabel: string;
   isFeatured: boolean;
