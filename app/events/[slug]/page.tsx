@@ -54,12 +54,11 @@ export default async function EventDetailPage({
   });
 
   const details = [
-    ['Date', event.dateLabel],
+    [event.programType === 'resident' ? 'Schedule' : 'Date', event.dateLabel],
     ['Time', event.timeLabel],
     ['Location', event.address || '1130 Sunset Blvd, Los Angeles, CA 90012'],
-    ['Room', event.room || 'Club Bahia'],
     ['Age', event.ageRestriction || '21+'],
-    ['Admission', event.admission || 'Contact venue'],
+    ['Details', event.admission || 'Call to confirm'],
   ];
 
   return (
@@ -171,7 +170,7 @@ export default async function EventDetailPage({
                 Request a table for {event.title}
               </h2>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-amber-50/68 sm:text-base">
-                The request form already knows the correct event and date. The venue will review party size and availability before confirming.
+                The request form already knows the correct event. Availability is confirmed by the venue.
               </p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row lg:flex-col xl:flex-row">
