@@ -61,36 +61,13 @@ export function ResidentProgramFeature({
           >
             Live Latin Weekends
           </h2>
-          <p className="mt-5 max-w-2xl text-base leading-8 text-amber-50/72 sm:text-lg">
-            Club Bahia’s resident group Azucar LA performs live cumbia, merengue, salsa, bachata, and Latin dance music.
-          </p>
 
-          <dl className="mt-6 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl border border-amber-100/10 bg-black/22 p-4">
-              <dt className="text-[0.6rem] uppercase tracking-[0.2em] text-amber-200/55">
-                Schedule
-              </dt>
-              <dd className="mt-2 text-sm leading-6 text-amber-50">
-                {program.dateLabel}
-              </dd>
-            </div>
-            <div className="rounded-2xl border border-amber-100/10 bg-black/22 p-4">
-              <dt className="text-[0.6rem] uppercase tracking-[0.2em] text-amber-200/55">
-                Music
-              </dt>
-              <dd className="mt-2 text-sm leading-6 text-amber-50">
-                Cumbia · merengue · salsa · bachata
-              </dd>
-            </div>
-            <div className="rounded-2xl border border-amber-100/10 bg-black/22 p-4 sm:col-span-2">
-              <dt className="text-[0.6rem] uppercase tracking-[0.2em] text-amber-200/55">
-                Note
-              </dt>
-              <dd className="mt-2 text-sm leading-6 text-amber-50">
-                Some nights, hours, cover, and age policy may vary. Call ahead to confirm.
-              </dd>
-            </div>
-          </dl>
+          <div className="mt-6 border-t border-amber-100/12 pt-5 text-sm leading-7 text-amber-50/72 sm:text-base">
+            <p>{program.dateLabel}</p>
+            <p className="mt-2 text-amber-50/58">
+              Some nights, hours, cover, and age policy may vary. Call ahead to confirm.
+            </p>
+          </div>
 
           <div className="mt-7 grid gap-3 sm:grid-cols-2">
             <Link
