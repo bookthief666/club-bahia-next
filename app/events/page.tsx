@@ -17,15 +17,22 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function EventsPage() {
+export default async function EventsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ empty?: string }>;
+}) {
+  const query = await searchParams;
   const cards = await listPublicEventCards({
     includePreview: process.env.VERCEL_ENV === 'preview',
   });
   const catalog = buildPublicProgramCatalog(cards);
+  const forceEmpty =
+    process.env.VERCEL_ENV === 'preview' && query.empty === '1';
 
   return (
     <EventsExperience
-      scheduledEvents={catalog.scheduledEvents}
+      scheduledEvents={forceEmpty ? [] : catalog.scheduledEvents}
       residentPrograms={catalog.residentPrograms}
       evergreenPrograms={catalog.evergreenPrograms}
     />
