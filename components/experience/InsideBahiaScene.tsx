@@ -49,7 +49,12 @@ const scenes: CinematicScene[] = [
     alt: bahiaAssets.discoBallEmptyDanceFloor.alt,
     imageClassName: 'object-[50%_42%]',
     tone: 'from-[#050304]/28 via-[#230509]/14 to-black/14',
-    cta: { label: 'Start Reservation', href: '/reservations', heading: 'Reserve the Night', eyebrow: 'Your Friday or Saturday.' },
+    cta: {
+      label: 'Start Reservation',
+      href: '/reservations',
+      heading: 'Reserve the Night',
+      eyebrow: 'Your Friday or Saturday.',
+    },
   },
 ];
 
@@ -67,7 +72,7 @@ export function InsideBahiaScene() {
         </h2>
       </div>
 
-      <div className="relative z-10 mx-auto mt-8 grid max-w-7xl gap-4 px-3 pb-10 sm:px-6 sm:pb-16 md:grid-cols-12 md:gap-6">
+      <div className="relative z-10 mx-auto mt-8 flex max-w-7xl snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pb-10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:scroll-px-6 sm:px-6 sm:pb-16 md:grid md:grid-cols-12 md:overflow-visible md:snap-none md:gap-6">
         {scenes.map((scene, index) => (
           <motion.article
             key={scene.id}
@@ -75,7 +80,7 @@ export function InsideBahiaScene() {
             whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.28 }}
             transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
-            className={`group relative mx-auto min-h-[72svh] w-full overflow-hidden rounded-[1.35rem] border border-amber-100/12 bg-[radial-gradient(circle_at_35%_20%,rgba(225,18,27,0.2),transparent_28%),linear-gradient(135deg,#160506,#020102_65%)] shadow-[0_28px_90px_rgba(0,0,0,0.5)] min-[390px]:min-h-[76svh] sm:min-h-[80svh] sm:rounded-[2.25rem] md:min-h-[72vh] ${index === 0 || index === 4 ? 'md:col-span-12' : index === 1 ? 'md:col-span-7' : index === 2 ? 'md:col-span-5' : 'md:col-span-6'}`}
+            className={`group relative min-h-[68svh] w-[86vw] max-w-[30rem] shrink-0 snap-center overflow-hidden rounded-[1.35rem] border border-amber-100/12 bg-[radial-gradient(circle_at_35%_20%,rgba(225,18,27,0.2),transparent_28%),linear-gradient(135deg,#160506,#020102_65%)] shadow-[0_28px_90px_rgba(0,0,0,0.5)] min-[390px]:min-h-[72svh] sm:min-h-[74svh] sm:w-[72vw] sm:max-w-[38rem] sm:rounded-[2.25rem] md:min-h-[72vh] md:w-full md:max-w-none md:shrink ${index === 0 || index === 4 ? 'md:col-span-12' : index === 1 ? 'md:col-span-7' : index === 2 ? 'md:col-span-5' : 'md:col-span-6'}`}
             aria-label={scene.alt ?? scene.asset?.alt ?? 'Club Bahia venue photo'}
           >
             {scene.asset ? (
@@ -90,7 +95,7 @@ export function InsideBahiaScene() {
                   src={scene.asset.src}
                   alt={scene.alt ?? scene.asset.alt}
                   fill
-                  sizes="(min-width: 768px) 50vw, 100vw"
+                  sizes="(min-width: 768px) 50vw, 86vw"
                   className={`bahia-kenburns-panel ${scene.imageClassName ?? 'object-center'} object-cover opacity-95 saturate-[1.12] contrast-[1.04]`}
                 />
               </motion.div>
