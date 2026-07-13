@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
-import { isMockAdminEnabled } from '@/lib/admin/mock-auth';
 import {
   clearAssetSessionCookie,
   hasAssetSession,
   setAssetSessionCookie,
   validateAssetAccessCode,
 } from '@/lib/admin/assets/server';
+import {
+  getAdminUserFromRequest,
+  isProductionAdminAuthConfigured,
+} from '@/lib/admin/auth/session';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -13,14 +16,10 @@ export const dynamic = 'force-dynamic';
 const NO_STORE_HEADERS = { 'Cache-Control': 'no-store, max-age=0' };
 
 export async function GET(request: Request) {
-  if (!isMockAdminEnabled) {
-    return NextResponse.json(
-      { authorized: false },
-      { status: 401, headers: NO_STORE_HEADERS },
-    );
-  }
+  const authorized = isProductionAdminAuthConfigured()
+    ? Boolean(getAdminUserFromRequest(request))
+    : hasAssetSession(request);
 
-  const authorized = hasAssetSession(request);
   return NextResponse.json(
     { authorized },
     { status: authorized ? 200 : 401, headers: NO_STORE_HEADERS },
@@ -28,10 +27,13 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  if (!isMockAdminEnabled) {
+  if (isProductionAdminAuthConfigured()) {
+    const authorized = Boolean(getAdminUserFromRequest(request));
     return NextResponse.json(
-      { error: 'Media sessions are disabled in this environment.' },
-      { status: 401, headers: NO_STORE_HEADERS },
+      authorized
+        ? { authorized: true }
+        : { error: 'Admin sign-in is required.' },
+      { status: authorized ? 200 : 401, headers: NO_STORE_HEADERS },
     );
   }
 
