@@ -18,6 +18,8 @@ export function UpcomingEventsEmptyState({
     campaign: residentProgram?.slug || 'general-reservations',
     content: 'events-page-empty-upcoming',
   });
+  const backgroundImage =
+    residentProgram?.secondaryImageUrl || residentProgram?.imageUrl || '';
 
   return (
     <motion.section
@@ -27,35 +29,31 @@ export function UpcomingEventsEmptyState({
       className="relative isolate overflow-hidden rounded-[1.75rem] border border-amber-100/15 bg-[#100606]/88 shadow-[0_28px_90px_rgba(0,0,0,.42)] sm:rounded-[2.25rem]"
       aria-labelledby="no-upcoming-events-title"
     >
-      {residentProgram?.secondaryImageUrl ? (
+      {backgroundImage ? (
         <div
           aria-hidden="true"
-          className="absolute inset-0 -z-20 bg-cover bg-center opacity-28 saturate-75"
-          style={{
-            backgroundImage: `url(${JSON.stringify(
-              residentProgram.secondaryImageUrl,
-            )})`,
-          }}
+          className="absolute inset-0 -z-20 bg-cover bg-center opacity-24 saturate-75"
+          style={{ backgroundImage: `url(${JSON.stringify(backgroundImage)})` }}
         />
       ) : null}
       <div
         aria-hidden="true"
-        className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(8,4,4,.98),rgba(8,4,4,.82)_55%,rgba(7,14,11,.92)),radial-gradient(circle_at_15%_15%,rgba(225,18,27,.25),transparent_30%),radial-gradient(circle_at_85%_10%,rgba(246,183,60,.13),transparent_24%)]"
+        className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(8,4,4,.98),rgba(8,4,4,.82)_55%,rgba(7,14,11,.92)),radial-gradient(circle_at_15%_15%,rgba(225,18,27,.2),transparent_30%),radial-gradient(circle_at_85%_10%,rgba(246,183,60,.1),transparent_24%)]"
       />
 
       <div className="grid gap-8 p-5 sm:p-8 lg:grid-cols-[1.15fr_.85fr] lg:items-center lg:p-10">
         <div>
           <p className="text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-amber-200/72">
-            Upcoming special events
+            Upcoming events
           </p>
           <h2
             id="no-upcoming-events-title"
-            className="bahia-display-serif mt-3 text-[clamp(3.2rem,13vw,7.25rem)] font-semibold leading-[0.86] tracking-[-0.055em] text-amber-50"
+            className="bahia-display-serif mt-3 text-[clamp(3.1rem,12vw,6.6rem)] font-semibold leading-[0.86] tracking-[-0.055em] text-amber-50"
           >
-            The next special night has not been announced yet.
+            No special event announced.
           </h2>
-          <p className="mt-5 max-w-3xl text-base leading-8 text-amber-50/72 sm:text-lg">
-            New concerts, themed parties, and guest performances will appear here as soon as the venue confirms them. Club Bahia is still open for resident weekend music, dancing, dinner, birthdays, and table requests.
+          <p className="mt-5 max-w-2xl text-base leading-8 text-amber-50/72 sm:text-lg">
+            Confirmed nights appear here when released. In the meantime, Azucar LA, reservations, and celebrations continue.
           </p>
           <div className="mt-7 flex flex-col gap-3 sm:flex-row">
             <Link
@@ -66,7 +64,7 @@ export function UpcomingEventsEmptyState({
               }
               className="inline-flex min-h-12 items-center justify-center rounded-full bg-red-600 px-6 text-xs font-semibold uppercase tracking-[0.18em] text-white shadow-[0_0_26px_rgba(225,18,27,.3)] transition hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-400"
             >
-              See Live Latin Weekends
+              View Live Weekends
             </Link>
             <Link
               href={reservationHref}
@@ -79,9 +77,9 @@ export function UpcomingEventsEmptyState({
 
         <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
           {[
-            ['Resident music', 'Azucar LA performs most Friday and Saturday nights.'],
-            ['Celebrations', 'Birthday and group reservation requests remain available.'],
-            ['Updates', 'Check back as confirmed dates and special events are added.'],
+            ['Live music', 'Azucar LA'],
+            ['Reservations', 'Tables and celebrations'],
+            ['Updates', 'Confirmed dates posted here'],
           ].map(([title, detail]) => (
             <div
               key={title}
