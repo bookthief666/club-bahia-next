@@ -38,22 +38,22 @@ export function UpcomingEventsEmptyState({
       ) : null}
       <div
         aria-hidden="true"
-        className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(8,4,4,.98),rgba(8,4,4,.82)_55%,rgba(7,14,11,.92)),radial-gradient(circle_at_15%_15%,rgba(225,18,27,.2),transparent_30%),radial-gradient(circle_at_85%_10%,rgba(246,183,60,.1),transparent_24%)]"
+        className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(8,4,4,.98),rgba(8,4,4,.8)_58%,rgba(7,14,11,.92)),radial-gradient(circle_at_15%_15%,rgba(225,18,27,.18),transparent_30%),radial-gradient(circle_at_85%_10%,rgba(246,183,60,.08),transparent_24%)]"
       />
 
-      <div className="grid gap-8 p-5 sm:p-8 lg:grid-cols-[1.15fr_.85fr] lg:items-center lg:p-10">
-        <div>
+      <div className="p-5 sm:p-8 lg:p-10">
+        <div className="max-w-3xl">
           <p className="text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-amber-200/72">
             Upcoming events
           </p>
           <h2
             id="no-upcoming-events-title"
-            className="bahia-display-serif mt-3 text-[clamp(3.1rem,12vw,6.6rem)] font-semibold leading-[0.86] tracking-[-0.055em] text-amber-50"
+            className="bahia-display-serif mt-3 text-[clamp(2.4rem,8vw,4.75rem)] font-semibold leading-[0.92] tracking-[-0.045em] text-amber-50"
           >
-            No special event announced.
+            No upcoming events.
           </h2>
           <p className="mt-5 max-w-2xl text-base leading-8 text-amber-50/72 sm:text-lg">
-            Confirmed nights appear here when released. In the meantime, Azucar LA, reservations, and celebrations continue.
+            Confirmed nights will appear here. Please call Club Bahia to check the regular schedule or inquire about past or future events.
           </p>
           <div className="mt-7 flex flex-col gap-3 sm:flex-row">
             <Link
@@ -73,22 +73,6 @@ export function UpcomingEventsEmptyState({
               Request a Table
             </Link>
           </div>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-          {[
-            ['Live music', 'Azucar LA'],
-            ['Reservations', 'Tables and celebrations'],
-            ['Updates', 'Confirmed dates posted here'],
-          ].map(([title, detail]) => (
-            <div
-              key={title}
-              className="rounded-2xl border border-amber-100/10 bg-black/24 p-4 backdrop-blur"
-            >
-              <p className="font-serif text-2xl text-amber-50">{title}</p>
-              <p className="mt-2 text-sm leading-6 text-amber-50/60">{detail}</p>
-            </div>
-          ))}
         </div>
       </div>
     </motion.section>
