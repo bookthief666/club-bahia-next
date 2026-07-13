@@ -5,7 +5,7 @@ import {
   isManagerAdminAuthConfigured,
   isProductionAdminAuthConfigured,
   verifyAdminSessionToken,
-} from '../lib/admin/auth/session';
+} from '../lib/admin/auth/token';
 
 const originalEnv = { ...process.env };
 
