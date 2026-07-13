@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { requireAssetAccess, setAssetSessionCookie } from '@/lib/admin/assets/server';
-import { isMockAdminEnabled } from '@/lib/admin/mock-auth';
+import { setAssetSessionCookie } from '@/lib/admin/assets/server';
+import { requireAdminResourceAccess } from '@/lib/admin/auth/resource-access';
 import { ReservationStatusUpdateSchema } from '@/lib/reservations/domain';
 import {
   isReservationStorageConfigured,
@@ -23,15 +23,8 @@ function authorizedJson(body: unknown, status = 200) {
 }
 
 function authorize(request: Request): NextResponse | null {
-  if (!isMockAdminEnabled) {
-    return NextResponse.json(
-      { error: 'Reservation administration is disabled in this environment.' },
-      { status: 401, headers: NO_STORE_HEADERS },
-    );
-  }
-
   try {
-    requireAssetAccess(request);
+    requireAdminResourceAccess(request);
     return null;
   } catch (error) {
     return NextResponse.json(
