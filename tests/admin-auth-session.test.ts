@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { shouldAllowMockAdmin } from '../lib/admin/auth/domain';
 import {
   authenticateAdminCredential,
   createAdminSessionToken,
@@ -89,5 +90,33 @@ describe('production admin authentication', () => {
         new Date('2026-07-13T12:30:00.000Z'),
       ),
     ).toBeNull();
+  });
+});
+
+describe('preview mock authentication policy', () => {
+  it('uses preview mock auth only when the flag is absent or explicitly enabled', () => {
+    expect(
+      shouldAllowMockAdmin({
+        nodeEnv: 'production',
+        vercelEnv: 'preview',
+      }),
+    ).toBe(true);
+    expect(
+      shouldAllowMockAdmin({
+        nodeEnv: 'production',
+        vercelEnv: 'preview',
+        devAuthEnabled: 'true',
+      }),
+    ).toBe(true);
+  });
+
+  it('disables preview mock auth when ADMIN_DEV_AUTH_ENABLED is false', () => {
+    expect(
+      shouldAllowMockAdmin({
+        nodeEnv: 'production',
+        vercelEnv: 'preview',
+        devAuthEnabled: 'false',
+      }),
+    ).toBe(false);
   });
 });
