@@ -14,8 +14,8 @@ export function StoryOverlay({ onClose }: { onClose: () => void }) {
         </figure>
         <div className="relative">
           <div className="pointer-events-none absolute -inset-6 -z-10 rounded-[2rem] bg-[radial-gradient(circle_at_18%_8%,rgba(225,18,27,0.18),transparent_34%),linear-gradient(135deg,rgba(255,246,232,0.06),transparent_42%)]" aria-hidden="true" />
-          <p className="mb-4 text-xs font-black uppercase tracking-[0.35em] text-red-100/80">Sunset Blvd after dark</p>
-          <h2 className="max-w-[11ch] text-balance font-serif text-[clamp(3rem,12vw,8rem)] font-semibold leading-[0.82] tracking-[-0.075em] text-amber-50">{experienceCopy.story.heading}</h2>
+          <p className="mb-4 text-xs font-black uppercase tracking-[0.35em] text-red-100/80">A Sunset Boulevard original</p>
+          <h2 className="max-w-[13ch] text-balance font-serif text-[clamp(3rem,11vw,7rem)] font-semibold leading-[0.84] tracking-[-0.07em] text-amber-50">{experienceCopy.story.heading}</h2>
           <div className="mt-7 max-w-2xl space-y-5 text-base leading-8 text-amber-50/80 sm:text-lg">
             {experienceCopy.story.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
           </div>
@@ -23,7 +23,7 @@ export function StoryOverlay({ onClose }: { onClose: () => void }) {
             {experienceCopy.story.facts.map((fact) => <li key={fact} className="rounded-full border border-amber-100/16 bg-black/28 px-4 py-3 backdrop-blur-sm">{fact}</li>)}
           </ul>
           <Link href="/reservations" className="bahia-reserve-shimmer mt-9 inline-flex min-h-12 items-center justify-center overflow-hidden rounded-full border border-amber-100/30 bg-red-700/35 px-6 text-xs font-black uppercase tracking-[0.22em] text-amber-50 shadow-[0_0_34px_rgba(225,18,27,0.32)] transition hover:border-amber-100/60 hover:bg-red-600/45 focus:outline-none focus:ring-2 focus:ring-red-500">
-            Reserve the Night
+            Reserve Your Night
           </Link>
         </div>
       </div>
