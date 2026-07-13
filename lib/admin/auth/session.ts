@@ -29,6 +29,15 @@ interface AdminCredentialProfile {
   password: string;
 }
 
+export class AdminAuthenticationError extends Error {
+  readonly status = 401;
+
+  constructor(message = 'Admin sign-in is required.') {
+    super(message);
+    this.name = 'AdminAuthenticationError';
+  }
+}
+
 function initialsForName(name: string): string {
   const initials = name
     .trim()
@@ -101,6 +110,33 @@ function payloadToUser(payload: AdminSessionPayload): AdminUser {
     role: payload.role as AdminRole,
     avatarInitials: payload.initials,
   };
+}
+
+function mockAdminAllowed(): boolean {
+  return (
+    process.env.NODE_ENV !== 'production' ||
+    process.env.VERCEL_ENV === 'preview' ||
+    process.env.ADMIN_DEV_AUTH_ENABLED === 'true'
+  );
+}
+
+function mockAdminUser(): AdminUser {
+  const name = process.env.ADMIN_DEV_USER_NAME || 'Maya Rivera';
+  return {
+    id: 'dev-mock-admin',
+    name,
+    role: (process.env.ADMIN_DEV_USER_ROLE as AdminRole | undefined) || 'owner',
+    avatarInitials: initialsForName(name),
+  };
+}
+
+function cookieValue(request: Request, name: string): string | undefined {
+  const header = request.headers.get('cookie') ?? '';
+  for (const item of header.split(';')) {
+    const [key, ...valueParts] = item.trim().split('=');
+    if (key === name) return decodeURIComponent(valueParts.join('='));
+  }
+  return undefined;
 }
 
 export function isProductionAdminAuthConfigured(): boolean {
@@ -185,27 +221,24 @@ export function verifyAdminSessionToken(
   }
 }
 
+export function getAdminUserFromRequest(request: Request): AdminUser | null {
+  return verifyAdminSessionToken(cookieValue(request, ADMIN_SESSION_COOKIE));
+}
+
+export function requireAdminRequest(request: Request): AdminUser {
+  const current = getAdminUserFromRequest(request);
+  if (current) return current;
+
+  if (!isProductionAdminAuthConfigured() && mockAdminAllowed()) {
+    return mockAdminUser();
+  }
+
+  throw new AdminAuthenticationError();
+}
+
 export async function getCurrentAdminUser(): Promise<AdminUser | null> {
   const store = await cookies();
   return verifyAdminSessionToken(store.get(ADMIN_SESSION_COOKIE)?.value);
-}
-
-function mockAdminAllowed(): boolean {
-  return (
-    process.env.NODE_ENV !== 'production' ||
-    process.env.VERCEL_ENV === 'preview' ||
-    process.env.ADMIN_DEV_AUTH_ENABLED === 'true'
-  );
-}
-
-function mockAdminUser(): AdminUser {
-  const name = process.env.ADMIN_DEV_USER_NAME || 'Maya Rivera';
-  return {
-    id: 'dev-mock-admin',
-    name,
-    role: (process.env.ADMIN_DEV_USER_ROLE as AdminRole | undefined) || 'owner',
-    avatarInitials: initialsForName(name),
-  };
 }
 
 export async function requireAdminUser(): Promise<AdminUser> {
