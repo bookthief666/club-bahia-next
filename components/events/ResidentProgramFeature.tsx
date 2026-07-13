@@ -53,7 +53,7 @@ export function ResidentProgramFeature({
 
         <div className="p-5 sm:p-8 lg:p-10">
           <p className="text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-emerald-200/74">
-            Every weekend at Bahia
+            Resident live music
           </p>
           <h2
             id="resident-program-title"
@@ -61,8 +61,8 @@ export function ResidentProgramFeature({
           >
             Live Latin Weekends
           </h2>
-          <p className="mt-5 text-base leading-8 text-amber-50/72 sm:text-lg">
-            Club Bahia’s resident group Azucar LA performs live cumbia, merengue, salsa, bachata, and Latin dance music most Friday and Saturday nights.
+          <p className="mt-5 max-w-2xl text-base leading-8 text-amber-50/72 sm:text-lg">
+            Club Bahia’s resident group Azucar LA performs live cumbia, merengue, salsa, bachata, and Latin dance music.
           </p>
 
           <dl className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -76,33 +76,21 @@ export function ResidentProgramFeature({
             </div>
             <div className="rounded-2xl border border-amber-100/10 bg-black/22 p-4">
               <dt className="text-[0.6rem] uppercase tracking-[0.2em] text-amber-200/55">
-                Room
-              </dt>
-              <dd className="mt-2 text-sm leading-6 text-amber-50">
-                {program.room || 'Main room'}
-              </dd>
-            </div>
-            <div className="rounded-2xl border border-amber-100/10 bg-black/22 p-4">
-              <dt className="text-[0.6rem] uppercase tracking-[0.2em] text-amber-200/55">
                 Music
               </dt>
               <dd className="mt-2 text-sm leading-6 text-amber-50">
                 Cumbia · merengue · salsa · bachata
               </dd>
             </div>
-            <div className="rounded-2xl border border-amber-100/10 bg-black/22 p-4">
+            <div className="rounded-2xl border border-amber-100/10 bg-black/22 p-4 sm:col-span-2">
               <dt className="text-[0.6rem] uppercase tracking-[0.2em] text-amber-200/55">
-                Details
+                Note
               </dt>
               <dd className="mt-2 text-sm leading-6 text-amber-50">
-                Cover, hours, and age policy may vary
+                Some nights, hours, cover, and age policy may vary. Call ahead to confirm.
               </dd>
             </div>
           </dl>
-
-          <p className="mt-5 text-sm leading-7 text-amber-50/62">
-            Check the latest confirmed listing or call Club Bahia before making plans. Reservation requests are reviewed by the venue and do not guarantee admission or table placement until confirmed.
-          </p>
 
           <div className="mt-7 grid gap-3 sm:grid-cols-2">
             <Link
@@ -134,7 +122,7 @@ export function ResidentProgramFeature({
           </div>
           <div className="flex flex-col justify-center bg-black/16 p-5 sm:p-7">
             <p className="text-[0.62rem] font-semibold uppercase tracking-[0.24em] text-amber-100/58">
-              A Sunset Boulevard tradition
+              Sunset Boulevard
             </p>
             <p className="mt-3 font-serif text-3xl leading-tight text-amber-50 sm:text-5xl">
               Dinner, live music, dancing, and celebrations under the Bahia marquee.
