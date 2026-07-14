@@ -34,7 +34,7 @@ function metaReadiness(): SocialAccountReadiness {
 
   return {
     provider: 'meta',
-    label: 'Facebook and Instagram',
+    label: 'Instagram and Meta',
     status: accountConfigured
       ? imageProofReady
         ? 'connected'
@@ -45,10 +45,10 @@ function metaReadiness(): SocialAccountReadiness {
     summary: imageProofReady
       ? 'The controlled Instagram image publisher is configured with encrypted publication receipts and duplicate-post protection.'
       : accountConfigured
-        ? 'The Meta account details are present, but one or more publication safety checks still need attention.'
+        ? 'The Instagram account details are present, but one or more publication safety checks still need attention.'
         : appConfigured
-          ? 'The Meta application is configured. Club Bahia still needs to authorize the Facebook Page and Instagram account.'
-          : 'Create and configure a Meta developer application before automatic publishing can begin.',
+          ? 'The Meta application is configured. Club Bahia still needs to authorize its Instagram account and linked Facebook Page.'
+          : 'Configure a Meta developer application so Instagram can become the first live publishing lane.',
     checks: [
       {
         id: 'meta-app',
@@ -70,19 +70,19 @@ function metaReadiness(): SocialAccountReadiness {
       },
       {
         id: 'meta-page',
-        label: 'Club Bahia Facebook Page',
+        label: 'Linked Facebook Page',
         complete: configured('META_FACEBOOK_PAGE_ID'),
-        detail: 'The authorized Page ID is required for Facebook publishing and Page-linked Instagram discovery.',
+        detail: 'The current Instagram publishing path uses the Page-linked professional account. Facebook posting remains secondary.',
       },
       {
         id: 'meta-instagram',
-        label: 'Instagram professional account',
+        label: 'Club Bahia Instagram professional account',
         complete: configured('META_INSTAGRAM_ACCOUNT_ID'),
-        detail: 'The Instagram professional account must be authorized for content publishing.',
+        detail: 'The authorized Instagram professional account is the primary Meta destination.',
       },
       {
         id: 'meta-token',
-        label: 'Server-side Page access token',
+        label: 'Server-side Meta access token',
         complete: configured('META_PAGE_ACCESS_TOKEN'),
         detail: 'Environment storage supports the controlled proof; encrypted OAuth credential rotation remains a later connection milestone.',
       },
@@ -109,28 +109,142 @@ function metaReadiness(): SocialAccountReadiness {
           : 'Complete the Meta credentials, Graph version, encrypted receipt storage, and live-publishing switch.',
       },
       {
-        id: 'facebook-page-post',
-        label: 'Facebook Page post',
+        id: 'instagram-reel',
+        label: 'Instagram Reel',
         available: false,
-        reason: 'The Facebook Page publishing adapter follows the controlled Instagram proof.',
+        reason: 'The vertical-video processing and asynchronous status pipeline follows the image proof.',
       },
       {
         id: 'instagram-carousel',
         label: 'Instagram carousel',
         available: false,
-        reason: 'Planned after the single-image publishing proof of concept.',
-      },
-      {
-        id: 'instagram-reel',
-        label: 'Instagram Reel',
-        available: false,
-        reason: 'Requires the media-processing and asynchronous status pipeline.',
+        reason: 'Planned after single-image publishing is verified.',
       },
       {
         id: 'instagram-story',
         label: 'Instagram Story',
         available: false,
-        reason: 'Planned after feed, carousel, and Reel publishing are stable.',
+        reason: 'Planned after feed and vertical-video publishing are stable.',
+      },
+      {
+        id: 'facebook-page-post',
+        label: 'Facebook Page cross-post',
+        available: false,
+        reason: 'Secondary reuse channel after Instagram and TikTok are operational.',
+      },
+    ],
+  };
+}
+
+function tiktokReadiness(): SocialAccountReadiness {
+  const appConfigured =
+    configured('TIKTOK_CLIENT_KEY') &&
+    configured('TIKTOK_CLIENT_SECRET') &&
+    configured('TIKTOK_OAUTH_REDIRECT_URI');
+  const accountConfigured =
+    configured('TIKTOK_OPEN_ID') &&
+    configured('TIKTOK_ACCESS_TOKEN') &&
+    configured('TIKTOK_REFRESH_TOKEN');
+  const contentPostingEnabled = enabled('TIKTOK_CONTENT_POSTING_ENABLED');
+  const audited = enabled('TIKTOK_APP_AUDITED');
+  const verifiedMediaHost = configured('TIKTOK_VERIFIED_MEDIA_HOST');
+  const receiptStorage = isAdminWorkspaceStorageConfigured();
+  const integrationReady =
+    appConfigured &&
+    accountConfigured &&
+    contentPostingEnabled &&
+    verifiedMediaHost &&
+    receiptStorage;
+  const publicPostingReady = integrationReady && audited;
+
+  return {
+    provider: 'tiktok',
+    label: 'TikTok',
+    status: publicPostingReady
+      ? 'connected'
+      : accountConfigured || integrationReady
+        ? 'needs-attention'
+        : appConfigured
+          ? 'ready-for-connection'
+          : 'setup-required',
+    summary: publicPostingReady
+      ? 'TikTok is configured for public direct-post development with an audited client and verified media host.'
+      : integrationReady
+        ? 'The technical connection is present, but public visibility still depends on TikTok client audit approval.'
+        : appConfigured
+          ? 'The TikTok developer application is configured. Club Bahia still needs to authorize its account and complete Content Posting setup.'
+          : 'TikTok is the second primary publishing lane. Register the developer app and Content Posting integration before direct posting can begin.',
+    checks: [
+      {
+        id: 'tiktok-app',
+        label: 'TikTok developer application',
+        complete: configured('TIKTOK_CLIENT_KEY') && configured('TIKTOK_CLIENT_SECRET'),
+        detail: 'Client key and secret remain server-only.',
+      },
+      {
+        id: 'tiktok-redirect',
+        label: 'Approved TikTok OAuth redirect URL',
+        complete: configured('TIKTOK_OAUTH_REDIRECT_URI'),
+        detail: 'Must exactly match the redirect configured in TikTok for Developers.',
+      },
+      {
+        id: 'tiktok-account',
+        label: 'Authorized Club Bahia TikTok account',
+        complete: configured('TIKTOK_OPEN_ID'),
+        detail: 'The authorized creator open ID identifies the publishing destination.',
+      },
+      {
+        id: 'tiktok-tokens',
+        label: 'TikTok access and refresh tokens',
+        complete:
+          configured('TIKTOK_ACCESS_TOKEN') && configured('TIKTOK_REFRESH_TOKEN'),
+        detail: 'Direct posting requires the authorized account token and future refresh support.',
+      },
+      {
+        id: 'tiktok-content-posting',
+        label: 'Content Posting API and video.publish scope',
+        complete: contentPostingEnabled,
+        detail: 'The app and target account must be approved and authorized for direct posting.',
+      },
+      {
+        id: 'tiktok-media-host',
+        label: 'Verified TikTok media domain or URL prefix',
+        complete: verifiedMediaHost,
+        detail: 'TikTok pull-from-URL video and photo posts require media from a verified domain or URL prefix.',
+      },
+      {
+        id: 'tiktok-audit',
+        label: 'TikTok client audit for public posts',
+        complete: audited,
+        detail: 'Unaudited clients are restricted to private viewing mode even when direct posting works technically.',
+      },
+      {
+        id: 'tiktok-receipts',
+        label: 'Encrypted publication receipts',
+        complete: receiptStorage,
+        detail: 'Publication IDs and uncertain results need the same duplicate-prevention boundary used for Instagram.',
+      },
+    ],
+    capabilities: [
+      {
+        id: 'tiktok-video',
+        label: 'TikTok vertical video',
+        available: false,
+        reason: publicPostingReady
+          ? 'Account readiness is complete; the controlled video adapter is the next build checkpoint.'
+          : 'Complete TikTok authorization, Content Posting setup, verified media hosting, audit, and receipt storage.',
+      },
+      {
+        id: 'tiktok-status',
+        label: 'TikTok post-status polling',
+        available: false,
+        reason: 'Will be built with the video adapter because TikTok processing completes asynchronously.',
+      },
+      {
+        id: 'tiktok-photo',
+        label: 'TikTok photo post',
+        available: false,
+        reason: 'Planned after controlled vertical-video publishing is verified.',
       },
     ],
   };
@@ -158,7 +272,7 @@ function googleReadiness(): SocialAccountReadiness {
       ? 'The Business Profile location is configured for event-post development.'
       : oauthConfigured
         ? 'OAuth is configured. The approved Business Profile account and location still need to be connected.'
-        : 'Google Business Profile API access and OAuth credentials are still required.',
+        : 'Google remains a valuable local-discovery channel after Instagram and TikTok publishing are operational.',
     checks: [
       {
         id: 'google-oauth',
@@ -216,7 +330,7 @@ export function getPromotionAutopilotReadiness(): PromotionAutopilotReadiness {
   const cronSecretConfigured = configured('PUBLISHING_CRON_SECRET');
 
   return {
-    accounts: [metaReadiness(), googleReadiness()],
+    accounts: [metaReadiness(), tiktokReadiness(), googleReadiness()],
     scheduler: {
       databaseConfigured,
       cronSecretConfigured,
