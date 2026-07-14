@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { SocialConnectionsClient } from '@/components/admin/settings/SocialConnectionsClient';
 import { getPromotionAutopilotReadiness } from '@/lib/admin/autopilot/server/readiness';
 
 function statusTone(status: string): string {
@@ -34,20 +35,22 @@ export default function PromotionSettingsPage() {
           Connect the accounts that will publish.
         </h1>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-white/58 sm:text-base">
-          The controlled Instagram image publisher and TikTok private-test pipeline are built. Each remains disabled until its venue account, provider permissions, approved media host, encrypted receipts, and explicit live switch are verified.
+          The controlled Instagram image publisher and TikTok private-test pipeline are built. Connect the authorized Club Bahia accounts here without copying provider tokens into the browser.
         </p>
         <div className="mt-5 flex flex-wrap gap-2 text-xs text-white/48">
           <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5">
             No tokens shown in the browser
           </span>
           <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5">
-            Human confirmation required
+            Signed anti-forgery state
           </span>
           <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5">
-            Duplicate-post protection active
+            Encrypted renewable credentials
           </span>
         </div>
       </section>
+
+      <SocialConnectionsClient />
 
       <section className="grid gap-4 xl:grid-cols-2">
         {readiness.accounts.map((account) => (
@@ -58,7 +61,7 @@ export default function PromotionSettingsPage() {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[.18em] text-white/38">
-                  Connected account
+                  Provider readiness
                 </p>
                 <h2 className="mt-1 font-serif text-3xl text-white">{account.label}</h2>
               </div>
@@ -160,7 +163,7 @@ export default function PromotionSettingsPage() {
         </p>
         <h2 className="mt-1 font-serif text-2xl text-white">Instagram can publish one approved image. TikTok can run one private video proof.</h2>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-white/58">
-          Step 5 contains guarded provider panels. Instagram requires approved feed copy and image media. TikTok re-queries the authorized creator, forces SELF_ONLY privacy, disables comments, duets, and stitches, and stores the asynchronous publish ID before status polling. Public TikTok posts, scheduled campaigns, Reels, Stories, carousels, Facebook cross-posts, and Google posts remain gated.
+          Step 5 contains guarded provider panels. Instagram requires approved feed copy and image media. TikTok re-queries the authorized creator, forces SELF_ONLY privacy, disables comments, duets, and stitches, and stores the asynchronous publish ID before status polling. Public TikTok posts and scheduled campaigns remain gated.
         </p>
         <Link
           href="/admin/events"
