@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { SocialConnectionsClient } from '@/components/admin/settings/SocialConnectionsClient';
 import { getPromotionAutopilotReadiness } from '@/lib/admin/autopilot/server/readiness';
+import { isAdminWorkspaceStorageConfigured } from '@/lib/admin/workspaces/server';
 
 function statusTone(status: string): string {
   if (status === 'connected') {
@@ -24,6 +25,11 @@ function statusLabel(status: string): string {
 
 export default async function PromotionSettingsPage() {
   const readiness = await getPromotionAutopilotReadiness();
+  const queueStorageConfigured = isAdminWorkspaceStorageConfigured();
+  const triggerConfigured = Boolean(
+    process.env.PUBLISHING_CRON_SECRET?.trim(),
+  );
+  const schedulerReady = queueStorageConfigured && triggerConfigured;
 
   return (
     <div className="space-y-5">
@@ -35,11 +41,11 @@ export default async function PromotionSettingsPage() {
           Connect the accounts that will publish.
         </h1>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-white/58 sm:text-base">
-          The controlled Instagram image publisher and TikTok private-test pipeline are built. Connect the authorized Club Bahia accounts here without copying provider tokens into the browser.
+          The Instagram image publisher, TikTok private proof, shared publishing queue, and Today dashboard are built. Connect the authorized Club Bahia accounts here without copying provider authorization into the browser.
         </p>
         <div className="mt-5 flex flex-wrap gap-2 text-xs text-white/48">
           <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5">
-            No tokens shown in the browser
+            No provider secrets shown
           </span>
           <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5">
             Signed anti-forgery state
@@ -63,7 +69,9 @@ export default async function PromotionSettingsPage() {
                 <p className="text-[10px] font-semibold uppercase tracking-[.18em] text-white/38">
                   Provider readiness
                 </p>
-                <h2 className="mt-1 font-serif text-3xl text-white">{account.label}</h2>
+                <h2 className="mt-1 font-serif text-3xl text-white">
+                  {account.label}
+                </h2>
               </div>
               <span
                 className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[.12em] ${statusTone(account.status)}`}
@@ -72,7 +80,9 @@ export default async function PromotionSettingsPage() {
               </span>
             </div>
 
-            <p className="mt-4 text-sm leading-7 text-white/58">{account.summary}</p>
+            <p className="mt-4 text-sm leading-7 text-white/58">
+              {account.summary}
+            </p>
 
             <div className="mt-5 space-y-2">
               {account.checks.map((check) => (
@@ -91,8 +101,12 @@ export default async function PromotionSettingsPage() {
                     {check.complete ? '✓' : '·'}
                   </span>
                   <div>
-                    <p className="text-sm font-semibold text-white/76">{check.label}</p>
-                    <p className="mt-1 text-xs leading-5 text-white/42">{check.detail}</p>
+                    <p className="text-sm font-semibold text-white/76">
+                      {check.label}
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-white/42">
+                      {check.detail}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -126,32 +140,44 @@ export default async function PromotionSettingsPage() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[.18em] text-amber-100/60">
-              Full campaign scheduler
+              Promotion schedule
             </p>
-            <h2 className="mt-1 font-serif text-3xl text-white">Publish the campaign on time</h2>
+            <h2 className="mt-1 font-serif text-3xl text-white">
+              Publish approved posts on time
+            </h2>
           </div>
           <span
             className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[.12em] ${
-              readiness.scheduler.ready
+              schedulerReady
                 ? 'border-emerald-200/25 bg-emerald-200/10 text-emerald-100'
-                : 'border-white/15 bg-white/[.05] text-white/55'
+                : 'border-amber-200/18 bg-amber-200/[.06] text-amber-100'
             }`}
           >
-            {readiness.scheduler.ready ? 'Scheduler configured' : 'Not configured'}
+            {schedulerReady ? 'Automatic trigger ready' : 'Manual worker available'}
           </span>
         </div>
-        <p className="mt-4 text-sm leading-7 text-white/58">{readiness.scheduler.summary}</p>
+        <p className="mt-4 text-sm leading-7 text-white/58">
+          The venue pilot uses the existing encrypted Growth OS store for queue jobs, optimistic claims, retry state, and provider receipts. The Home dashboard can run due posts manually now. A protected recurring trigger is still required for posts to run while nobody has the app open.
+        </p>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <div className="rounded-2xl border border-white/8 bg-black/18 p-3">
-            <p className="text-sm font-semibold text-white/72">Transactional publishing database</p>
+            <p className="text-sm font-semibold text-white/72">
+              Durable encrypted queue
+            </p>
             <p className="mt-1 text-xs text-white/42">
-              {readiness.scheduler.databaseConfigured ? 'Configuration detected.' : 'Still required for scheduled job claims, retry queues, and campaign-wide automation.'}
+              {queueStorageConfigured
+                ? 'Ready for scheduled jobs, leases, attempts, and retry history.'
+                : 'Configure shared encrypted Growth OS storage before queueing posts.'}
             </p>
           </div>
           <div className="rounded-2xl border border-white/8 bg-black/18 p-3">
-            <p className="text-sm font-semibold text-white/72">Authenticated scheduler trigger</p>
+            <p className="text-sm font-semibold text-white/72">
+              Authenticated recurring trigger
+            </p>
             <p className="mt-1 text-xs text-white/42">
-              {readiness.scheduler.cronSecretConfigured ? 'Configuration detected.' : 'Still required before a cron or durable workflow can execute approved posts.'}
+              {triggerConfigured
+                ? 'Protected scheduler authorization is configured.'
+                : 'Still required for unattended execution at the scheduled minute.'}
             </p>
           </div>
         </div>
@@ -161,15 +187,17 @@ export default async function PromotionSettingsPage() {
         <p className="text-[10px] font-semibold uppercase tracking-[.18em] text-amber-100/65">
           Current safety boundary
         </p>
-        <h2 className="mt-1 font-serif text-2xl text-white">Instagram can publish one approved image. TikTok can run one private video proof.</h2>
+        <h2 className="mt-1 font-serif text-2xl text-white">
+          Instagram feed images can execute from the queue. TikTok and Reels remain review-gated.
+        </h2>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-white/58">
-          Step 5 contains guarded provider panels. Instagram requires approved feed copy and image media. TikTok re-queries the authorized creator, forces SELF_ONLY privacy, disables comments, duets, and stitches, and stores the asynchronous publish ID before status polling. Public TikTok posts and scheduled campaigns remain gated.
+          The worker claims due jobs exactly once, records every attempt, retries only provider failures classified as safe, and stops uncertain responses for manual review. Public TikTok posts and Instagram Reels remain paused until their controlled provider proofs are completed.
         </p>
         <Link
-          href="/admin/events"
+          href="/admin"
           className="mt-4 inline-flex min-h-11 items-center rounded-full bg-amber-300 px-5 text-sm font-bold text-black"
         >
-          Return to events →
+          Open today’s promotion →
         </Link>
       </section>
     </div>
