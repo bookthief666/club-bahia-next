@@ -28,6 +28,12 @@ export interface OperationsEvent {
   riskFlags: string[];
   revenueTarget: number;
   committedCosts: number;
+  performers?: string;
+  genres?: string;
+  admission?: string;
+  ageRestriction?: string;
+  reservationUrl?: string;
+  flyerUrl?: string;
   ideaPlan?: EventIdeaConcept;
   archivedAt?: string;
   cancelledAt?: string;
