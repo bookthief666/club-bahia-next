@@ -4,9 +4,18 @@ import type {
   PromotionAutopilotReadiness,
   SocialAccountReadiness,
 } from '@/lib/admin/autopilot/domain';
+import { isAdminWorkspaceStorageConfigured } from '@/lib/admin/workspaces/server';
 
 function configured(name: string): boolean {
   return Boolean(process.env[name]?.trim());
+}
+
+function enabled(name: string): boolean {
+  return process.env[name] === 'true';
+}
+
+function validGraphVersion(): boolean {
+  return /^v\d+\.\d+$/.test(process.env.META_GRAPH_API_VERSION?.trim() ?? '');
 }
 
 function metaReadiness(): SocialAccountReadiness {
@@ -18,20 +27,28 @@ function metaReadiness(): SocialAccountReadiness {
     configured('META_FACEBOOK_PAGE_ID') &&
     configured('META_INSTAGRAM_ACCOUNT_ID') &&
     configured('META_PAGE_ACCESS_TOKEN');
+  const liveEnabled = enabled('META_PUBLISH_ENABLED');
+  const receiptStorage = isAdminWorkspaceStorageConfigured();
+  const imageProofReady =
+    accountConfigured && validGraphVersion() && liveEnabled && receiptStorage;
 
   return {
     provider: 'meta',
     label: 'Facebook and Instagram',
     status: accountConfigured
-      ? 'connected'
+      ? imageProofReady
+        ? 'connected'
+        : 'needs-attention'
       : appConfigured
         ? 'ready-for-connection'
         : 'setup-required',
-    summary: accountConfigured
-      ? 'A server-side Meta account configuration is present for the first publishing proof of concept.'
-      : appConfigured
-        ? 'The Meta application is configured. Club Bahia still needs to authorize the Facebook Page and Instagram account.'
-        : 'Create and configure a Meta developer application before automatic publishing can begin.',
+    summary: imageProofReady
+      ? 'The controlled Instagram image publisher is configured with encrypted publication receipts and duplicate-post protection.'
+      : accountConfigured
+        ? 'The Meta account details are present, but one or more publication safety checks still need attention.'
+        : appConfigured
+          ? 'The Meta application is configured. Club Bahia still needs to authorize the Facebook Page and Instagram account.'
+          : 'Create and configure a Meta developer application before automatic publishing can begin.',
     checks: [
       {
         id: 'meta-app',
@@ -46,40 +63,56 @@ function metaReadiness(): SocialAccountReadiness {
         detail: 'Must exactly match the callback URL configured in Meta.',
       },
       {
+        id: 'meta-version',
+        label: 'Pinned Graph API version',
+        complete: validGraphVersion(),
+        detail: 'The version is explicit so a platform upgrade cannot silently change publishing behavior.',
+      },
+      {
         id: 'meta-page',
         label: 'Club Bahia Facebook Page',
         complete: configured('META_FACEBOOK_PAGE_ID'),
-        detail: 'The authorized Page ID is required for Facebook publishing.',
+        detail: 'The authorized Page ID is required for Facebook publishing and Page-linked Instagram discovery.',
       },
       {
         id: 'meta-instagram',
         label: 'Instagram professional account',
         complete: configured('META_INSTAGRAM_ACCOUNT_ID'),
-        detail: 'The Instagram professional account must be authorized for publishing.',
+        detail: 'The Instagram professional account must be authorized for content publishing.',
       },
       {
         id: 'meta-token',
         label: 'Server-side Page access token',
         complete: configured('META_PAGE_ACCESS_TOKEN'),
-        detail: 'Temporary environment storage supports the proof of concept; durable encrypted credential storage comes next.',
+        detail: 'Environment storage supports the controlled proof; encrypted OAuth credential rotation remains a later connection milestone.',
+      },
+      {
+        id: 'meta-receipts',
+        label: 'Encrypted publication receipts',
+        complete: receiptStorage,
+        detail: 'A durable receipt claim blocks duplicate submissions and records the provider post ID.',
+      },
+      {
+        id: 'meta-live-switch',
+        label: 'Controlled live-publishing switch',
+        complete: liveEnabled,
+        detail: 'META_PUBLISH_ENABLED must be explicitly true before the live button can call Meta.',
       },
     ],
     capabilities: [
       {
         id: 'instagram-image',
         label: 'Instagram image post',
-        available: accountConfigured,
-        reason: accountConfigured
+        available: imageProofReady,
+        reason: imageProofReady
           ? undefined
-          : 'Connect the Facebook Page and Instagram professional account.',
+          : 'Complete the Meta credentials, Graph version, encrypted receipt storage, and live-publishing switch.',
       },
       {
         id: 'facebook-page-post',
         label: 'Facebook Page post',
-        available: accountConfigured,
-        reason: accountConfigured
-          ? undefined
-          : 'Connect the Facebook Page and grant publishing permissions.',
+        available: false,
+        reason: 'The Facebook Page publishing adapter follows the controlled Instagram proof.',
       },
       {
         id: 'instagram-carousel',
