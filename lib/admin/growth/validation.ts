@@ -54,6 +54,14 @@ export const CampaignReelShotSchema = z
     message: 'Reel shot must end after it starts.',
   });
 
+export const CampaignShortVideoVariantSchema = z.object({
+  platform: z.enum(['instagram-reel', 'tiktok']),
+  caption: z.string().trim().min(1).max(2200),
+  title: z.string().trim().max(300).optional(),
+  hashtags: z.array(z.string().trim().min(1).max(100)).max(12).optional(),
+  postingNotes: z.string().trim().max(700).optional(),
+});
+
 export const CampaignStructuredContentSchema = z.object({
   primaryHook: z.string().trim().max(500).optional(),
   alternativeHooks: z.array(z.string().trim().min(1).max(500)).max(8).optional(),
@@ -65,6 +73,10 @@ export const CampaignStructuredContentSchema = z.object({
   reelShots: z.array(CampaignReelShotSchema).max(20).optional(),
   reelVoiceover: z.string().trim().max(2500).optional(),
   reelThumbnailText: z.string().trim().max(160).optional(),
+  shortVideoVariants: z
+    .array(CampaignShortVideoVariantSchema)
+    .max(4)
+    .optional(),
   emailSubjects: z.array(z.string().trim().min(1).max(300)).max(8).optional(),
   emailPreheader: z.string().trim().max(500).optional(),
   smsVariants: z.array(z.string().trim().min(1).max(300)).max(6).optional(),
