@@ -8,6 +8,12 @@ import {
   type PublishingExecutionItem,
   type PublishingExecutionStatus,
 } from '@/lib/admin/publishing/execution-domain';
+import {
+  canUseSharedWorkspaceStorage,
+  loadOrMigrateSharedWorkspace,
+  saveSharedWorkspace,
+  SharedWorkspaceConflictError,
+} from '@/lib/admin/workspaces/client';
 
 const STORAGE_KEY = 'club-bahia-publishing-execution-v1';
 export const PUBLISHING_EXECUTION_UPDATED_EVENT =
@@ -63,7 +69,9 @@ export interface PublishingExecutionRepository {
 export class BrowserPublishingExecutionRepository
   implements PublishingExecutionRepository
 {
-  private readAll(): Record<string, Partial<EventPublishingExecution>> {
+  private readonly sharedRevisions = new Map<string, number>();
+
+  private readAllLocal(): Record<string, Partial<EventPublishingExecution>> {
     if (typeof window === 'undefined') return {};
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return {};
@@ -78,20 +86,64 @@ export class BrowserPublishingExecutionRepository
     }
   }
 
-  private save(execution: EventPublishingExecution): EventPublishingExecution {
+  private writeAllLocal(
+    all: Record<string, Partial<EventPublishingExecution>>,
+  ): void {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+  }
+
+  private clearLegacy(eventId: string): void {
+    const all = this.readAllLocal();
+    if (!(eventId in all)) return;
+    delete all[eventId];
+    if (Object.keys(all).length) this.writeAllLocal(all);
+    else window.localStorage.removeItem(STORAGE_KEY);
+  }
+
+  private notify(eventId: string): void {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(
+      new CustomEvent(PUBLISHING_EXECUTION_UPDATED_EVENT, {
+        detail: { eventId },
+      }),
+    );
+  }
+
+  private async save(
+    execution: EventPublishingExecution,
+  ): Promise<EventPublishingExecution> {
     const next = {
       ...execution,
       updatedAt: new Date().toISOString(),
     };
-    const all = this.readAll();
-    all[execution.eventId] = next;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
-    window.dispatchEvent(
-      new CustomEvent(PUBLISHING_EXECUTION_UPDATED_EVENT, {
-        detail: { eventId: execution.eventId },
-      }),
-    );
-    return clone(next);
+
+    if (!canUseSharedWorkspaceStorage()) {
+      const all = this.readAllLocal();
+      all[execution.eventId] = next;
+      this.writeAllLocal(all);
+      this.notify(execution.eventId);
+      return clone(next);
+    }
+
+    try {
+      const record = await saveSharedWorkspace({
+        kind: 'publishing-execution',
+        key: execution.eventId,
+        value: next,
+        expectedRevision: this.sharedRevisions.get(execution.eventId) ?? 0,
+      });
+      this.sharedRevisions.set(execution.eventId, record.revision);
+      this.notify(execution.eventId);
+      return clone(record.value);
+    } catch (error) {
+      if (error instanceof SharedWorkspaceConflictError) {
+        throw new Error(
+          'Publishing status changed in another browser. Reload before saving again.',
+        );
+      }
+      throw error;
+    }
   }
 
   async get(
@@ -99,7 +151,22 @@ export class BrowserPublishingExecutionRepository
     content: CampaignContentItem[],
   ): Promise<EventPublishingExecution> {
     if (!content.length) return emptyPublishingExecution(eventId);
-    return clone(normalizeExecution(eventId, content, this.readAll()[eventId]));
+
+    if (!canUseSharedWorkspaceStorage()) {
+      return clone(normalizeExecution(eventId, content, this.readAllLocal()[eventId]));
+    }
+
+    const legacy = this.readAllLocal()[eventId];
+    const record = await loadOrMigrateSharedWorkspace<
+      Partial<EventPublishingExecution>
+    >({
+      kind: 'publishing-execution',
+      key: eventId,
+      legacyValue: legacy,
+    });
+    this.sharedRevisions.set(eventId, record?.revision ?? 0);
+    if (record && legacy) this.clearLegacy(eventId);
+    return clone(normalizeExecution(eventId, content, record?.value));
   }
 
   async updateItem(

@@ -6,6 +6,12 @@ import type {
   EventPostAssembly,
 } from '@/lib/admin/publishing/domain';
 import { emptyEventPostAssembly } from '@/lib/admin/publishing/domain';
+import {
+  canUseSharedWorkspaceStorage,
+  loadOrMigrateSharedWorkspace,
+  saveSharedWorkspace,
+  SharedWorkspaceConflictError,
+} from '@/lib/admin/workspaces/client';
 
 const STORAGE_KEY = 'club-bahia-post-assembly-v1';
 export const POST_ASSEMBLY_UPDATED_EVENT = 'club-bahia-post-assembly-updated';
@@ -62,7 +68,9 @@ export interface PostAssemblyRepository {
 }
 
 export class BrowserPostAssemblyRepository implements PostAssemblyRepository {
-  private readAll(): Record<string, Partial<EventPostAssembly>> {
+  private readonly sharedRevisions = new Map<string, number>();
+
+  private readAllLocal(): Record<string, Partial<EventPostAssembly>> {
     if (typeof window === 'undefined') return {};
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return {};
@@ -74,24 +82,76 @@ export class BrowserPostAssemblyRepository implements PostAssemblyRepository {
     }
   }
 
-  private save(assembly: EventPostAssembly): EventPostAssembly {
+  private writeAllLocal(all: Record<string, Partial<EventPostAssembly>>): void {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+  }
+
+  private clearLegacy(eventId: string): void {
+    const all = this.readAllLocal();
+    if (!(eventId in all)) return;
+    delete all[eventId];
+    if (Object.keys(all).length) this.writeAllLocal(all);
+    else window.localStorage.removeItem(STORAGE_KEY);
+  }
+
+  private notify(eventId: string): void {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(
+      new CustomEvent(POST_ASSEMBLY_UPDATED_EVENT, {
+        detail: { eventId },
+      }),
+    );
+  }
+
+  private async save(assembly: EventPostAssembly): Promise<EventPostAssembly> {
     const next = {
       ...assembly,
       updatedAt: new Date().toISOString(),
     };
-    const all = this.readAll();
-    all[assembly.eventId] = next;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
-    window.dispatchEvent(
-      new CustomEvent(POST_ASSEMBLY_UPDATED_EVENT, {
-        detail: { eventId: assembly.eventId },
-      }),
-    );
-    return clone(next);
+
+    if (!canUseSharedWorkspaceStorage()) {
+      const all = this.readAllLocal();
+      all[assembly.eventId] = next;
+      this.writeAllLocal(all);
+      this.notify(assembly.eventId);
+      return clone(next);
+    }
+
+    try {
+      const record = await saveSharedWorkspace({
+        kind: 'post-assembly',
+        key: assembly.eventId,
+        value: next,
+        expectedRevision: this.sharedRevisions.get(assembly.eventId) ?? 0,
+      });
+      this.sharedRevisions.set(assembly.eventId, record.revision);
+      this.notify(assembly.eventId);
+      return clone(normalizeAssembly(assembly.eventId, record.value));
+    } catch (error) {
+      if (error instanceof SharedWorkspaceConflictError) {
+        throw new Error(
+          'Post assignments changed in another browser. Reload before saving again.',
+        );
+      }
+      throw error;
+    }
   }
 
   async get(eventId: string): Promise<EventPostAssembly> {
-    return clone(normalizeAssembly(eventId, this.readAll()[eventId]));
+    if (!canUseSharedWorkspaceStorage()) {
+      return clone(normalizeAssembly(eventId, this.readAllLocal()[eventId]));
+    }
+
+    const legacy = this.readAllLocal()[eventId];
+    const record = await loadOrMigrateSharedWorkspace<Partial<EventPostAssembly>>({
+      kind: 'post-assembly',
+      key: eventId,
+      legacyValue: legacy,
+    });
+    this.sharedRevisions.set(eventId, record?.revision ?? 0);
+    if (record && legacy) this.clearLegacy(eventId);
+    return clone(normalizeAssembly(eventId, record?.value));
   }
 
   async assignPrimaryAsset(

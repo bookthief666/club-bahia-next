@@ -1,6 +1,12 @@
 'use client';
 
 import type { OperationsEvent } from '@/lib/admin/domain';
+import {
+  canUseSharedWorkspaceStorage,
+  loadOrMigrateSharedWorkspace,
+  saveSharedWorkspace,
+  SharedWorkspaceConflictError,
+} from '@/lib/admin/workspaces/client';
 import type {
   CampaignBrief,
   CampaignChannel,
@@ -261,9 +267,11 @@ export interface GrowthWorkspaceRepository {
 }
 
 export class BrowserGrowthWorkspaceRepository implements GrowthWorkspaceRepository {
+  private readonly sharedRevisions = new Map<string, number>();
+
   constructor(private readonly generator: CampaignGenerator = new ApiCampaignGenerator()) {}
 
-  private readAll(): Record<string, StoredWorkspace> {
+  private readAllLocal(): Record<string, StoredWorkspace> {
     if (typeof window === 'undefined') return {};
 
     const raw = window.localStorage.getItem(STORAGE_KEY);
@@ -276,9 +284,17 @@ export class BrowserGrowthWorkspaceRepository implements GrowthWorkspaceReposito
     }
   }
 
-  private writeAll(workspaces: Record<string, StoredWorkspace>): void {
+  private writeAllLocal(workspaces: Record<string, StoredWorkspace>): void {
     if (typeof window === 'undefined') return;
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(workspaces));
+  }
+
+  private clearLegacy(eventId: string): void {
+    const all = this.readAllLocal();
+    if (!(eventId in all)) return;
+    delete all[eventId];
+    if (Object.keys(all).length) this.writeAllLocal(all);
+    else window.localStorage.removeItem(STORAGE_KEY);
   }
 
   private notify(eventId: string): void {
@@ -288,21 +304,54 @@ export class BrowserGrowthWorkspaceRepository implements GrowthWorkspaceReposito
     );
   }
 
-  private save(workspace: EventGrowthWorkspace): EventGrowthWorkspace {
-    const all = this.readAll();
+  private async save(workspace: EventGrowthWorkspace): Promise<EventGrowthWorkspace> {
     const next: EventGrowthWorkspace = {
       ...workspace,
       updatedAt: new Date().toISOString(),
     };
 
-    all[workspace.eventId] = next;
-    this.writeAll(all);
-    this.notify(workspace.eventId);
-    return clone(next);
+    if (!canUseSharedWorkspaceStorage()) {
+      const all = this.readAllLocal();
+      all[workspace.eventId] = next;
+      this.writeAllLocal(all);
+      this.notify(workspace.eventId);
+      return clone(next);
+    }
+
+    try {
+      const record = await saveSharedWorkspace({
+        kind: 'growth',
+        key: workspace.eventId,
+        value: next,
+        expectedRevision: this.sharedRevisions.get(workspace.eventId) ?? 0,
+      });
+      this.sharedRevisions.set(workspace.eventId, record.revision);
+      this.notify(workspace.eventId);
+      return clone(record.value);
+    } catch (error) {
+      if (error instanceof SharedWorkspaceConflictError) {
+        throw new Error(
+          'This campaign changed in another browser. Reload before saving again.',
+        );
+      }
+      throw error;
+    }
   }
 
   async getWorkspace(event: OperationsEvent): Promise<EventGrowthWorkspace> {
-    return clone(normalizeWorkspace(event, this.readAll()[event.id]));
+    if (!canUseSharedWorkspaceStorage()) {
+      return clone(normalizeWorkspace(event, this.readAllLocal()[event.id]));
+    }
+
+    const legacy = this.readAllLocal()[event.id];
+    const record = await loadOrMigrateSharedWorkspace<StoredWorkspace>({
+      kind: 'growth',
+      key: event.id,
+      legacyValue: legacy,
+    });
+    this.sharedRevisions.set(event.id, record?.revision ?? 0);
+    if (record && legacy) this.clearLegacy(event.id);
+    return clone(normalizeWorkspace(event, record?.value));
   }
 
   async updateBrief(
