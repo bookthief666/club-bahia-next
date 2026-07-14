@@ -11,6 +11,11 @@ import {
 import type { PromotionAutopilotReadiness } from '@/lib/admin/autopilot/domain';
 import type { PublishingQueueJob } from '@/lib/admin/autopilot/queue-domain';
 import { buildShortVideoPublicationDrafts } from '@/lib/admin/autopilot/short-video';
+import {
+  CLUB_BAHIA_TIME_ZONE,
+  formatUtcForVenueInput,
+  venueInputToUtc,
+} from '@/lib/admin/autopilot/venue-time';
 import type { OperationsEvent } from '@/lib/admin/domain';
 import { eventRepository } from '@/lib/admin/event-repository';
 import type {
@@ -32,6 +37,11 @@ interface QueueResponse {
 
 type ScheduleLane = 'instagram-feed' | 'instagram-reel' | 'tiktok-video';
 
+type ExecutionSupport =
+  | 'automatic'
+  | 'connection-required'
+  | 'provider-proof-required';
+
 interface LaneDraft {
   id: string;
   label: string;
@@ -41,25 +51,8 @@ interface LaneDraft {
   caption: string;
   media?: EventAsset;
   approvedCopy: boolean;
-  executionSupport:
-    | 'automatic'
-    | 'connection-required'
-    | 'provider-proof-required';
+  executionSupport: ExecutionSupport;
   schedule: string;
-}
-
-function localInput(value?: string): string {
-  if (!value) return '';
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return '';
-  const local = new Date(parsed.getTime() - parsed.getTimezoneOffset() * 60_000);
-  return local.toISOString().slice(0, 16);
-}
-
-function isoValue(value: string): string | undefined {
-  if (!value) return undefined;
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? undefined : parsed.toISOString();
 }
 
 function selectedAsset(
@@ -72,12 +65,10 @@ function selectedAsset(
   const postPackage = assembly.packages.find(
     (entry) => entry.contentItemId === item.id,
   );
-  const selected = (postPackage?.assetIds ?? [])
+  const compatible = (postPackage?.assetIds ?? [])
     .map((assetId) => assets.find((asset) => asset.id === assetId))
-    .filter((asset): asset is EventAsset => Boolean(asset));
-  const compatible = selected.filter((asset) =>
-    isAssetCompatibleWithChannel(asset, channel),
-  );
+    .filter((asset): asset is EventAsset => Boolean(asset))
+    .filter((asset) => isAssetCompatibleWithChannel(asset, channel));
   return (
     compatible.find((asset) => asset.id === postPackage?.primaryAssetId) ??
     compatible[0]
@@ -85,11 +76,25 @@ function selectedAsset(
 }
 
 function statusTone(status: PublishingQueueJob['status'] | undefined): string {
-  if (status === 'published') return 'border-emerald-200/20 bg-emerald-200/[.08] text-emerald-100';
-  if (status === 'scheduled' || status === 'approved') return 'border-sky-200/20 bg-sky-200/[.08] text-sky-100';
-  if (status === 'retrying' || status === 'publishing') return 'border-violet-200/20 bg-violet-200/[.08] text-violet-100';
-  if (status === 'failed' || status === 'paused') return 'border-red-200/20 bg-red-200/[.08] text-red-100';
+  if (status === 'published') {
+    return 'border-emerald-200/20 bg-emerald-200/[.08] text-emerald-100';
+  }
+  if (status === 'scheduled' || status === 'approved') {
+    return 'border-sky-200/20 bg-sky-200/[.08] text-sky-100';
+  }
+  if (status === 'retrying' || status === 'publishing') {
+    return 'border-violet-200/20 bg-violet-200/[.08] text-violet-100';
+  }
+  if (status === 'failed' || status === 'paused') {
+    return 'border-red-200/20 bg-red-200/[.08] text-red-100';
+  }
   return 'border-amber-200/20 bg-amber-200/[.08] text-amber-100';
+}
+
+function supportText(support: ExecutionSupport): string {
+  if (support === 'automatic') return '✓ Automatic provider execution available';
+  if (support === 'connection-required') return '• Connect the provider account first';
+  return '• Queued for review until this provider proof is completed';
 }
 
 function ScheduleCard({
@@ -109,7 +114,8 @@ function ScheduleCard({
   onApprove: () => Promise<void>;
   onCancel: () => Promise<void>;
 }) {
-  const ready = lane.approvedCopy && lane.media && lane.schedule;
+  const ready = Boolean(lane.approvedCopy && lane.media && lane.schedule);
+
   return (
     <article className="overflow-hidden rounded-[1.4rem] border border-white/10 bg-black/22">
       <div className="p-4 sm:p-5">
@@ -118,26 +124,40 @@ function ScheduleCard({
             <p className="text-[10px] font-semibold uppercase tracking-[.18em] text-cyan-100/60">
               {lane.provider === 'meta' ? 'Instagram' : 'TikTok'}
             </p>
-            <h3 className="mt-1 text-xl font-semibold text-white">{lane.label}</h3>
+            <h3 className="mt-1 text-xl font-semibold text-white">
+              {lane.label}
+            </h3>
           </div>
-          <span className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[.12em] ${statusTone(job?.status)}`}>
+          <span
+            className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[.12em] ${statusTone(job?.status)}`}
+          >
             {job?.status?.replace('-', ' ') ?? 'not queued'}
           </span>
         </div>
 
         <div className="mt-4 grid gap-3 text-xs text-white/56">
-          <p className={lane.approvedCopy ? 'text-emerald-100/75' : 'text-amber-100/75'}>
-            {lane.approvedCopy ? '✓ Copy approved' : '• Approve the campaign copy first'}
+          <p
+            className={
+              lane.approvedCopy ? 'text-emerald-100/75' : 'text-amber-100/75'
+            }
+          >
+            {lane.approvedCopy
+              ? '✓ Copy approved'
+              : '• Approve the campaign copy first'}
           </p>
-          <p className={lane.media ? 'text-emerald-100/75' : 'text-amber-100/75'}>
+          <p
+            className={lane.media ? 'text-emerald-100/75' : 'text-amber-100/75'}
+          >
             {lane.media ? `✓ ${lane.media.name}` : '• Assign approved media first'}
           </p>
-          <p className={lane.executionSupport === 'automatic' ? 'text-emerald-100/75' : 'text-amber-100/75'}>
-            {lane.executionSupport === 'automatic'
-              ? '✓ Automatic provider execution available'
-              : lane.executionSupport === 'connection-required'
-                ? '• Connect the provider account first'
-                : '• Queued for review until this provider proof is completed'}
+          <p
+            className={
+              lane.executionSupport === 'automatic'
+                ? 'text-emerald-100/75'
+                : 'text-amber-100/75'
+            }
+          >
+            {supportText(lane.executionSupport)}
           </p>
         </div>
 
@@ -148,7 +168,7 @@ function ScheduleCard({
         </div>
 
         <label className="mt-4 block text-xs font-semibold text-white/62">
-          Publishing time
+          Publishing time — Los Angeles
           <input
             type="datetime-local"
             value={lane.schedule}
@@ -157,6 +177,9 @@ function ScheduleCard({
             className="mt-2 min-h-12 w-full rounded-xl border border-white/12 bg-black/28 px-3 text-sm text-white outline-none focus:border-cyan-200/45 disabled:opacity-40"
           />
         </label>
+        <p className="mt-2 text-[11px] leading-5 text-white/35">
+          Always interpreted in {CLUB_BAHIA_TIME_ZONE}, even when this device is elsewhere.
+        </p>
 
         {job?.lastError ? (
           <p className="mt-3 rounded-xl border border-red-200/16 bg-red-200/[.06] p-3 text-xs leading-5 text-red-50/75">
@@ -222,6 +245,7 @@ export function AutopilotScheduleClient({ eventId }: { eventId: string }) {
     const nextEvent = await eventRepository.getEvent(eventId);
     setEvent(nextEvent);
     if (!nextEvent) return;
+
     const nextWorkspace = await growthWorkspaceRepository.getWorkspace(nextEvent);
     const [nextAssembly, queueResponse, readinessResponse] = await Promise.all([
       postAssemblyRepository.get(eventId),
@@ -230,6 +254,7 @@ export function AutopilotScheduleClient({ eventId }: { eventId: string }) {
       }),
       fetch('/api/admin/autopilot/readiness', { cache: 'no-store' }),
     ]);
+
     setWorkspace(nextWorkspace);
     setAssembly(nextAssembly);
     if (queueResponse.ok) {
@@ -239,7 +264,9 @@ export function AutopilotScheduleClient({ eventId }: { eventId: string }) {
         const next = { ...current };
         for (const job of payload.jobs ?? []) {
           if (job.channel in next && job.scheduledFor) {
-            next[job.channel as ScheduleLane] = localInput(job.scheduledFor);
+            next[job.channel as ScheduleLane] = formatUtcForVenueInput(
+              job.scheduledFor,
+            );
           }
         }
         return next;
@@ -250,6 +277,7 @@ export function AutopilotScheduleClient({ eventId }: { eventId: string }) {
         (await readinessResponse.json()) as PromotionAutopilotReadiness,
       );
     }
+
     try {
       setAssets(await fetchEventAssets(eventId));
       setMediaLocked(false);
@@ -266,13 +294,16 @@ export function AutopilotScheduleClient({ eventId }: { eventId: string }) {
   useEffect(() => {
     void load().catch((error) =>
       setMessage(
-        error instanceof Error ? error.message : 'Could not load the publishing queue.',
+        error instanceof Error
+          ? error.message
+          : 'Could not load the publishing queue.',
       ),
     );
   }, [load]);
 
   const lanes = useMemo<LaneDraft[]>(() => {
     if (!event || !workspace) return [];
+
     const instagramItem = workspace.content.find(
       (item) => item.channel === 'instagram-feed',
     );
@@ -284,15 +315,21 @@ export function AutopilotScheduleClient({ eventId }: { eventId: string }) {
       assets,
     );
     const video = selectedAsset(videoItem, 'reel', assembly, assets);
-    const meta = readiness?.accounts.find((account) => account.provider === 'meta');
+    const meta = readiness?.accounts.find(
+      (account) => account.provider === 'meta',
+    );
     const tiktok = readiness?.accounts.find(
       (account) => account.provider === 'tiktok',
     );
     const imageAutomatic = Boolean(
-      meta?.capabilities.find((item) => item.id === 'instagram-image')?.available,
+      meta?.capabilities.find((item) => item.id === 'instagram-image')
+        ?.available,
     );
     const videoDrafts = videoItem
-      ? buildShortVideoPublicationDrafts({ item: videoItem, eventTitle: event.title })
+      ? buildShortVideoPublicationDrafts({
+          item: videoItem,
+          eventTitle: event.title,
+        })
       : [];
     const instagramVideo = videoDrafts.find(
       (draft) => draft.channel === 'instagram-reel',
@@ -300,6 +337,7 @@ export function AutopilotScheduleClient({ eventId }: { eventId: string }) {
     const tiktokVideo = videoDrafts.find(
       (draft) => draft.channel === 'tiktok-video',
     );
+
     return [
       {
         id: `${eventId}-instagram-feed`,
@@ -311,45 +349,59 @@ export function AutopilotScheduleClient({ eventId }: { eventId: string }) {
         media: image,
         approvedCopy: Boolean(
           instagramItem &&
-            ['approved', 'scheduled', 'published'].includes(instagramItem.status),
+            ['approved', 'scheduled', 'published'].includes(
+              instagramItem.status,
+            ),
         ),
         executionSupport: imageAutomatic ? 'automatic' : 'connection-required',
-        schedule: schedules['instagram-feed'] || localInput(instagramItem?.publishAt),
+        schedule:
+          schedules['instagram-feed'] ||
+          formatUtcForVenueInput(instagramItem?.publishAt),
       },
       {
         id: `${eventId}-instagram-reel`,
         label: 'Instagram Reel',
         provider: 'meta',
         channel: 'instagram-reel',
-        contentItemId: videoItem ? `${videoItem.id}-instagram-reel` : 'instagram-reel',
+        contentItemId: videoItem
+          ? `${videoItem.id}-instagram-reel`
+          : 'instagram-reel',
         caption: instagramVideo
           ? `${instagramVideo.caption}\n\n${instagramVideo.hashtags.join(' ')}`
           : '',
         media: video,
         approvedCopy: Boolean(
-          videoItem && ['approved', 'scheduled', 'published'].includes(videoItem.status),
+          videoItem &&
+            ['approved', 'scheduled', 'published'].includes(videoItem.status),
         ),
         executionSupport: 'provider-proof-required',
-        schedule: schedules['instagram-reel'] || localInput(videoItem?.publishAt),
+        schedule:
+          schedules['instagram-reel'] ||
+          formatUtcForVenueInput(videoItem?.publishAt),
       },
       {
         id: `${eventId}-tiktok-video`,
         label: 'TikTok vertical video',
         provider: 'tiktok',
         channel: 'tiktok-video',
-        contentItemId: videoItem ? `${videoItem.id}-tiktok-video` : 'tiktok-video',
+        contentItemId: videoItem
+          ? `${videoItem.id}-tiktok-video`
+          : 'tiktok-video',
         caption: tiktokVideo
           ? `${tiktokVideo.caption}\n\n${tiktokVideo.hashtags.join(' ')}`
           : '',
         media: video,
         approvedCopy: Boolean(
-          videoItem && ['approved', 'scheduled', 'published'].includes(videoItem.status),
+          videoItem &&
+            ['approved', 'scheduled', 'published'].includes(videoItem.status),
         ),
         executionSupport:
           tiktok?.status === 'connected'
             ? 'provider-proof-required'
             : 'connection-required',
-        schedule: schedules['tiktok-video'] || localInput(videoItem?.publishAt),
+        schedule:
+          schedules['tiktok-video'] ||
+          formatUtcForVenueInput(videoItem?.publishAt),
       },
     ];
   }, [assembly, assets, event, eventId, readiness, schedules, workspace]);
@@ -362,7 +414,9 @@ export function AutopilotScheduleClient({ eventId }: { eventId: string }) {
       await load();
       setMessage('Approved media unlocked for scheduling.');
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Could not unlock media.');
+      setMessage(
+        error instanceof Error ? error.message : 'Could not unlock media.',
+      );
     }
   }
 
@@ -373,7 +427,16 @@ export function AutopilotScheduleClient({ eventId }: { eventId: string }) {
     if (!event || !workspace) return;
     setPendingLane(lane.channel);
     setMessage('');
+
     try {
+      const scheduledFor =
+        action === 'upsert' ? venueInputToUtc(lane.schedule) : undefined;
+      if (action === 'upsert' && !scheduledFor) {
+        throw new Error(
+          'Choose a valid Los Angeles publishing time. Times skipped by daylight-saving changes cannot be scheduled.',
+        );
+      }
+
       const body =
         action === 'upsert'
           ? {
@@ -386,7 +449,7 @@ export function AutopilotScheduleClient({ eventId }: { eventId: string }) {
                 label: lane.label,
                 provider: lane.provider,
                 channel: lane.channel,
-                scheduledFor: isoValue(lane.schedule),
+                scheduledFor,
                 approvalMode: 'approve-each',
                 payload: {
                   caption: lane.caption,
@@ -395,12 +458,15 @@ export function AutopilotScheduleClient({ eventId }: { eventId: string }) {
                   reservationUrl: workspace.brief.reservationUrl || undefined,
                   altText: lane.media?.altText || undefined,
                   privacyLevel:
-                    lane.channel === 'tiktok-video' ? 'PUBLIC_TO_EVERYONE' : undefined,
+                    lane.channel === 'tiktok-video'
+                      ? 'PUBLIC_TO_EVERYONE'
+                      : undefined,
                 },
                 executionSupport: lane.executionSupport,
               },
             }
           : { action, jobId: lane.id };
+
       const response = await fetch('/api/admin/autopilot/queue', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -410,7 +476,9 @@ export function AutopilotScheduleClient({ eventId }: { eventId: string }) {
         job?: PublishingQueueJob;
       };
       if (!response.ok || !payload.job) {
-        throw new Error(payload.error || 'Publishing queue could not be updated.');
+        throw new Error(
+          payload.error || 'Publishing queue could not be updated.',
+        );
       }
       setJobs((current) => [
         ...current.filter((job) => job.id !== payload.job?.id),
@@ -425,7 +493,9 @@ export function AutopilotScheduleClient({ eventId }: { eventId: string }) {
       );
     } catch (error) {
       setMessage(
-        error instanceof Error ? error.message : 'Publishing queue could not be updated.',
+        error instanceof Error
+          ? error.message
+          : 'Publishing queue could not be updated.',
       );
     } finally {
       setPendingLane(undefined);
@@ -453,7 +523,7 @@ export function AutopilotScheduleClient({ eventId }: { eventId: string }) {
               Approve what should publish and when
             </h2>
             <p className="mt-2 text-sm leading-7 text-white/56">
-              Instagram and TikTok keep separate captions, times, provider receipts, and retry histories. Only formats that have passed their controlled provider proof can execute unattended.
+              Instagram and TikTok keep separate captions, Los Angeles times, provider receipts, and retry histories. Only formats that have passed their controlled provider proof can execute unattended.
             </p>
           </div>
           <Link
@@ -489,7 +559,10 @@ export function AutopilotScheduleClient({ eventId }: { eventId: string }) {
         ) : null}
 
         {message ? (
-          <p role="status" className="mt-4 rounded-xl border border-amber-200/15 bg-amber-200/[.06] px-4 py-3 text-sm text-amber-50/80">
+          <p
+            role="status"
+            className="mt-4 rounded-xl border border-amber-200/15 bg-amber-200/[.06] px-4 py-3 text-sm text-amber-50/80"
+          >
             {message}
           </p>
         ) : null}
@@ -502,7 +575,10 @@ export function AutopilotScheduleClient({ eventId }: { eventId: string }) {
               job={jobs.find((job) => job.id === lane.id)}
               pending={pendingLane === lane.channel}
               onSchedule={(value) =>
-                setSchedules((current) => ({ ...current, [lane.channel]: value }))
+                setSchedules((current) => ({
+                  ...current,
+                  [lane.channel]: value,
+                }))
               }
               onSave={() => queueAction(lane, 'upsert')}
               onApprove={() => queueAction(lane, 'approve')}
