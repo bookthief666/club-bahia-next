@@ -5,6 +5,7 @@ export const ADMIN_WORKSPACE_KINDS = [
   'growth',
   'post-assembly',
   'publishing-execution',
+  'autopilot-publication',
 ] as const;
 
 export type AdminWorkspaceKind = (typeof ADMIN_WORKSPACE_KINDS)[number];
