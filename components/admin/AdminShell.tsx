@@ -40,6 +40,13 @@ function pageIdentity(pathname: string): {
   title: string;
   subtitle: string;
 } {
+  if (pathname.startsWith('/admin/settings')) {
+    return {
+      eyebrow: 'Promotion Autopilot',
+      title: 'Publishing connections',
+      subtitle: 'Connect accounts and verify what can publish automatically.',
+    };
+  }
   if (pathname.includes('/publishing/execute')) {
     return {
       eyebrow: 'Promotion steps · Step 5',
@@ -86,28 +93,28 @@ function pageIdentity(pathname: string): {
     return {
       eyebrow: 'Promotion steps · Step 1',
       title: 'Create event',
-      subtitle: 'Start with the information guests need to know.',
+      subtitle: 'Enter the confirmed facts that every promotional channel will use.',
     };
   }
   if (pathname.includes('/edit')) {
     return {
       eyebrow: 'Promotion steps · Step 1',
       title: 'Edit event',
-      subtitle: 'Keep public event information accurate and current.',
+      subtitle: 'Keep the promotion source of truth accurate and current.',
     };
   }
   if (/^\/admin\/events\/[^/]+$/.test(pathname)) {
     return {
       eyebrow: 'Promotion steps · Step 1',
       title: 'Event overview',
-      subtitle: 'Review the event and continue into promotion.',
+      subtitle: 'Review the event facts and continue into promotion.',
     };
   }
   if (pathname.startsWith('/admin/events')) {
     return {
-      eyebrow: 'Club Bahia Growth OS',
+      eyebrow: 'Club Bahia Promotion Autopilot',
       title: 'Events',
-      subtitle: 'Choose an event, then create and publish its promotion.',
+      subtitle: 'Choose an event, then prepare and publish its promotion.',
     };
   }
   return {
@@ -220,14 +227,26 @@ export function AdminShell({
             })}
           </nav>
 
-          <div className="mt-auto rounded-2xl border border-emerald-200/12 bg-emerald-200/[.045] p-4">
-            <p className="text-[10px] font-semibold uppercase tracking-[.18em] text-emerald-100/60">
-              Simple rule
-            </p>
-            <p className="mt-2 text-xs leading-5 text-white/48">
-              Green means ready. Amber needs review. Red must be fixed before publishing or confirming.
-            </p>
-            <SignOutButton />
+          <div className="mt-auto space-y-2">
+            <Link
+              href="/admin/settings"
+              className={`flex min-h-11 items-center justify-center rounded-2xl border px-4 text-xs font-semibold transition ${
+                pathname.startsWith('/admin/settings')
+                  ? 'border-amber-200/20 bg-amber-200/10 text-amber-100'
+                  : 'border-white/10 text-white/50 hover:border-white/20 hover:text-white'
+              }`}
+            >
+              Publishing connections
+            </Link>
+            <div className="rounded-2xl border border-emerald-200/12 bg-emerald-200/[.045] p-4">
+              <p className="text-[10px] font-semibold uppercase tracking-[.18em] text-emerald-100/60">
+                Simple rule
+              </p>
+              <p className="mt-2 text-xs leading-5 text-white/48">
+                Green means ready. Amber needs review. Red must be fixed before publishing or confirming.
+              </p>
+              <SignOutButton />
+            </div>
           </div>
         </aside>
 
@@ -245,6 +264,18 @@ export function AdminShell({
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
+              <Link
+                href="/admin/settings"
+                aria-label="Publishing connections"
+                title="Publishing connections"
+                className={`flex h-9 w-9 items-center justify-center rounded-full border text-sm transition sm:h-11 sm:w-11 ${
+                  pathname.startsWith('/admin/settings')
+                    ? 'border-emerald-200/25 bg-emerald-200/10 text-emerald-100'
+                    : 'border-white/10 bg-black/20 text-white/45 hover:border-white/20 hover:text-white'
+                }`}
+              >
+                ⚙
+              </Link>
               <div
                 className="flex h-9 w-9 items-center justify-center rounded-full border border-amber-200/25 bg-[radial-gradient(circle_at_35%_25%,rgba(246,183,60,.2),rgba(15,13,11,.95))] text-[10px] font-bold text-amber-100 shadow-[0_0_24px_rgba(246,183,60,.08)] sm:h-11 sm:w-11 sm:text-xs"
                 aria-label={`${user.name}, ${user.role}`}
