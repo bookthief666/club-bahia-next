@@ -1,4 +1,4 @@
-export type SocialProvider = 'meta' | 'google-business';
+export type SocialProvider = 'meta' | 'tiktok' | 'google-business';
 
 export type SocialConnectionStatus =
   | 'setup-required'
