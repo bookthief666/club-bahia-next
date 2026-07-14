@@ -21,6 +21,7 @@ export type CampaignObjective = 'reservations' | 'ticket-sales' | 'attendance' |
 export type PublishingMode = 'automatic' | 'manual';
 export type CampaignGenerationProvider = 'openai' | 'fixture';
 export type CampaignQualitySeverity = 'error' | 'warning' | 'info';
+export type ShortVideoPlatform = 'instagram-reel' | 'tiktok';
 
 export interface CampaignBrief {
   theme: string;
@@ -64,6 +65,14 @@ export interface CampaignReelShot {
   voiceover?: string;
 }
 
+export interface CampaignShortVideoVariant {
+  platform: ShortVideoPlatform;
+  caption: string;
+  title?: string;
+  hashtags?: string[];
+  postingNotes?: string;
+}
+
 export interface CampaignStructuredContent {
   primaryHook?: string;
   alternativeHooks?: string[];
@@ -75,6 +84,7 @@ export interface CampaignStructuredContent {
   reelShots?: CampaignReelShot[];
   reelVoiceover?: string;
   reelThumbnailText?: string;
+  shortVideoVariants?: CampaignShortVideoVariant[];
   emailSubjects?: string[];
   emailPreheader?: string;
   smsVariants?: string[];
@@ -171,8 +181,8 @@ export const CAMPAIGN_CHANNEL_LABELS: Record<CampaignChannel, string> = {
   website: 'Website',
   'instagram-feed': 'Instagram post',
   'instagram-story': 'Instagram story',
-  reel: 'Reel',
-  facebook: 'Facebook',
+  reel: 'Vertical video',
+  facebook: 'Facebook cross-post',
   email: 'Email',
   sms: 'SMS',
 };
