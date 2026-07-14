@@ -3,7 +3,14 @@
 import { commandCenterFixture } from './fixtures';
 import type { EventStatus, OperationsEvent } from './domain';
 import type { EventIdeaConcept } from './event-ideas/domain';
-import { addDays, getVenueToday, localDateToVenueDate, type LocalDate } from './date';
+import {
+  addDays,
+  eventLocalDate,
+  eventLocalTime,
+  getVenueToday,
+  localDateToVenueDate,
+  type LocalDate,
+} from './date';
 import { ACTIVE_STATUSES, assertValidTransition } from './event-status';
 import {
   canUseSharedWorkspaceStorage,
@@ -36,6 +43,7 @@ export interface EventRepository {
 
 export type EventInput = Pick<OperationsEvent, 'title' | 'concept' | 'room' | 'owner'> & {
   date: LocalDate;
+  startTime?: string;
   status?: EventStatus;
   capacityTarget?: number;
   ticketsSold?: number;
@@ -43,8 +51,36 @@ export type EventInput = Pick<OperationsEvent, 'title' | 'concept' | 'room' | 'o
   riskFlags?: string[];
   revenueTarget?: number;
   committedCosts?: number;
+  performers?: string;
+  genres?: string;
+  admission?: string;
+  ageRestriction?: string;
+  reservationUrl?: string;
+  flyerUrl?: string;
   ideaPlan?: EventIdeaConcept;
 };
+
+function parseStartTime(value = '21:00'): { hour: number; minute: number } {
+  const [hourText, minuteText] = value.split(':');
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  if (
+    !Number.isInteger(hour) ||
+    !Number.isInteger(minute) ||
+    hour < 0 ||
+    hour > 23 ||
+    minute < 0 ||
+    minute > 59
+  ) {
+    throw new Error('Choose a valid event start time.');
+  }
+  return { hour, minute };
+}
+
+function cleanOptional(value: string | undefined): string | undefined {
+  const cleaned = value?.trim();
+  return cleaned || undefined;
+}
 
 export function newEventDefaults(now = new Date()): EventInput {
   const date = addDays(getVenueToday(now), 7);
@@ -54,12 +90,19 @@ export function newEventDefaults(now = new Date()): EventInput {
     room: 'Main room',
     owner: 'Luis',
     date,
+    startTime: '21:00',
     status: 'idea',
     capacityTarget: 250,
     ticketsSold: 0,
     riskFlags: [],
     revenueTarget: 0,
     committedCosts: 0,
+    performers: '',
+    genres: '',
+    admission: '',
+    ageRestriction: '',
+    reservationUrl: '',
+    flyerUrl: '',
   };
 }
 
@@ -157,7 +200,8 @@ export class BrowserFixtureEventRepository implements EventRepository {
 
   async createEvent(input: EventInput) {
     const events = await this.read();
-    const starts = localDateToVenueDate(input.date, 21);
+    const { hour, minute } = parseStartTime(input.startTime);
+    const starts = localDateToVenueDate(input.date, hour, minute);
     const ends = new Date(starts.getTime() + 4 * 60 * 60 * 1000);
     const event: OperationsEvent = {
       id: `evt-dev-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
@@ -176,6 +220,12 @@ export class BrowserFixtureEventRepository implements EventRepository {
       riskFlags: input.riskFlags ?? [],
       revenueTarget: input.revenueTarget ?? 0,
       committedCosts: input.committedCosts ?? 0,
+      performers: cleanOptional(input.performers),
+      genres: cleanOptional(input.genres),
+      admission: cleanOptional(input.admission),
+      ageRestriction: cleanOptional(input.ageRestriction),
+      reservationUrl: cleanOptional(input.reservationUrl),
+      flyerUrl: cleanOptional(input.flyerUrl),
       ideaPlan: input.ideaPlan ? clone(input.ideaPlan) : undefined,
     };
     events.push(event);
@@ -206,11 +256,30 @@ export class BrowserFixtureEventRepository implements EventRepository {
       riskFlags: input.riskFlags,
       revenueTarget: input.revenueTarget,
       committedCosts: input.committedCosts,
+      performers:
+        input.performers === undefined ? undefined : cleanOptional(input.performers),
+      genres: input.genres === undefined ? undefined : cleanOptional(input.genres),
+      admission:
+        input.admission === undefined ? undefined : cleanOptional(input.admission),
+      ageRestriction:
+        input.ageRestriction === undefined
+          ? undefined
+          : cleanOptional(input.ageRestriction),
+      reservationUrl:
+        input.reservationUrl === undefined
+          ? undefined
+          : cleanOptional(input.reservationUrl),
+      flyerUrl:
+        input.flyerUrl === undefined ? undefined : cleanOptional(input.flyerUrl),
       ideaPlan: input.ideaPlan ? clone(input.ideaPlan) : undefined,
     };
 
-    if (input.date) {
-      const starts = localDateToVenueDate(input.date, 21);
+    if (input.date || input.startTime) {
+      const date = input.date ?? eventLocalDate(current.startsAt);
+      const { hour, minute } = parseStartTime(
+        input.startTime ?? eventLocalTime(current.startsAt),
+      );
+      const starts = localDateToVenueDate(date, hour, minute);
       patch.startsAt = starts.toISOString();
       patch.endsAt = new Date(starts.getTime() + 4 * 60 * 60 * 1000).toISOString();
     }
@@ -257,12 +326,19 @@ export class BrowserFixtureEventRepository implements EventRepository {
       room: original.room,
       owner: original.owner,
       date: input.date,
+      startTime: eventLocalTime(original.startsAt),
       status: 'idea',
       capacityTarget: original.capacityTarget,
       ticketsSold: 0,
       riskFlags: [],
       revenueTarget: original.revenueTarget,
       committedCosts: original.committedCosts,
+      performers: original.performers,
+      genres: original.genres,
+      admission: original.admission,
+      ageRestriction: original.ageRestriction,
+      reservationUrl: original.reservationUrl,
+      flyerUrl: original.flyerUrl,
       ideaPlan: original.ideaPlan,
     });
   }
