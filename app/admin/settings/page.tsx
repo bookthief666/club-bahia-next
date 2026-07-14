@@ -15,7 +15,7 @@ function statusTone(status: string): string {
 }
 
 function statusLabel(status: string): string {
-  if (status === 'connected') return 'Configured';
+  if (status === 'connected') return 'Controlled publishing ready';
   if (status === 'ready-for-connection') return 'Ready to connect';
   if (status === 'needs-attention') return 'Needs attention';
   return 'Setup required';
@@ -34,17 +34,17 @@ export default function PromotionSettingsPage() {
           Connect the accounts that will publish.
         </h1>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-white/58 sm:text-base">
-          The Growth OS will prepare posts first. Automatic publishing stays disabled until the venue accounts, permissions, durable job storage, and retry safeguards are verified.
+          The first controlled Instagram image publisher is built. It stays disabled until the venue account, exact API version, approved media host, encrypted receipt storage, and explicit live switch are all verified.
         </p>
         <div className="mt-5 flex flex-wrap gap-2 text-xs text-white/48">
           <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5">
             No tokens shown in the browser
           </span>
           <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5">
-            Approval required before publishing
+            Human confirmation required
           </span>
           <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5">
-            Duplicate-post protection planned
+            Duplicate-post protection active
           </span>
         </div>
       </section>
@@ -123,9 +123,9 @@ export default function PromotionSettingsPage() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[.18em] text-amber-100/60">
-              Durable scheduler
+              Full campaign scheduler
             </p>
-            <h2 className="mt-1 font-serif text-3xl text-white">Publish exactly once</h2>
+            <h2 className="mt-1 font-serif text-3xl text-white">Publish the campaign on time</h2>
           </div>
           <span
             className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[.12em] ${
@@ -142,7 +142,7 @@ export default function PromotionSettingsPage() {
           <div className="rounded-2xl border border-white/8 bg-black/18 p-3">
             <p className="text-sm font-semibold text-white/72">Transactional publishing database</p>
             <p className="mt-1 text-xs text-white/42">
-              {readiness.scheduler.databaseConfigured ? 'Configuration detected.' : 'Still required for atomic job claims, retries, and unique idempotency keys.'}
+              {readiness.scheduler.databaseConfigured ? 'Configuration detected.' : 'Still required for scheduled job claims, retry queues, and campaign-wide automation.'}
             </p>
           </div>
           <div className="rounded-2xl border border-white/8 bg-black/18 p-3">
@@ -158,9 +158,9 @@ export default function PromotionSettingsPage() {
         <p className="text-[10px] font-semibold uppercase tracking-[.18em] text-amber-100/65">
           Current safety boundary
         </p>
-        <h2 className="mt-1 font-serif text-2xl text-white">Preparation remains live. Automatic posting remains gated.</h2>
+        <h2 className="mt-1 font-serif text-2xl text-white">One controlled Instagram image can publish. Full autopilot remains gated.</h2>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-white/58">
-          Captions, hashtags, media matching, tracked links, schedules, and approval records can be prepared now. The first live provider milestone will publish one controlled Instagram image post and save the provider ID and public URL without allowing a duplicate retry.
+          Step 5 now contains a guarded live-publication panel. It only activates for approved Instagram copy and approved image media after every Meta safety check passes. Scheduled campaigns, Facebook, carousels, Reels, Stories, and Google posts remain disabled until their own adapters are verified.
         </p>
         <Link
           href="/admin/events"
