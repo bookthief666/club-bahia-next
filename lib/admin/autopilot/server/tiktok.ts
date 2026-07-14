@@ -1,5 +1,7 @@
 import 'server-only';
 
+import { getOAuthCredential } from '@/lib/admin/autopilot/server/credential-store';
+
 export type TikTokPublishingStage =
   | 'configuration'
   | 'query-creator'
@@ -25,6 +27,7 @@ export interface TikTokPublishingConfiguration {
   enabled: boolean;
   audited: boolean;
   verifiedMediaHost?: string;
+  source: 'oauth' | 'environment';
 }
 
 export interface TikTokCreatorInfo {
@@ -63,13 +66,40 @@ type FetchLike = (
   init?: RequestInit,
 ) => Promise<Response>;
 
-export function getTikTokPublishingConfiguration(): TikTokPublishingConfiguration {
-  const accessToken = process.env.TIKTOK_ACCESS_TOKEN?.trim() ?? '';
+async function connectedAccessValue(): Promise<string | null> {
+  try {
+    const stored = await getOAuthCredential('tiktok');
+    if (
+      stored?.record.status === 'connected' &&
+      stored.record.secretMaterial.length >= 20
+    ) {
+      if (
+        stored.record.expiresAt &&
+        new Date(stored.record.expiresAt).getTime() <= Date.now()
+      ) {
+        throw new TikTokPublishingError(
+          'The TikTok authorization expired. Refresh or reconnect it from Publishing Connections.',
+          'configuration',
+        );
+      }
+      return stored.record.secretMaterial;
+    }
+  } catch (error) {
+    if (error instanceof TikTokPublishingError) throw error;
+    // Preview and tests may intentionally use environment-only provider setup.
+  }
+  return null;
+}
+
+export async function getTikTokPublishingConfiguration(): Promise<TikTokPublishingConfiguration> {
+  const storedValue = await connectedAccessValue();
+  const accessToken =
+    storedValue || process.env.TIKTOK_ACCESS_TOKEN?.trim() || '';
   const verifiedMediaHost =
     process.env.TIKTOK_VERIFIED_MEDIA_HOST?.trim().toLowerCase() || undefined;
   if (accessToken.length < 20) {
     throw new TikTokPublishingError(
-      'TIKTOK_ACCESS_TOKEN is not configured.',
+      'Connect the Club Bahia TikTok account before publishing.',
       'configuration',
     );
   }
@@ -87,12 +117,13 @@ export function getTikTokPublishingConfiguration(): TikTokPublishingConfiguratio
     verifiedMediaHost,
     enabled: process.env.TIKTOK_CONTENT_POSTING_ENABLED === 'true',
     audited: process.env.TIKTOK_APP_AUDITED === 'true',
+    source: storedValue ? 'oauth' : 'environment',
   };
 }
 
-export function isTikTokPublishingConfigured(): boolean {
+export async function isTikTokPublishingConfigured(): Promise<boolean> {
   try {
-    return getTikTokPublishingConfiguration().enabled;
+    return (await getTikTokPublishingConfiguration()).enabled;
   } catch {
     return false;
   }
@@ -184,7 +215,7 @@ async function tiktokRequest(
 export async function queryTikTokCreatorInfo(
   fetchImpl: FetchLike = fetch,
 ): Promise<TikTokCreatorInfo> {
-  const config = getTikTokPublishingConfiguration();
+  const config = await getTikTokPublishingConfiguration();
   if (!config.enabled) {
     throw new TikTokPublishingError(
       'TikTok Content Posting is disabled.',
@@ -233,7 +264,7 @@ function assertVerifiedVideoUrl(
 ): void {
   if (!config.verifiedMediaHost) {
     throw new TikTokPublishingError(
-      'TIKTOK_VERIFIED_MEDIA_HOST must be configured before a video can be initialized.',
+      'Configure the exact TikTok-verified media hostname before initializing a video.',
       'configuration',
     );
   }
@@ -254,7 +285,7 @@ export async function initializeTikTokVideoPost(
   creator: TikTokCreatorInfo,
   fetchImpl: FetchLike = fetch,
 ): Promise<TikTokVideoPublication> {
-  const config = getTikTokPublishingConfiguration();
+  const config = await getTikTokPublishingConfiguration();
   if (!config.enabled) {
     throw new TikTokPublishingError(
       'TikTok Content Posting is disabled.',
@@ -310,7 +341,7 @@ export async function getTikTokPostStatus(
   publishId: string,
   fetchImpl: FetchLike = fetch,
 ): Promise<TikTokPostStatus> {
-  const config = getTikTokPublishingConfiguration();
+  const config = await getTikTokPublishingConfiguration();
   if (!config.enabled) {
     throw new TikTokPublishingError(
       'TikTok Content Posting is disabled.',
