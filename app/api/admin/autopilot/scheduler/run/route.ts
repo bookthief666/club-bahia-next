@@ -33,15 +33,23 @@ function equal(left: string, right: string): boolean {
   return timingSafeEqual(digest(left), digest(right));
 }
 
+function schedulerSecret(): string {
+  return (
+    process.env.PUBLISHING_CRON_SECRET?.trim() ||
+    process.env.CRON_SECRET?.trim() ||
+    ''
+  );
+}
+
 function schedulerUser(request: Request): AdminUser | null {
   try {
     const admin = requireAdminRequest(request);
     if (['owner', 'manager'].includes(admin.role)) return admin;
   } catch {
-    // A scheduler trigger can authenticate with the dedicated bearer value below.
+    // A recurring scheduler trigger can authenticate with the bearer value below.
   }
 
-  const configured = process.env.PUBLISHING_CRON_SECRET?.trim() ?? '';
+  const configured = schedulerSecret();
   const header = request.headers.get('authorization') ?? '';
   const supplied = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
   if (configured.length >= 32 && supplied && equal(configured, supplied)) {
@@ -55,7 +63,7 @@ function schedulerUser(request: Request): AdminUser | null {
   return null;
 }
 
-export async function POST(request: Request) {
+async function runScheduler(request: Request) {
   const user = schedulerUser(request);
   if (!user) return json({ error: 'Scheduler authorization failed.' }, 401);
   if (!isAdminWorkspaceStorageConfigured()) {
@@ -129,4 +137,12 @@ export async function POST(request: Request) {
     results,
     completedAt: new Date().toISOString(),
   });
+}
+
+export async function GET(request: Request) {
+  return runScheduler(request);
+}
+
+export async function POST(request: Request) {
+  return runScheduler(request);
 }
