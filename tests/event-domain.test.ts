@@ -177,11 +177,11 @@ describe("repository status edge cases", () => {
     ).rejects.toThrow(/Los Angeles/);
   });
 
-  it("allows live when the submitted date matches the current venue date", async () => {
+  it("allows live when the submitted date and time match the current venue date", async () => {
     const repo = new BrowserFixtureEventRepository();
     const live = await repo.updateEvent(
       "evt-sabado-caliente",
-      { date: "2026-08-08", status: "live" },
+      { date: "2026-08-08", startTime: "21:00", status: "live" },
       { now: new Date("2026-08-09T01:00:00.000Z") },
     );
     expect(live.status).toBe("live");
