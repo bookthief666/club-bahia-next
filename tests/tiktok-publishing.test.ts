@@ -8,6 +8,10 @@ import {
   queryTikTokCreatorInfo,
   TikTokPublishingError,
 } from '../lib/admin/autopilot/server/tiktok';
+import {
+  TikTokPrivateVideoPublishRequestSchema,
+  TikTokPublicationStatusRequestSchema,
+} from '../lib/admin/autopilot/validation';
 
 beforeEach(() => {
   vi.stubEnv('TIKTOK_ACCESS_TOKEN', 'test-tiktok-access-token-long-enough');
@@ -18,6 +22,53 @@ beforeEach(() => {
 });
 
 describe('guarded TikTok Content Posting adapter', () => {
+  it('requires an HTTPS video and explicit private-test confirmation', () => {
+    expect(
+      TikTokPrivateVideoPublishRequestSchema.safeParse({
+        eventId: 'evt-1',
+        contentItemId: 'reel-tiktok-video',
+        caption: 'Tonight at Club Bahia #ClubBahia',
+        videoUrl: 'https://media.clubbahia.example/events/night.mp4',
+        confirmation: 'PUBLISH_PRIVATE_TEST',
+      }).success,
+    ).toBe(true);
+
+    expect(
+      TikTokPrivateVideoPublishRequestSchema.safeParse({
+        eventId: 'evt-1',
+        contentItemId: 'reel-tiktok-video',
+        caption: 'Tonight at Club Bahia',
+        videoUrl: 'http://media.clubbahia.example/events/night.mp4',
+        confirmation: 'PUBLISH_PRIVATE_TEST',
+      }).success,
+    ).toBe(false);
+
+    expect(
+      TikTokPrivateVideoPublishRequestSchema.safeParse({
+        eventId: 'evt-1',
+        contentItemId: 'reel-tiktok-video',
+        caption: 'Tonight at Club Bahia',
+        videoUrl: 'https://media.clubbahia.example/events/night.mp4',
+      }).success,
+    ).toBe(false);
+  });
+
+  it('validates the durable status-refresh identity', () => {
+    expect(
+      TikTokPublicationStatusRequestSchema.safeParse({
+        idempotencyKey:
+          'evt-1:tiktok:reel-tiktok-video:c123:m456:publish-now',
+        confirmation: 'CHECK_STATUS',
+      }).success,
+    ).toBe(true);
+    expect(
+      TikTokPublicationStatusRequestSchema.safeParse({
+        idempotencyKey: '../../receipt',
+        confirmation: 'CHECK_STATUS',
+      }).success,
+    ).toBe(false);
+  });
+
   it('queries current creator settings before publishing', async () => {
     const fetchImpl = vi.fn(async () =>
       new Response(
@@ -53,6 +104,31 @@ describe('guarded TikTok Content Posting adapter', () => {
     );
   });
 
+  it('can verify the creator before a media hostname is configured', async () => {
+    vi.stubEnv('TIKTOK_VERIFIED_MEDIA_HOST', '');
+    const fetchImpl = vi.fn(async () =>
+      new Response(
+        JSON.stringify({
+          data: {
+            creator_username: 'clubbahia',
+            privacy_level_options: ['SELF_ONLY'],
+            comment_disabled: true,
+            duet_disabled: true,
+            stitch_disabled: true,
+            max_video_post_duration_sec: 60,
+          },
+          error: { code: 'ok', message: '', log_id: 'creator-log' },
+        }),
+        { status: 200 },
+      ),
+    );
+
+    await expect(queryTikTokCreatorInfo(fetchImpl)).resolves.toMatchObject({
+      username: 'clubbahia',
+      privacyLevelOptions: ['SELF_ONLY'],
+    });
+  });
+
   it('initializes a pull-from-URL video using an allowed creator privacy level', async () => {
     const fetchImpl = vi.fn(async () =>
       new Response(
@@ -68,9 +144,9 @@ describe('guarded TikTok Content Posting adapter', () => {
       {
         videoUrl: 'https://media.clubbahia.example/events/darkwave.mp4',
         title: 'Darkwave Thursday at Club Bahia #ClubBahia',
-        privacyLevel: 'PUBLIC_TO_EVERYONE',
-        disableComment: false,
-        disableDuet: false,
+        privacyLevel: 'SELF_ONLY',
+        disableComment: true,
+        disableDuet: true,
         disableStitch: true,
       },
       {
@@ -90,7 +166,9 @@ describe('guarded TikTok Content Posting adapter', () => {
     const body = JSON.parse(String(request?.[1]?.body));
     expect(body).toMatchObject({
       post_info: {
-        privacy_level: 'PUBLIC_TO_EVERYONE',
+        privacy_level: 'SELF_ONLY',
+        disable_comment: true,
+        disable_duet: true,
         disable_stitch: true,
       },
       source_info: {
