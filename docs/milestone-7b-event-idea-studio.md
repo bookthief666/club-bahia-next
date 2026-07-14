@@ -20,6 +20,8 @@ The OpenAI request receives the typed Club Bahia venue profile from Milestone 7A
 
 Choosing Use this plan creates a real shared event draft in the evaluating stage. The selected plan becomes editable event information, and identified risks are preserved on the event record.
 
+The complete selected development plan is retained with the event. The event overview displays its confidence label, fit rationale, people and setup needs, risks, unanswered questions, and recommended first test.
+
 The manager is redirected to the normal event editor to verify the title, date, room, responsible person, and public description before promotion begins.
 
 ## Reliability
