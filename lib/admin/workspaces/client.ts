@@ -1,7 +1,9 @@
 'use client';
 
 import type {
-  AdminWorkspaceKind,
+  ClientAdminWorkspaceKind,
+} from '@/lib/admin/workspaces/client-kinds';
+import type {
   AdminWorkspaceRecord,
 } from '@/lib/admin/workspaces/domain';
 
@@ -24,7 +26,7 @@ interface WorkspaceApiError {
   currentRevision?: number;
 }
 
-function endpoint(kind: AdminWorkspaceKind, key: string): string {
+function endpoint(kind: ClientAdminWorkspaceKind, key: string): string {
   const query = new URLSearchParams({ kind, key });
   return `${WORKSPACE_API}?${query.toString()}`;
 }
@@ -45,7 +47,7 @@ export function canUseSharedWorkspaceStorage(): boolean {
 }
 
 export async function loadSharedWorkspace<T>(
-  kind: AdminWorkspaceKind,
+  kind: ClientAdminWorkspaceKind,
   key: string,
 ): Promise<AdminWorkspaceRecord<T> | null> {
   const response = await window.fetch(endpoint(kind, key), {
@@ -61,7 +63,7 @@ export async function loadSharedWorkspace<T>(
 }
 
 export async function saveSharedWorkspace<T>(input: {
-  kind: AdminWorkspaceKind;
+  kind: ClientAdminWorkspaceKind;
   key: string;
   value: T;
   expectedRevision: number;
@@ -81,7 +83,7 @@ export async function saveSharedWorkspace<T>(input: {
 }
 
 export async function loadOrMigrateSharedWorkspace<T>(input: {
-  kind: AdminWorkspaceKind;
+  kind: ClientAdminWorkspaceKind;
   key: string;
   legacyValue?: T;
 }): Promise<AdminWorkspaceRecord<T> | null> {
