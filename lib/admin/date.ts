@@ -45,6 +45,11 @@ export function formatVenueTime(iso: string | Date): string {
   }).format(typeof iso === 'string' ? new Date(iso) : iso);
 }
 
+export function eventLocalTime(iso: string): string {
+  const parts = getZonedParts(new Date(iso));
+  return `${String(parts.hour).padStart(2, '0')}:${String(parts.minute).padStart(2, '0')}`;
+}
+
 export function formatVenueMonth(date: LocalDate): string {
   return new Intl.DateTimeFormat('en-US', {
     timeZone: 'UTC',
