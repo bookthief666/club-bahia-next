@@ -55,14 +55,22 @@ export function EventListClient() {
               Plan the night. Build the crowd.
             </h1>
             <p className="mt-3 text-sm leading-6 text-white/58 sm:text-base">
-              Choose an event to create its campaign, add the final flyer and Reel, prepare every post, and track what gets published.
+              Start with a rough idea and let the Event Idea Studio develop three practical concepts, or enter the details of an event that is already confirmed.
             </p>
-            <Link
-              href="/admin/events/new"
-              className="mt-5 inline-flex min-h-12 items-center rounded-full bg-amber-300 px-6 text-sm font-bold text-black shadow-[0_12px_32px_rgba(246,183,60,.16)]"
-            >
-              Create a new event →
-            </Link>
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <Link
+                href="/admin/events/ideas"
+                className="inline-flex min-h-12 items-center justify-center rounded-full bg-amber-300 px-6 text-sm font-bold text-black shadow-[0_12px_32px_rgba(246,183,60,.16)]"
+              >
+                Develop an event with AI →
+              </Link>
+              <Link
+                href="/admin/events/new"
+                className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/15 bg-black/18 px-6 text-sm font-semibold text-white/72 transition hover:border-white/30 hover:text-white"
+              >
+                Enter confirmed event
+              </Link>
+            </div>
           </div>
 
           <div className="grid grid-cols-3 gap-2 lg:min-w-[22rem]">
@@ -98,14 +106,14 @@ export function EventListClient() {
         <div className="mb-3 flex items-end justify-between gap-3">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[.2em] text-white/38">
-              Event workspace
+              Event plans
             </p>
             <h2 className="mt-1 text-2xl font-semibold text-white">
               {filtered.length} event{filtered.length === 1 ? '' : 's'}
             </h2>
           </div>
           <p className="hidden text-xs text-white/38 sm:block">
-            Open an event to follow its five campaign steps.
+            Open an event to follow its five promotion steps.
           </p>
         </div>
 
@@ -117,8 +125,14 @@ export function EventListClient() {
             <div className="rounded-[1.4rem] border border-dashed border-white/15 bg-black/15 p-8 text-center">
               <h3 className="text-xl font-semibold text-white">No matching events</h3>
               <p className="mt-2 text-sm text-white/50">
-                Clear the filters or create a new event.
+                Clear the filters, develop an idea, or enter a confirmed event.
               </p>
+              <Link
+                href="/admin/events/ideas"
+                className="mt-4 inline-flex min-h-11 items-center rounded-full bg-amber-300 px-5 text-sm font-bold text-black"
+              >
+                Open Event Idea Studio
+              </Link>
             </div>
           ) : null}
         </div>
