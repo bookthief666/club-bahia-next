@@ -127,17 +127,17 @@ function captionWithTrackedLink(input: {
   });
   const caption = input.caption.includes(input.reservationUrl)
     ? input.caption.replaceAll(input.reservationUrl, trackedUrl)
-    : `${input.caption}\n\n${trackedUrl}`;
+    : input.caption;
   if (caption.length > 2200) {
     throw new Error(
-      'The Instagram caption is too long after adding its tracked reservation link.',
+      'The Instagram caption is too long after applying its tracked reservation link.',
     );
   }
   return { caption, trackedUrl };
 }
 
 export async function POST(request: Request) {
-  let user;
+  let user: ReturnType<typeof requireAdminRequest>;
   try {
     user = requireAdminRequest(request);
   } catch (error) {
