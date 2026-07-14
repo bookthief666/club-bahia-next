@@ -18,6 +18,7 @@ export type EventAssetPlatform =
   | 'instagram-feed'
   | 'instagram-story'
   | 'reel'
+  | 'tiktok'
   | 'facebook'
   | 'email'
   | 'sms'
@@ -56,7 +57,7 @@ export const EVENT_ASSET_ROLE_LABELS: Record<EventAssetRole, string> = {
   'primary-flyer': 'Primary event flyer',
   'feed-creative': 'Instagram feed creative',
   'story-creative': 'Story creative',
-  'reel-video': 'Finished Reel / vertical video',
+  'reel-video': 'Vertical video for Instagram / TikTok',
   'raw-video': 'Raw video clip',
   'performer-photo': 'Performer / DJ photo',
   'venue-photo': 'Venue photo',
@@ -70,7 +71,8 @@ export const EVENT_ASSET_PLATFORM_LABELS: Record<EventAssetPlatform, string> = {
   website: 'Website',
   'instagram-feed': 'Instagram feed',
   'instagram-story': 'Instagram Story',
-  reel: 'Reel',
+  reel: 'Instagram Reel',
+  tiktok: 'TikTok',
   facebook: 'Facebook',
   email: 'Email',
   sms: 'SMS',
@@ -141,9 +143,10 @@ export function buildEventAssetReadiness(
     },
     {
       id: 'reel',
-      label: 'Reel video',
-      description: 'An approved finished vertical video.',
-      complete: hasRole('reel-video') || hasPlatform('reel'),
+      label: 'Vertical video',
+      description: 'An approved finished vertical video for Instagram Reel or TikTok.',
+      complete:
+        hasRole('reel-video') || hasPlatform('reel') || hasPlatform('tiktok'),
     },
   ];
 }
