@@ -22,8 +22,8 @@ function statusLabel(status: string): string {
   return 'Setup required';
 }
 
-export default function PromotionSettingsPage() {
-  const readiness = getPromotionAutopilotReadiness();
+export default async function PromotionSettingsPage() {
+  const readiness = await getPromotionAutopilotReadiness();
 
   return (
     <div className="space-y-5">
