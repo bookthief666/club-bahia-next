@@ -142,6 +142,7 @@ export function EventIdeaStudioClient() {
         date,
         status: 'evaluating',
         riskFlags: concept.risks,
+        ideaPlan: concept,
       });
 
       router.push(`/admin/events/${saved.id}/edit?from=idea-studio`);
