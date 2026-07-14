@@ -65,6 +65,25 @@ function findVariant(
   );
 }
 
+function extractedCaption(
+  body: string,
+  platform: ShortVideoPlatform,
+): string | undefined {
+  const label =
+    platform === 'instagram-reel'
+      ? 'Instagram Reel caption'
+      : 'TikTok caption';
+  const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = body.match(
+    new RegExp(
+      `(?:^|\\n)${escaped}:?\\s*\\n?([\\s\\S]*?)(?=\\n(?:Instagram Reel caption|TikTok caption|TikTok title|Shot list|Video script|Posting notes):?|$)`,
+      'i',
+    ),
+  );
+  const caption = match?.[1]?.trim();
+  return caption ? caption.slice(0, 2200) : undefined;
+}
+
 export function buildShortVideoPublicationDrafts(input: {
   item: CampaignContentItem;
   eventTitle: string;
@@ -85,6 +104,7 @@ export function buildShortVideoPublicationDrafts(input: {
       label: 'Instagram Reel',
       caption:
         instagram?.caption?.trim() ||
+        extractedCaption(input.item.body, 'instagram-reel') ||
         defaultCaption(input.item, input.eventTitle, 'instagram-reel'),
       title: instagram?.title?.trim() || input.item.structured?.reelThumbnailText,
       hashtags: uniqueHashtags(instagram?.hashtags ?? sharedHashtags),
@@ -99,6 +119,7 @@ export function buildShortVideoPublicationDrafts(input: {
       label: 'TikTok video',
       caption:
         tiktok?.caption?.trim() ||
+        extractedCaption(input.item.body, 'tiktok') ||
         defaultCaption(input.item, input.eventTitle, 'tiktok'),
       title: tiktok?.title?.trim() || input.eventTitle,
       hashtags: uniqueHashtags(
