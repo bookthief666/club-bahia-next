@@ -1,3 +1,4 @@
+import { AutopilotScheduleClient } from '@/components/admin/publishing/AutopilotScheduleClient';
 import { CampaignLaunchClient } from '@/components/admin/publishing/CampaignLaunchClient';
 import { CampaignTrackingLinksClient } from '@/components/admin/publishing/CampaignTrackingLinksClient';
 import { InstagramPublishProofClient } from '@/components/admin/publishing/InstagramPublishProofClient';
@@ -20,6 +21,9 @@ export default async function EventPublishingExecutionPage({
       </div>
       <div className="mb-5">
         <CampaignTrackingLinksClient eventId={eventId} />
+      </div>
+      <div className="mb-5">
+        <AutopilotScheduleClient eventId={eventId} />
       </div>
       <div className="mb-5">
         <InstagramPublishProofClient eventId={eventId} />
