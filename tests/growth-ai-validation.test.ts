@@ -5,6 +5,7 @@ import { buildFixtureCampaign } from '../lib/admin/growth/generator';
 import {
   CampaignGenerationRequestSchema,
   CampaignGenerationResultSchema,
+  CampaignStructuredContentSchema,
 } from '../lib/admin/growth/validation';
 
 const event: OperationsEvent = {
@@ -65,7 +66,7 @@ describe('AI campaign validation boundary', () => {
     expect(result.success).toBe(false);
   });
 
-  it('accepts a deterministic fallback response with provider metadata', () => {
+  it('accepts a deterministic fallback response with structured promotion data', () => {
     const fixture = buildFixtureCampaign(event, brief);
     const result = CampaignGenerationResultSchema.safeParse({
       ...fixture,
@@ -74,6 +75,26 @@ describe('AI campaign validation boundary', () => {
     });
 
     expect(result.success).toBe(true);
+    expect(fixture.content.find((item) => item.channel === 'instagram-feed')?.structured?.hashtags?.localDiscovery)
+      .toContain('#EchoPark');
+    expect(fixture.content.find((item) => item.channel === 'reel')?.structured?.reelShots)
+      .toHaveLength(4);
+    expect(fixture.content.find((item) => item.channel === 'email')?.structured?.emailSubjects?.length)
+      .toBeGreaterThanOrEqual(3);
+  });
+
+  it('rejects structured Reel shots with an invalid time range', () => {
+    const result = CampaignStructuredContentSchema.safeParse({
+      reelShots: [
+        {
+          startSecond: 10,
+          endSecond: 4,
+          shot: 'Invalid reversed timeline',
+        },
+      ],
+    });
+
+    expect(result.success).toBe(false);
   });
 
   it('rejects malformed campaign content returned by a provider', () => {
