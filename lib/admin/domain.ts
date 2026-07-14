@@ -1,3 +1,5 @@
+import type { EventIdeaConcept } from '@/lib/admin/event-ideas/domain';
+
 export type AdminRole = 'owner' | 'manager' | 'producer' | 'marketing' | 'door' | 'viewer';
 
 export type EventStatus = 'idea' | 'evaluating' | 'approved' | 'announced' | 'on-sale' | 'final-prep' | 'live' | 'completed' | 'reviewed' | 'cancelled' | 'archived';
@@ -26,6 +28,7 @@ export interface OperationsEvent {
   riskFlags: string[];
   revenueTarget: number;
   committedCosts: number;
+  ideaPlan?: EventIdeaConcept;
   archivedAt?: string;
   cancelledAt?: string;
   cancellationReason?: string;
