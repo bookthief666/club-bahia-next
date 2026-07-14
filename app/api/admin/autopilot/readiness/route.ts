@@ -19,7 +19,7 @@ export async function GET(request: Request) {
     );
   }
 
-  return NextResponse.json(getPromotionAutopilotReadiness(), {
+  return NextResponse.json(await getPromotionAutopilotReadiness(), {
     headers: NO_STORE_HEADERS,
   });
 }
