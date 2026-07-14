@@ -64,12 +64,16 @@ async function mutateQueue<T>(input: {
   mutate: (queue: PublishingQueueState) => {
     queue: PublishingQueueState;
     result: T;
+    changed?: boolean;
   };
 }): Promise<{ queue: PublishingQueueState; result: T }> {
   let lastError: unknown;
   for (let attempt = 0; attempt < MAX_MUTATION_ATTEMPTS; attempt += 1) {
     const current = await getPublishingQueue();
     const mutation = input.mutate(current.queue);
+    if (mutation.changed === false) {
+      return { queue: current.queue, result: mutation.result };
+    }
     try {
       const saved = await saveAdminWorkspaceRecord({
         kind: 'autopilot-queue',
@@ -152,7 +156,11 @@ export async function claimDuePublishingQueueJob(input: {
         workerId: input.workerId,
         now: input.now,
       });
-      return { queue: claimed.queue, result: claimed.job };
+      return {
+        queue: claimed.queue,
+        result: claimed.job,
+        changed: Boolean(claimed.job),
+      };
     },
   });
   return saved.result;
