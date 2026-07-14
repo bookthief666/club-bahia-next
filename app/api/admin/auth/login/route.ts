@@ -17,7 +17,6 @@ const WINDOW_MS = 15 * 60 * 1000;
 type AttemptRecord = { count: number; resetAt: number };
 
 declare global {
-  // eslint-disable-next-line no-var
   var __clubBahiaAdminLoginAttempts: Map<string, AttemptRecord> | undefined;
 }
 
