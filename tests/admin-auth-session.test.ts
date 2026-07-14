@@ -1,8 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { shouldAllowMockAdmin } from '../lib/admin/auth/domain';
+import {
+  inspectAdminAuthConfiguration,
+  shouldAllowMockAdmin,
+} from '../lib/admin/auth/domain';
 import {
   authenticateAdminCredential,
   createAdminSessionToken,
+  getAdminAuthConfigurationStatus,
   isManagerAdminAuthConfigured,
   isProductionAdminAuthConfigured,
   verifyAdminSessionToken,
@@ -90,6 +94,58 @@ describe('production admin authentication', () => {
         new Date('2026-07-13T12:30:00.000Z'),
       ),
     ).toBeNull();
+  });
+});
+
+describe('admin authentication configuration diagnostics', () => {
+  it('reports only safe presence, validity, environment, and mock-auth state', () => {
+    const secret = 'secret-value-that-must-never-be-returned';
+    const password = 'private-owner-password';
+    const status = inspectAdminAuthConfiguration({
+      authSecret: secret,
+      ownerPassword: password,
+      nodeEnv: 'production',
+      vercelEnv: 'preview',
+      devAuthEnabled: 'false',
+    });
+
+    expect(status).toEqual({
+      configured: true,
+      authSecret: { exists: true, valid: true, minimumLength: 32 },
+      ownerPassword: { exists: true, valid: true, minimumLength: 12 },
+      managerPassword: { exists: false, valid: false, minimumLength: 12 },
+      deploymentEnvironment: 'preview',
+      mockAuthenticationEnabled: false,
+    });
+    expect(JSON.stringify(status)).not.toContain(secret);
+    expect(JSON.stringify(status)).not.toContain(password);
+  });
+
+  it('distinguishes missing values from values that fail minimum length', () => {
+    const status = inspectAdminAuthConfiguration({
+      authSecret: 'short',
+      ownerPassword: '',
+      nodeEnv: 'production',
+      vercelEnv: 'preview',
+      devAuthEnabled: 'false',
+    });
+
+    expect(status.configured).toBe(false);
+    expect(status.authSecret).toMatchObject({ exists: true, valid: false });
+    expect(status.ownerPassword).toMatchObject({ exists: false, valid: false });
+  });
+
+  it('reads the deployed process environment through the same safe status model', () => {
+    process.env.VERCEL_ENV = 'preview';
+    process.env.ADMIN_DEV_AUTH_ENABLED = 'false';
+
+    expect(getAdminAuthConfigurationStatus()).toMatchObject({
+      configured: true,
+      authSecret: { exists: true, valid: true },
+      ownerPassword: { exists: true, valid: true },
+      deploymentEnvironment: 'preview',
+      mockAuthenticationEnabled: false,
+    });
   });
 });
 
