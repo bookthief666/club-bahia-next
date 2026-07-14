@@ -79,8 +79,8 @@ function generationInstructions(): string {
     'Website: concise event-page description, no hashtags.',
     'Instagram feed: strong hook, readable line breaks, clear CTA, and 3–6 relevant hashtags.',
     'Instagram story: 4–6 short frames labeled Frame 1, Frame 2, and so on; keep each frame brief.',
-    'Reel: a practical 15-second vertical-video script with timestamps, shots, on-screen text, and final CTA.',
-    'Facebook: informative event copy with the essential verified details and a welcoming tone.',
+    'Vertical video: create one practical 15-second edit plan with timestamps, shots, on-screen text, and final CTA. Then include clearly labeled “Instagram Reel caption” and “TikTok caption” sections. The captions must be different and native to each platform rather than duplicated.',
+    'Facebook: concise optional cross-post copy with essential verified details; do not make it the primary campaign voice.',
     'Email: include a subject line and a concise body with one primary CTA.',
     'SMS: remain under 300 characters, include the essential verified facts, CTA, and opt-out language.',
     'Asset prompts must describe visuals only and must not request copyrighted logos, celebrity likenesses, or unreadable dense typography.',
@@ -238,11 +238,35 @@ export async function generateCampaignWithOpenAI(
   brief: CampaignBrief,
 ): Promise<CampaignGenerationResult> {
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error('OPENAI_API_KEY is not configured.');
-
+  const strict = process.env.OPENAI_CAMPAIGN_STRICT === 'true';
   const model = process.env.OPENAI_CAMPAIGN_MODEL || DEFAULT_MODEL;
-  const output = await callOpenAI(apiKey, model, event, brief);
-  return mergeCampaignOutput(event, brief, output);
+
+  if (!apiKey) {
+    if (strict) throw new Error('OPENAI_API_KEY is not configured.');
+    return {
+      ...buildFixtureCampaign(event, brief),
+      provider: 'fixture',
+      warning: 'OPENAI_API_KEY is not configured.',
+    };
+  }
+
+  try {
+    return mergeCampaignOutput(
+      event,
+      brief,
+      await callOpenAI(apiKey, model, event, brief),
+    );
+  } catch (error) {
+    if (strict) throw error;
+    return {
+      ...buildFixtureCampaign(event, brief),
+      provider: 'fixture',
+      warning:
+        error instanceof Error
+          ? `AI generation failed: ${error.message}`
+          : 'AI generation failed.',
+    };
+  }
 }
 
 export async function generateCampaignItemWithOpenAI(
@@ -251,23 +275,32 @@ export async function generateCampaignItemWithOpenAI(
   channel: CampaignChannel,
 ): Promise<CampaignItemGenerationResult> {
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error('OPENAI_API_KEY is not configured.');
-
+  const strict = process.env.OPENAI_CAMPAIGN_STRICT === 'true';
   const model = process.env.OPENAI_CAMPAIGN_MODEL || DEFAULT_MODEL;
-  const output = await callOpenAI(apiKey, model, event, brief, channel);
-  const merged = mergeItemOutput(channel, output);
 
-  const fixtureGenerator = new FixtureCampaignGenerator();
-  const fixtureItem = await fixtureGenerator.generateItem(event, brief, channel);
+  if (!apiKey) {
+    if (strict) throw new Error('OPENAI_API_KEY is not configured.');
+    return {
+      item: await new FixtureCampaignGenerator().generateItem(event, brief, channel),
+      provider: 'fixture',
+      warning: 'OPENAI_API_KEY is not configured.',
+    };
+  }
 
-  return {
-    ...merged,
-    item: {
-      ...fixtureItem,
-      body: merged.item.body,
-      callToAction: merged.item.callToAction,
-      assetPrompt: merged.item.assetPrompt || fixtureItem.assetPrompt,
-      updatedAt: new Date().toISOString(),
-    },
-  };
+  try {
+    return mergeItemOutput(
+      channel,
+      await callOpenAI(apiKey, model, event, brief, channel),
+    );
+  } catch (error) {
+    if (strict) throw error;
+    return {
+      item: await new FixtureCampaignGenerator().generateItem(event, brief, channel),
+      provider: 'fixture',
+      warning:
+        error instanceof Error
+          ? `AI generation failed: ${error.message}`
+          : 'AI generation failed.',
+    };
+  }
 }
