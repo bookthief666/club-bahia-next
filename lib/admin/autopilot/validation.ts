@@ -26,6 +26,7 @@ export const InstagramImagePublishRequestSchema = z.object({
     })
     .optional()
     .default(''),
+  confirmation: z.literal('PUBLISH_NOW'),
 });
 
 export type InstagramImagePublishRequest = z.infer<
