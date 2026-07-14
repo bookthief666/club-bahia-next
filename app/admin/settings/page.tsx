@@ -31,6 +31,7 @@ export default async function PromotionSettingsPage() {
       process.env.CRON_SECRET?.trim(),
   );
   const schedulerReady = queueStorageConfigured && triggerConfigured;
+  const reelProofEnabled = process.env.META_REELS_PROOF_ENABLED === 'true';
 
   return (
     <div className="space-y-5">
@@ -42,7 +43,7 @@ export default async function PromotionSettingsPage() {
           Connect the accounts that will publish.
         </h1>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-white/58 sm:text-base">
-          The Instagram image publisher, TikTok private proof, shared publishing queue, and Today dashboard are built. Connect the authorized Club Bahia accounts here without copying provider authorization into the browser.
+          Instagram image publishing, the controlled Reel proof, TikTok private testing, the shared queue, and the Today dashboard are built. Connect the authorized Club Bahia accounts here without copying provider authorization into the browser.
         </p>
         <div className="mt-5 flex flex-wrap gap-2 text-xs text-white/48">
           <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5">
@@ -137,6 +138,46 @@ export default async function PromotionSettingsPage() {
         ))}
       </section>
 
+      <section className="rounded-[1.5rem] border border-pink-200/14 bg-[radial-gradient(circle_at_92%_0%,rgba(244,114,182,.12),transparent_22rem),rgba(18,17,15,.9)] p-4 sm:p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[.18em] text-pink-100/60">
+              Instagram Reel proof
+            </p>
+            <h2 className="mt-1 font-serif text-3xl text-white">
+              Process first, then confirm the live publish
+            </h2>
+          </div>
+          <span
+            className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[.12em] ${
+              reelProofEnabled
+                ? 'border-emerald-200/25 bg-emerald-200/10 text-emerald-100'
+                : 'border-amber-200/18 bg-amber-200/[.06] text-amber-100'
+            }`}
+          >
+            {reelProofEnabled ? 'Proof switch enabled' : 'Proof switch disabled'}
+          </span>
+        </div>
+        <p className="mt-4 max-w-3xl text-sm leading-7 text-white/58">
+          Step 5 now creates the Meta video container, polls processing until it is ready, and requires a separate final confirmation before the Reel goes live. Automatic Reel execution remains disabled until a real Club Bahia proof completes successfully.
+        </p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          {[
+            ['1', 'Create container', 'Uploads the approved public video without publishing it live.'],
+            ['2', 'Verify processing', 'Reads Meta container status until the video is ready.'],
+            ['3', 'Confirm live publish', 'Uses a second explicit confirmation and stores the final receipt.'],
+          ].map(([step, title, detail]) => (
+            <div key={step} className="rounded-2xl border border-white/8 bg-black/18 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-[.16em] text-pink-100/60">
+                Step {step}
+              </p>
+              <p className="mt-1 text-sm font-semibold text-white/74">{title}</p>
+              <p className="mt-1 text-xs leading-5 text-white/42">{detail}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <section className="rounded-[1.5rem] border border-white/10 bg-[#12110f]/88 p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -189,10 +230,10 @@ export default async function PromotionSettingsPage() {
           Current safety boundary
         </p>
         <h2 className="mt-1 font-serif text-2xl text-white">
-          Instagram feed images can execute from the queue. TikTok and Reels remain review-gated.
+          Instagram feed images can execute from the queue. Reels have a controlled manual proof. TikTok public posting remains gated.
         </h2>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-white/58">
-          The worker claims due jobs exactly once, records every attempt, retries only provider failures classified as safe, and stops uncertain responses for manual review. Public TikTok posts and Instagram Reels remain paused until their controlled provider proofs are completed.
+          The queue worker claims due jobs exactly once, retries only failures classified as safe, and stops uncertain responses for manual review. The Reel proof can now validate the real Meta video workflow, but scheduled Reel execution remains paused until that proof is completed and reviewed.
         </p>
         <Link
           href="/admin"
