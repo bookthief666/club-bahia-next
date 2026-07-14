@@ -11,7 +11,7 @@ import {
   QueueExecutionError,
 } from '@/lib/admin/autopilot/server/queue-executor';
 import { syncQueuePublicationToExecution } from '@/lib/admin/autopilot/server/execution-sync';
-import { getAdminUserFromRequest } from '@/lib/admin/auth/session';
+import { requireAdminRequest } from '@/lib/admin/auth/session';
 import { isAdminWorkspaceStorageConfigured } from '@/lib/admin/workspaces/server';
 
 export const runtime = 'nodejs';
@@ -34,8 +34,12 @@ function equal(left: string, right: string): boolean {
 }
 
 function schedulerUser(request: Request): AdminUser | null {
-  const admin = getAdminUserFromRequest(request);
-  if (admin && ['owner', 'manager'].includes(admin.role)) return admin;
+  try {
+    const admin = requireAdminRequest(request);
+    if (['owner', 'manager'].includes(admin.role)) return admin;
+  } catch {
+    // A scheduler trigger can authenticate with the dedicated bearer value below.
+  }
 
   const configured = process.env.PUBLISHING_CRON_SECRET?.trim() ?? '';
   const header = request.headers.get('authorization') ?? '';
@@ -98,7 +102,9 @@ export async function POST(request: Request) {
         error instanceof QueueExecutionError
           ? error
           : new QueueExecutionError(
-              error instanceof Error ? error.message : 'Scheduled publication failed.',
+              error instanceof Error
+                ? error.message
+                : 'Scheduled publication failed.',
               false,
               true,
             );
