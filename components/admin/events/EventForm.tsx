@@ -69,9 +69,14 @@ export function EventForm({ eventId }: { eventId?: string }) {
       onSubmit={submit}
       className="space-y-4 rounded-2xl border border-white/10 bg-[#141210]/80 p-4 pb-24 md:pb-4"
     >
-      <p className="text-xs uppercase tracking-[.28em] text-amber-200/70">
-        Demo fixture persistence
-      </p>
+      <div className="rounded-2xl border border-emerald-200/12 bg-emerald-200/[.045] p-3">
+        <p className="text-xs font-semibold uppercase tracking-[.2em] text-emerald-100/70">
+          Shared event details
+        </p>
+        <p className="mt-1 text-sm leading-6 text-white/55">
+          Save the verified event facts first. The promotion tools will use these details without changing them.
+        </p>
+      </div>
       {error ? (
         <p role="alert" className="rounded-2xl bg-red-500/15 p-3 text-red-100">
           {error}
@@ -81,7 +86,7 @@ export function EventForm({ eventId }: { eventId?: string }) {
         <summary className="cursor-pointer font-serif text-xl">Basics</summary>
         <div className="mt-3 space-y-3">
           <label className="block text-sm">
-            Title
+            Event name
             <input
               required
               className="mt-1 w-full rounded-xl bg-white/10 p-3"
@@ -92,7 +97,7 @@ export function EventForm({ eventId }: { eventId?: string }) {
             />
           </label>
           <label className="block text-sm">
-            Concept
+            What is happening?
             <textarea
               required
               className="mt-1 w-full rounded-xl bg-white/10 p-3"
@@ -119,7 +124,7 @@ export function EventForm({ eventId }: { eventId?: string }) {
               />
             </label>
             <label className="block text-sm">
-              Status
+              Planning stage
               <select
                 className="mt-1 w-full rounded-xl bg-white/10 p-3"
                 value={form.status}
@@ -142,7 +147,7 @@ export function EventForm({ eventId }: { eventId?: string }) {
       </details>
       <details open className="rounded-2xl border border-white/10 p-3">
         <summary className="cursor-pointer font-serif text-xl">
-          Operations
+          Venue setup
         </summary>
         <div className="mt-3 space-y-3">
           {form.status === "cancelled" ? (
@@ -160,7 +165,7 @@ export function EventForm({ eventId }: { eventId?: string }) {
           ) : null}
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block text-sm">
-              Room
+              Room or area
               <input
                 className="mt-1 w-full rounded-xl bg-white/10 p-3"
                 value={form.room}
@@ -170,7 +175,7 @@ export function EventForm({ eventId }: { eventId?: string }) {
               />
             </label>
             <label className="block text-sm">
-              Owner
+              Person responsible
               <input
                 className="mt-1 w-full rounded-xl bg-white/10 p-3"
                 value={form.owner}
@@ -184,11 +189,10 @@ export function EventForm({ eventId }: { eventId?: string }) {
       </details>
       <details className="rounded-2xl border border-white/10 p-3">
         <summary className="cursor-pointer font-serif text-xl">
-          Advanced
+          More actions
         </summary>
         <p className="mt-3 text-sm text-white/55">
-          Status transition validation, archive, duplicate, and destructive
-          actions remain available from event detail screens.
+          Duplicate, archive, restore, and cancellation actions remain available from the event overview.
         </p>
       </details>
       <div className="sticky bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-10 rounded-2xl border border-white/10 bg-[#0d0b0a]/95 p-2 md:bottom-4 md:inline-block">
