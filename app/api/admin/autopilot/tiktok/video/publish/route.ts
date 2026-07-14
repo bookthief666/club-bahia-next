@@ -146,7 +146,7 @@ export async function POST(request: Request) {
 
   let config;
   try {
-    config = getTikTokPublishingConfiguration();
+    config = await getTikTokPublishingConfiguration();
   } catch (error) {
     return json(
       { error: error instanceof Error ? error.message : 'TikTok is not configured.' },
