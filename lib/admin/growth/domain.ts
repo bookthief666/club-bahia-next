@@ -43,6 +43,44 @@ export interface CampaignBrief {
   mainAttraction: string;
 }
 
+export interface CampaignHashtagGroups {
+  branded: string[];
+  localDiscovery: string[];
+  musicCommunity: string[];
+}
+
+export interface CampaignStoryFrame {
+  frame: number;
+  text: string;
+  visualDirection?: string;
+  interaction?: string;
+}
+
+export interface CampaignReelShot {
+  startSecond: number;
+  endSecond: number;
+  shot: string;
+  onScreenText?: string;
+  voiceover?: string;
+}
+
+export interface CampaignStructuredContent {
+  primaryHook?: string;
+  alternativeHooks?: string[];
+  shortCaption?: string;
+  standardCaption?: string;
+  longCaption?: string;
+  hashtags?: CampaignHashtagGroups;
+  storyFrames?: CampaignStoryFrame[];
+  reelShots?: CampaignReelShot[];
+  reelVoiceover?: string;
+  reelThumbnailText?: string;
+  emailSubjects?: string[];
+  emailPreheader?: string;
+  smsVariants?: string[];
+  altText?: string;
+}
+
 export interface CampaignContentItem {
   id: string;
   channel: CampaignChannel;
@@ -53,6 +91,7 @@ export interface CampaignContentItem {
   publishAt?: string;
   callToAction?: string;
   assetPrompt?: string;
+  structured?: CampaignStructuredContent;
   updatedAt: string;
 }
 
