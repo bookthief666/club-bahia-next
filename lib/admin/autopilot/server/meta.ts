@@ -1,5 +1,7 @@
 import 'server-only';
 
+import { getOAuthCredential } from '@/lib/admin/autopilot/server/credential-store';
+
 export type MetaPublishingStage =
   | 'configuration'
   | 'create-container'
@@ -26,6 +28,7 @@ export interface MetaPublishingConfiguration {
   instagramAccountId: string;
   accessToken: string;
   enabled: boolean;
+  source: 'oauth' | 'environment';
 }
 
 export interface InstagramImagePublication {
@@ -51,18 +54,46 @@ function cleanGraphVersion(value: string | undefined): string {
   return version;
 }
 
-export function getMetaPublishingConfiguration(): MetaPublishingConfiguration {
-  const instagramAccountId = process.env.META_INSTAGRAM_ACCOUNT_ID?.trim() ?? '';
-  const accessToken = process.env.META_PAGE_ACCESS_TOKEN?.trim() ?? '';
+async function connectedCredential(): Promise<{
+  instagramAccountId: string;
+  accessToken: string;
+} | null> {
+  try {
+    const stored = await getOAuthCredential('meta');
+    if (
+      stored?.record.status === 'connected' &&
+      stored.record.secretMaterial.length >= 20
+    ) {
+      const instagramAccountId =
+        stored.record.relatedInstagramId || stored.record.accountId;
+      if (/^\d{4,40}$/.test(instagramAccountId)) {
+        return {
+          instagramAccountId,
+          accessToken: stored.record.secretMaterial,
+        };
+      }
+    }
+  } catch {
+    // Preview and tests may intentionally use environment-only provider setup.
+  }
+  return null;
+}
+
+export async function getMetaPublishingConfiguration(): Promise<MetaPublishingConfiguration> {
+  const stored = await connectedCredential();
+  const instagramAccountId =
+    stored?.instagramAccountId || process.env.META_INSTAGRAM_ACCOUNT_ID?.trim() || '';
+  const accessToken =
+    stored?.accessToken || process.env.META_PAGE_ACCESS_TOKEN?.trim() || '';
   if (!/^\d{4,40}$/.test(instagramAccountId)) {
     throw new MetaPublishingError(
-      'META_INSTAGRAM_ACCOUNT_ID is not configured with a valid numeric account ID.',
+      'Connect the Club Bahia Instagram professional account or configure its numeric account ID.',
       'configuration',
     );
   }
   if (accessToken.length < 20) {
     throw new MetaPublishingError(
-      'META_PAGE_ACCESS_TOKEN is not configured.',
+      'Connect the Club Bahia Meta account before publishing.',
       'configuration',
     );
   }
@@ -72,12 +103,13 @@ export function getMetaPublishingConfiguration(): MetaPublishingConfiguration {
     instagramAccountId,
     accessToken,
     enabled: process.env.META_PUBLISH_ENABLED === 'true',
+    source: stored ? 'oauth' : 'environment',
   };
 }
 
-export function isMetaPublishingConfigured(): boolean {
+export async function isMetaPublishingConfigured(): Promise<boolean> {
   try {
-    const config = getMetaPublishingConfiguration();
+    const config = await getMetaPublishingConfiguration();
     return config.enabled;
   } catch {
     return false;
@@ -178,10 +210,10 @@ export async function publishInstagramImage(
   input: { imageUrl: string; caption: string },
   fetchImpl: FetchLike = fetch,
 ): Promise<InstagramImagePublication> {
-  const config = getMetaPublishingConfiguration();
+  const config = await getMetaPublishingConfiguration();
   if (!config.enabled) {
     throw new MetaPublishingError(
-      'Live Meta publishing is disabled. Set META_PUBLISH_ENABLED=true only for the controlled proof of publication.',
+      'Live Meta publishing is disabled. Enable it only for the controlled proof of publication.',
       'configuration',
     );
   }
