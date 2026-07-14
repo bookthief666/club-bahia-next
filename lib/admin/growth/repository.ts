@@ -1,6 +1,7 @@
 'use client';
 
 import type { OperationsEvent } from '@/lib/admin/domain';
+import { getVenueFact } from '@/lib/admin/venue-intelligence/profile';
 import {
   canUseSharedWorkspaceStorage,
   loadOrMigrateSharedWorkspace,
@@ -20,6 +21,7 @@ import type {
   PublishingMode,
 } from './domain';
 import { ApiCampaignGenerator } from './api-generator';
+import { CampaignStructuredContentSchema } from './validation';
 
 const STORAGE_KEY = 'club-bahia-growth-workspaces-v1';
 export const GROWTH_WORKSPACE_UPDATED_EVENT = 'club-bahia-growth-workspace-updated';
@@ -57,10 +59,10 @@ function defaultBrief(event: OperationsEvent): CampaignBrief {
     genres: '',
     doorsTime: '',
     admission: '',
-    ageRestriction: '21+',
+    ageRestriction: getVenueFact('age-policy')?.value ?? '',
     foodDrinkSpecial: '',
     reservationUrl: '',
-    address: '1130 Sunset Blvd, Los Angeles, CA 90012',
+    address: getVenueFact('address')?.value ?? '',
     mainAttraction: event.concept,
   };
 }
@@ -115,6 +117,8 @@ function normalizePublishingMode(
 function normalizeContentItem(item: StoredContentItem): CampaignContentItem | null {
   if (!item.id || !item.title || !item.body || !isCampaignChannel(item.channel)) return null;
 
+  const structured = CampaignStructuredContentSchema.safeParse(item.structured);
+
   return {
     id: item.id,
     channel: item.channel,
@@ -125,6 +129,7 @@ function normalizeContentItem(item: StoredContentItem): CampaignContentItem | nu
     publishAt: item.publishAt,
     callToAction: item.callToAction,
     assetPrompt: item.assetPrompt,
+    structured: structured.success ? structured.data : undefined,
     updatedAt: item.updatedAt ?? new Date().toISOString(),
   };
 }
@@ -331,7 +336,7 @@ export class BrowserGrowthWorkspaceRepository implements GrowthWorkspaceReposito
     } catch (error) {
       if (error instanceof SharedWorkspaceConflictError) {
         throw new Error(
-          'This campaign changed in another browser. Reload before saving again.',
+          'This promotion changed in another browser. Reload before saving again.',
         );
       }
       throw error;
@@ -392,7 +397,7 @@ export class BrowserGrowthWorkspaceRepository implements GrowthWorkspaceReposito
   ): Promise<EventGrowthWorkspace> {
     const current = await this.getWorkspace(event);
     const existing = current.content.find((item) => item.id === contentItemId);
-    if (!existing) throw new Error('Campaign content item not found.');
+    if (!existing) throw new Error('Promotional item not found.');
 
     const regenerated = await this.generator.generateItem(
       event,
@@ -422,7 +427,7 @@ export class BrowserGrowthWorkspaceRepository implements GrowthWorkspaceReposito
   ): Promise<EventGrowthWorkspace> {
     const current = await this.getWorkspace(event);
     const nextBody = body.trim();
-    if (!nextBody) throw new Error('Content cannot be empty.');
+    if (!nextBody) throw new Error('Promotional copy cannot be empty.');
 
     const content = current.content.map((item) =>
       item.id === contentItemId
@@ -453,7 +458,7 @@ export class BrowserGrowthWorkspaceRepository implements GrowthWorkspaceReposito
   ): Promise<EventGrowthWorkspace> {
     const current = await this.getWorkspace(event);
     const existing = current.content.find((item) => item.id === contentItemId);
-    if (!existing) throw new Error('Campaign content item not found.');
+    if (!existing) throw new Error('Promotional item not found.');
 
     if (
       existing.status !== status &&
@@ -488,7 +493,7 @@ export class BrowserGrowthWorkspaceRepository implements GrowthWorkspaceReposito
   ): Promise<EventGrowthWorkspace> {
     const current = await this.getWorkspace(event);
     const revision = current.history.find((item) => item.id === revisionId);
-    if (!revision) throw new Error('Campaign revision not found.');
+    if (!revision) throw new Error('Previous promotion version not found.');
 
     const currentSnapshot = current.content.length ? snapshotWorkspace(current) : null;
     const remainingHistory = current.history.filter((item) => item.id !== revisionId);
