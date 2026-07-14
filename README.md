@@ -122,3 +122,23 @@ npm run build
 ### Known limitations
 
 No production database, authentication replacement, reservation backend, ticketing, marketing API, drag-and-drop calendar editing, audit log, or notifications are included in this milestone. Destructive actions are intentionally labeled fixture-mode actions and must receive authorization and audit controls before production use.
+
+## Club Bahia Growth Copilot — Milestone 7A
+
+Milestone 7A begins the transition from campaign-copy generation into a venue-aware promotion system.
+
+- Adds a typed Club Bahia venue profile with verified facts, event-specific policy handling, brand voice, preferred calls to action, prohibited claims, and campaign guardrails.
+- Grounds OpenAI campaign requests in the verified venue profile while keeping event details authoritative.
+- Adds backward-compatible structured promotion fields for hooks, caption variants, hashtag groups, Story frames, Reel shots, email subjects, SMS variants, and alt text.
+- Preserves structured promotion data through shared-workspace migration and revision history.
+- Simplifies the manager workflow to Event details → Create promotion → Choose media → Review posts → Promote event.
+- Replaces stale prototype language in the event form and primary navigation.
+
+Verification for this checkpoint:
+
+- 19 test files passed
+- 98 tests passed
+- Next.js 15.5.20 production build passed
+- Vercel deployment reported success
+
+See `docs/milestone-7a-venue-intelligence.md` for scope and boundaries.
