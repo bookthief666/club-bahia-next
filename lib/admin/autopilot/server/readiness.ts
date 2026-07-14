@@ -4,6 +4,11 @@ import type {
   PromotionAutopilotReadiness,
   SocialAccountReadiness,
 } from '@/lib/admin/autopilot/domain';
+import {
+  getOAuthCredential,
+  type OAuthCredentialRecord,
+  type OAuthProvider,
+} from '@/lib/admin/autopilot/server/credential-store';
 import { isAdminWorkspaceStorageConfigured } from '@/lib/admin/workspaces/server';
 
 function configured(name: string): boolean {
@@ -18,15 +23,30 @@ function validGraphVersion(): boolean {
   return /^v\d+\.\d+$/.test(process.env.META_GRAPH_API_VERSION?.trim() ?? '');
 }
 
-function metaReadiness(): SocialAccountReadiness {
+async function storedCredential(provider: OAuthProvider): Promise<OAuthCredentialRecord | null> {
+  try {
+    const stored = await getOAuthCredential(provider);
+    return stored?.record.status === 'disconnected' ? null : stored?.record ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function metaReadiness(stored: OAuthCredentialRecord | null): SocialAccountReadiness {
   const appConfigured =
     configured('META_APP_ID') &&
     configured('META_APP_SECRET') &&
     configured('META_OAUTH_REDIRECT_URI');
-  const accountConfigured =
+  const oauthAccount = Boolean(
+    stored?.provider === 'meta' &&
+      stored.secretMaterial.length >= 20 &&
+      (stored.relatedInstagramId || stored.accountId),
+  );
+  const environmentAccount =
     configured('META_FACEBOOK_PAGE_ID') &&
     configured('META_INSTAGRAM_ACCOUNT_ID') &&
     configured('META_PAGE_ACCESS_TOKEN');
+  const accountConfigured = oauthAccount || environmentAccount;
   const liveEnabled = enabled('META_PUBLISH_ENABLED');
   const receiptStorage = isAdminWorkspaceStorageConfigured();
   const imageProofReady =
@@ -43,12 +63,12 @@ function metaReadiness(): SocialAccountReadiness {
         ? 'ready-for-connection'
         : 'setup-required',
     summary: imageProofReady
-      ? 'The controlled Instagram image publisher is configured with encrypted publication receipts and duplicate-post protection.'
+      ? `Controlled Instagram publishing is ready for ${stored?.accountLabel || 'the configured Club Bahia account'}.`
       : accountConfigured
-        ? 'The Instagram account details are present, but one or more publication safety checks still need attention.'
+        ? 'The Instagram account is connected, but one or more publishing safety checks still need attention.'
         : appConfigured
-          ? 'The Meta application is configured. Club Bahia still needs to authorize its Instagram account and linked Facebook Page.'
-          : 'Configure a Meta developer application so Instagram can become the first live publishing lane.',
+          ? 'The Meta application is configured. Authorize the Club Bahia Instagram account above.'
+          : 'Configure the Meta developer application before connecting Instagram.',
     checks: [
       {
         id: 'meta-app',
@@ -66,37 +86,39 @@ function metaReadiness(): SocialAccountReadiness {
         id: 'meta-version',
         label: 'Pinned Graph API version',
         complete: validGraphVersion(),
-        detail: 'The version is explicit so a platform upgrade cannot silently change publishing behavior.',
+        detail: 'An explicit version prevents silent provider behavior changes.',
       },
       {
         id: 'meta-page',
         label: 'Linked Facebook Page',
-        complete: configured('META_FACEBOOK_PAGE_ID'),
-        detail: 'The current Instagram publishing path uses the Page-linked professional account. Facebook posting remains secondary.',
+        complete: Boolean(stored?.relatedPageId) || configured('META_FACEBOOK_PAGE_ID'),
+        detail: 'The current Instagram path uses a Page-linked professional account.',
       },
       {
         id: 'meta-instagram',
         label: 'Club Bahia Instagram professional account',
-        complete: configured('META_INSTAGRAM_ACCOUNT_ID'),
-        detail: 'The authorized Instagram professional account is the primary Meta destination.',
+        complete: Boolean(stored?.relatedInstagramId || stored?.accountId) || configured('META_INSTAGRAM_ACCOUNT_ID'),
+        detail: stored?.accountLabel || 'The authorized professional account is the primary Meta destination.',
       },
       {
-        id: 'meta-token',
-        label: 'Server-side Meta access token',
-        complete: configured('META_PAGE_ACCESS_TOKEN'),
-        detail: 'Environment storage supports the controlled proof; encrypted OAuth credential rotation remains a later connection milestone.',
+        id: 'meta-authorization',
+        label: 'Encrypted server-side authorization',
+        complete: oauthAccount || configured('META_PAGE_ACCESS_TOKEN'),
+        detail: oauthAccount
+          ? 'Authorization is stored in the encrypted internal credential workspace.'
+          : 'Environment authorization remains supported during migration.',
       },
       {
         id: 'meta-receipts',
         label: 'Encrypted publication receipts',
         complete: receiptStorage,
-        detail: 'A durable receipt claim blocks duplicate submissions and records the provider post ID.',
+        detail: 'Durable claims block duplicate submissions and store provider IDs.',
       },
       {
         id: 'meta-live-switch',
         label: 'Controlled live-publishing switch',
         complete: liveEnabled,
-        detail: 'META_PUBLISH_ENABLED must be explicitly true before the live button can call Meta.',
+        detail: 'The explicit live switch must be enabled before Meta can be called.',
       },
     ],
     capabilities: [
@@ -106,13 +128,13 @@ function metaReadiness(): SocialAccountReadiness {
         available: imageProofReady,
         reason: imageProofReady
           ? undefined
-          : 'Complete the Meta credentials, Graph version, encrypted receipt storage, and live-publishing switch.',
+          : 'Complete account authorization, Graph version, receipt storage, and the live switch.',
       },
       {
         id: 'instagram-reel',
         label: 'Instagram Reel',
         available: false,
-        reason: 'The vertical-video processing and asynchronous status pipeline follows the image proof.',
+        reason: 'The asynchronous vertical-video pipeline follows the image proof.',
       },
       {
         id: 'instagram-carousel',
@@ -136,44 +158,52 @@ function metaReadiness(): SocialAccountReadiness {
   };
 }
 
-function tiktokReadiness(): SocialAccountReadiness {
+function tiktokReadiness(stored: OAuthCredentialRecord | null): SocialAccountReadiness {
   const appConfigured =
     configured('TIKTOK_CLIENT_KEY') &&
     configured('TIKTOK_CLIENT_SECRET') &&
     configured('TIKTOK_OAUTH_REDIRECT_URI');
-  const accountConfigured =
+  const oauthAccount = Boolean(
+    stored?.provider === 'tiktok' && stored.secretMaterial.length >= 20 && stored.accountId,
+  );
+  const environmentAccount =
     configured('TIKTOK_OPEN_ID') &&
     configured('TIKTOK_ACCESS_TOKEN') &&
     configured('TIKTOK_REFRESH_TOKEN');
+  const accountConfigured = oauthAccount || environmentAccount;
   const contentPostingEnabled = enabled('TIKTOK_CONTENT_POSTING_ENABLED');
   const audited = enabled('TIKTOK_APP_AUDITED');
   const verifiedMediaHost = configured('TIKTOK_VERIFIED_MEDIA_HOST');
   const receiptStorage = isAdminWorkspaceStorageConfigured();
-  const integrationReady =
+  const privateProofReady =
     appConfigured &&
     accountConfigured &&
     contentPostingEnabled &&
     verifiedMediaHost &&
     receiptStorage;
-  const publicPostingReady = integrationReady && audited;
+  const publicPostingReady = privateProofReady && audited;
 
   return {
     provider: 'tiktok',
     label: 'TikTok',
-    status: publicPostingReady
-      ? 'connected'
-      : accountConfigured || integrationReady
+    status: privateProofReady
+      ? publicPostingReady
+        ? 'connected'
+        : 'needs-attention'
+      : accountConfigured
         ? 'needs-attention'
         : appConfigured
           ? 'ready-for-connection'
           : 'setup-required',
     summary: publicPostingReady
-      ? 'TikTok is configured for public direct-post development with an audited client and verified media host.'
-      : integrationReady
-        ? 'The technical connection is present, but public visibility still depends on TikTok client audit approval.'
-        : appConfigured
-          ? 'The TikTok developer application is configured. Club Bahia still needs to authorize its account and complete Content Posting setup.'
-          : 'TikTok is the second primary publishing lane. Register the developer app and Content Posting integration before direct posting can begin.',
+      ? `TikTok is connected for public direct-post development as ${stored?.accountLabel || 'the authorized Club Bahia account'}.`
+      : privateProofReady
+        ? 'The private SELF_ONLY proof is ready. Public visibility still requires TikTok client audit approval.'
+        : accountConfigured
+          ? 'TikTok is connected, but Content Posting, verified media hosting, or receipt storage is incomplete.'
+          : appConfigured
+            ? 'The TikTok developer application is configured. Authorize the Club Bahia account above.'
+            : 'Register the TikTok developer application before direct posting can begin.',
     checks: [
       {
         id: 'tiktok-app',
@@ -185,60 +215,63 @@ function tiktokReadiness(): SocialAccountReadiness {
         id: 'tiktok-redirect',
         label: 'Approved TikTok OAuth redirect URL',
         complete: configured('TIKTOK_OAUTH_REDIRECT_URI'),
-        detail: 'Must exactly match the redirect configured in TikTok for Developers.',
+        detail: 'Must exactly match the redirect registered with TikTok.',
       },
       {
         id: 'tiktok-account',
         label: 'Authorized Club Bahia TikTok account',
-        complete: configured('TIKTOK_OPEN_ID'),
-        detail: 'The authorized creator open ID identifies the publishing destination.',
+        complete: Boolean(stored?.accountId) || configured('TIKTOK_OPEN_ID'),
+        detail: stored?.accountLabel || 'The creator account identifies the publishing destination.',
       },
       {
-        id: 'tiktok-tokens',
-        label: 'TikTok access and refresh tokens',
+        id: 'tiktok-authorization',
+        label: 'Encrypted renewable authorization',
         complete:
-          configured('TIKTOK_ACCESS_TOKEN') && configured('TIKTOK_REFRESH_TOKEN'),
-        detail: 'Direct posting requires the authorized account token and future refresh support.',
+          Boolean(stored?.secretMaterial && stored?.renewableMaterial) ||
+          (configured('TIKTOK_ACCESS_TOKEN') && configured('TIKTOK_REFRESH_TOKEN')),
+        detail: stored?.renewableMaterial
+          ? 'Access can be renewed from Publishing Connections without copying credentials.'
+          : 'Reconnect or provide the temporary migration authorization.',
       },
       {
         id: 'tiktok-content-posting',
         label: 'Content Posting API and video.publish scope',
         complete: contentPostingEnabled,
-        detail: 'The app and target account must be approved and authorized for direct posting.',
+        detail: 'The app and target account must be approved and authorized for Direct Post.',
       },
       {
         id: 'tiktok-media-host',
-        label: 'Verified TikTok media domain or URL prefix',
+        label: 'Verified TikTok media hostname',
         complete: verifiedMediaHost,
-        detail: 'TikTok pull-from-URL video and photo posts require media from a verified domain or URL prefix.',
+        detail: 'Pull-from-URL media must come from the exact verified hostname.',
       },
       {
         id: 'tiktok-audit',
         label: 'TikTok client audit for public posts',
         complete: audited,
-        detail: 'Unaudited clients are restricted to private viewing mode even when direct posting works technically.',
+        detail: 'The private proof does not require public visibility; public automation does.',
       },
       {
         id: 'tiktok-receipts',
         label: 'Encrypted publication receipts',
         complete: receiptStorage,
-        detail: 'Publication IDs and uncertain results need the same duplicate-prevention boundary used for Instagram.',
+        detail: 'Publish IDs and uncertain responses use the same duplicate-prevention boundary as Instagram.',
       },
     ],
     capabilities: [
       {
         id: 'tiktok-video',
-        label: 'TikTok vertical video',
-        available: false,
-        reason: publicPostingReady
-          ? 'Account readiness is complete; the controlled video adapter is the next build checkpoint.'
-          : 'Complete TikTok authorization, Content Posting setup, verified media hosting, audit, and receipt storage.',
+        label: 'TikTok private video proof',
+        available: privateProofReady,
+        reason: privateProofReady
+          ? undefined
+          : 'Complete authorization, Content Posting setup, verified media hosting, and receipt storage.',
       },
       {
         id: 'tiktok-status',
         label: 'TikTok post-status polling',
-        available: false,
-        reason: 'Will be built with the video adapter because TikTok processing completes asynchronously.',
+        available: privateProofReady,
+        reason: privateProofReady ? undefined : 'Available with the controlled private-video adapter.',
       },
       {
         id: 'tiktok-photo',
@@ -271,15 +304,13 @@ function googleReadiness(): SocialAccountReadiness {
     summary: locationConfigured
       ? 'The Business Profile location is configured for event-post development.'
       : oauthConfigured
-        ? 'OAuth is configured. The approved Business Profile account and location still need to be connected.'
-        : 'Google remains a valuable local-discovery channel after Instagram and TikTok publishing are operational.',
+        ? 'OAuth is configured. The approved Business Profile location still needs to be connected.'
+        : 'Google remains a later local-discovery channel after Instagram and TikTok.',
     checks: [
       {
         id: 'google-oauth',
         label: 'Google OAuth credentials',
-        complete:
-          configured('GOOGLE_BUSINESS_CLIENT_ID') &&
-          configured('GOOGLE_BUSINESS_CLIENT_SECRET'),
+        complete: configured('GOOGLE_BUSINESS_CLIENT_ID') && configured('GOOGLE_BUSINESS_CLIENT_SECRET'),
         detail: 'Client credentials remain server-only.',
       },
       {
@@ -291,14 +322,12 @@ function googleReadiness(): SocialAccountReadiness {
       {
         id: 'google-location',
         label: 'Club Bahia Business Profile location',
-        complete:
-          configured('GOOGLE_BUSINESS_ACCOUNT_ID') &&
-          configured('GOOGLE_BUSINESS_LOCATION_ID'),
+        complete: configured('GOOGLE_BUSINESS_ACCOUNT_ID') && configured('GOOGLE_BUSINESS_LOCATION_ID'),
         detail: 'The account and location IDs identify the verified venue profile.',
       },
       {
         id: 'google-refresh',
-        label: 'Server-side refresh token',
+        label: 'Server-side refresh authorization',
         complete: configured('GOOGLE_BUSINESS_REFRESH_TOKEN'),
         detail: 'Required to renew access without interrupting scheduled posts.',
       },
@@ -308,37 +337,41 @@ function googleReadiness(): SocialAccountReadiness {
         id: 'google-event-post',
         label: 'Google event post',
         available: locationConfigured,
-        reason: locationConfigured
-          ? undefined
-          : 'Complete Google API approval and connect the Business Profile location.',
+        reason: locationConfigured ? undefined : 'Complete Google API approval and connect the location.',
       },
       {
         id: 'google-cta',
         label: 'Reservation call-to-action',
         available: locationConfigured,
-        reason: locationConfigured
-          ? undefined
-          : 'Connect the Business Profile before event CTAs can publish.',
+        reason: locationConfigured ? undefined : 'Connect the Business Profile before event CTAs can publish.',
       },
     ],
   };
 }
 
-export function getPromotionAutopilotReadiness(): PromotionAutopilotReadiness {
+export async function getPromotionAutopilotReadiness(): Promise<PromotionAutopilotReadiness> {
+  const [metaCredential, tiktokCredential] = await Promise.all([
+    storedCredential('meta'),
+    storedCredential('tiktok'),
+  ]);
   const databaseConfigured =
     configured('PUBLISHING_DATABASE_URL') || configured('DATABASE_URL');
   const cronSecretConfigured = configured('PUBLISHING_CRON_SECRET');
 
   return {
-    accounts: [metaReadiness(), tiktokReadiness(), googleReadiness()],
+    accounts: [
+      metaReadiness(metaCredential),
+      tiktokReadiness(tiktokCredential),
+      googleReadiness(),
+    ],
     scheduler: {
       databaseConfigured,
       cronSecretConfigured,
       ready: databaseConfigured && cronSecretConfigured,
       summary:
         databaseConfigured && cronSecretConfigured
-          ? 'The durable publishing scheduler has its database and authenticated cron configuration.'
-          : 'Automatic scheduling remains disabled until a transactional database and cron secret are configured.',
+          ? 'The durable publishing scheduler has its database and authenticated trigger.'
+          : 'Automatic scheduling remains disabled until a transactional database and authenticated trigger are configured.',
     },
   };
 }
