@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { requireAdminRequest } from '@/lib/admin/auth/session';
+import { isClientAdminWorkspaceKind } from '@/lib/admin/workspaces/client-kinds';
 import {
   AdminWorkspaceConflictError,
-  isAdminWorkspaceKind,
   parseAdminWorkspaceKey,
 } from '@/lib/admin/workspaces/domain';
 import {
@@ -35,7 +35,7 @@ function unavailable(): NextResponse {
 }
 
 function parseIdentity(kindValue: unknown, keyValue: unknown) {
-  const kind = isAdminWorkspaceKind(kindValue) ? kindValue : null;
+  const kind = isClientAdminWorkspaceKind(kindValue) ? kindValue : null;
   const key = parseAdminWorkspaceKey(keyValue);
   return kind && key ? { kind, key } : null;
 }
@@ -56,7 +56,7 @@ export async function GET(request: Request) {
   );
   if (!identity) {
     return NextResponse.json(
-      { error: 'A valid workspace kind and key are required.' },
+      { error: 'A valid browser workspace kind and key are required.' },
       { status: 400, headers: NO_STORE_HEADERS },
     );
   }
@@ -117,7 +117,7 @@ export async function PUT(request: Request) {
     return NextResponse.json(
       {
         error:
-          'Workspace updates require a valid kind, key, value, and non-negative expected revision.',
+          'Workspace updates require a valid browser kind, key, value, and non-negative expected revision.',
       },
       { status: 400, headers: NO_STORE_HEADERS },
     );
