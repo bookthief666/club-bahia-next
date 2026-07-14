@@ -9,7 +9,10 @@ import {
 } from '@/lib/admin/autopilot/domain';
 
 export type QueueMediaKind = 'image' | 'video';
-export type QueueExecutionSupport = 'automatic' | 'connection-required' | 'provider-proof-required';
+export type QueueExecutionSupport =
+  | 'automatic'
+  | 'connection-required'
+  | 'provider-proof-required';
 
 export interface PublishingQueuePayload {
   caption: string;
@@ -124,7 +127,6 @@ export function createQueueJob(
       scheduledFor: input.scheduledFor,
     }),
     attemptCount: 0,
-    eventTitle: input.eventTitle.trim() || 'Club Bahia event',
     payload: {
       caption,
       mediaUrl,
@@ -147,7 +149,9 @@ export function upsertQueueJob(
 ): PublishingQueueState {
   const existing = queue.jobs.find((job) => job.id === incoming.id);
   if (existing?.status === 'published') {
-    throw new Error('A published job cannot be replaced. Create a new content version instead.');
+    throw new Error(
+      'A published job cannot be replaced. Create a new content version instead.',
+    );
   }
 
   let next = incoming;
@@ -178,7 +182,9 @@ export function upsertQueueJob(
     schemaVersion: 1,
     jobs: [...queue.jobs.filter((job) => job.id !== incoming.id), next].sort(
       (left, right) =>
-        (left.scheduledFor ?? '9999').localeCompare(right.scheduledFor ?? '9999'),
+        (left.scheduledFor ?? '9999').localeCompare(
+          right.scheduledFor ?? '9999',
+        ),
     ),
     updatedAt: now.toISOString(),
   };
@@ -249,7 +255,10 @@ export function claimNextDueQueueJob(input: {
     if (job.executionSupport !== 'automatic') return false;
     if (!approvalStillMatches(job) || isLeaseActive(job, now)) return false;
     const dueAt = job.nextAttemptAt ?? job.scheduledFor;
-    return !dueAt || (validDate(dueAt) && new Date(dueAt).getTime() <= now.getTime());
+    return (
+      !dueAt ||
+      (validDate(dueAt) && new Date(dueAt).getTime() <= now.getTime())
+    );
   });
   if (!due) return { queue: input.queue };
 
@@ -270,7 +279,9 @@ export function claimNextDueQueueJob(input: {
   return {
     queue: {
       schemaVersion: 1,
-      jobs: input.queue.jobs.map((job) => (job.id === due.id ? claimed : job)),
+      jobs: input.queue.jobs.map((job) =>
+        job.id === due.id ? claimed : job,
+      ),
       updatedAt: now.toISOString(),
     },
     job: claimed,
@@ -319,8 +330,12 @@ export function failQueueJob(input: {
     jobs: input.queue.jobs.map((job) => {
       if (job.id !== input.jobId) return job;
       const exhausted = job.attemptCount >= job.maxAttempts;
-      const retry = input.retryable && !exhausted && !input.manualReviewRequired;
-      const delayMinutes = Math.min(5 * 2 ** Math.max(0, job.attemptCount - 1), 120);
+      const retry =
+        input.retryable && !exhausted && !input.manualReviewRequired;
+      const delayMinutes = Math.min(
+        5 * 2 ** Math.max(0, job.attemptCount - 1),
+        120,
+      );
       return {
         ...job,
         status: retry ? ('retrying' as const) : ('failed' as const),
@@ -339,7 +354,10 @@ export function failQueueJob(input: {
   };
 }
 
-function localDateKey(value: string | undefined, timeZone: string): string | undefined {
+function localDateKey(
+  value: string | undefined,
+  timeZone: string,
+): string | undefined {
   if (!value || !validDate(value)) return undefined;
   return new Intl.DateTimeFormat('en-CA', {
     timeZone,
@@ -362,7 +380,9 @@ export function summarizePublishingQueueToday(
     publishingToday: active.filter(
       (job) =>
         localDateKey(job.nextAttemptAt ?? job.scheduledFor, timeZone) === today &&
-        ['approved', 'scheduled', 'retrying', 'publishing', 'processing'].includes(job.status),
+        ['approved', 'scheduled', 'retrying', 'publishing', 'processing'].includes(
+          job.status,
+        ),
     ),
     needsApproval: active.filter((job) => job.status === 'needs-approval'),
     problems: active.filter((job) =>
@@ -370,7 +390,12 @@ export function summarizePublishingQueueToday(
     ),
     upcoming: active.filter((job) => {
       const key = localDateKey(job.scheduledFor, timeZone);
-      return Boolean(key && today && key > today && ['scheduled', 'approved'].includes(job.status));
+      return Boolean(
+        key &&
+          today &&
+          key > today &&
+          ['scheduled', 'approved'].includes(job.status),
+      );
     }),
   };
 }
