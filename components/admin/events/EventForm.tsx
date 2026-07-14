@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { EventStatus, OperationsEvent } from "@/lib/admin/domain";
-import { eventLocalDate } from "@/lib/admin/date";
+import { eventLocalDate, eventLocalTime } from "@/lib/admin/date";
 import {
   eventRepository,
   newEventDefaults,
@@ -20,6 +20,13 @@ export function EventForm({ eventId }: { eventId?: string }) {
     title: defaults.title,
     concept: defaults.concept,
     date: defaults.date,
+    startTime: defaults.startTime ?? "21:00",
+    performers: defaults.performers ?? "",
+    genres: defaults.genres ?? "",
+    admission: defaults.admission ?? "",
+    ageRestriction: defaults.ageRestriction ?? "",
+    reservationUrl: defaults.reservationUrl ?? "",
+    flyerUrl: defaults.flyerUrl ?? "",
     room: defaults.room,
     owner: defaults.owner,
     status: defaults.status as EventStatus,
@@ -35,6 +42,13 @@ export function EventForm({ eventId }: { eventId?: string }) {
         title: loadedEvent.title,
         concept: loadedEvent.concept,
         date: eventLocalDate(loadedEvent.startsAt),
+        startTime: eventLocalTime(loadedEvent.startsAt),
+        performers: loadedEvent.performers ?? "",
+        genres: loadedEvent.genres ?? "",
+        admission: loadedEvent.admission ?? "",
+        ageRestriction: loadedEvent.ageRestriction ?? "",
+        reservationUrl: loadedEvent.reservationUrl ?? "",
+        flyerUrl: loadedEvent.flyerUrl ?? "",
         room: loadedEvent.room,
         owner: loadedEvent.owner,
         status: loadedEvent.status,
@@ -71,19 +85,21 @@ export function EventForm({ eventId }: { eventId?: string }) {
     >
       <div className="rounded-2xl border border-emerald-200/12 bg-emerald-200/[.045] p-3">
         <p className="text-xs font-semibold uppercase tracking-[.2em] text-emerald-100/70">
-          Shared event details
+          Event facts
         </p>
         <p className="mt-1 text-sm leading-6 text-white/55">
-          Save the verified event facts first. The promotion tools will use these details without changing them.
+          Enter only confirmed details. The Promotion Autopilot will use them to generate captions, tracked links, media instructions, and a publishing schedule.
         </p>
       </div>
+
       {error ? (
         <p role="alert" className="rounded-2xl bg-red-500/15 p-3 text-red-100">
           {error}
         </p>
       ) : null}
+
       <details open className="rounded-2xl border border-white/10 p-3">
-        <summary className="cursor-pointer font-serif text-xl">Basics</summary>
+        <summary className="cursor-pointer font-serif text-xl">Essential details</summary>
         <div className="mt-3 space-y-3">
           <label className="block text-sm">
             Event name
@@ -91,22 +107,10 @@ export function EventForm({ eventId }: { eventId?: string }) {
               required
               className="mt-1 w-full rounded-xl bg-white/10 p-3"
               value={form.title}
-              onChange={(event) =>
-                setForm({ ...form, title: event.target.value })
-              }
+              onChange={(event) => setForm({ ...form, title: event.target.value })}
             />
           </label>
-          <label className="block text-sm">
-            What is happening?
-            <textarea
-              required
-              className="mt-1 w-full rounded-xl bg-white/10 p-3"
-              value={form.concept}
-              onChange={(event) =>
-                setForm({ ...form, concept: event.target.value })
-              }
-            />
-          </label>
+
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block text-sm">
               Date
@@ -116,39 +120,129 @@ export function EventForm({ eventId }: { eventId?: string }) {
                 className="mt-1 w-full rounded-xl bg-white/10 p-3"
                 value={form.date}
                 onChange={(event) =>
-                  setForm({
-                    ...form,
-                    date: event.target.value as typeof form.date,
-                  })
+                  setForm({ ...form, date: event.target.value as typeof form.date })
                 }
               />
             </label>
             <label className="block text-sm">
-              Planning stage
-              <select
+              Start time
+              <input
+                required
+                type="time"
                 className="mt-1 w-full rounded-xl bg-white/10 p-3"
-                value={form.status}
-                onChange={(event) =>
-                  setForm({
-                    ...form,
-                    status: event.target.value as EventStatus,
-                  })
-                }
-              >
-                {statuses.map((status) => (
-                  <option className="bg-black" key={status} value={status}>
-                    {STATUS_TONES[status].label}
-                  </option>
-                ))}
-              </select>
+                value={form.startTime}
+                onChange={(event) => setForm({ ...form, startTime: event.target.value })}
+              />
             </label>
           </div>
+
+          <label className="block text-sm">
+            Public event description and special details
+            <textarea
+              required
+              rows={4}
+              placeholder="What is happening, why guests should care, and any confirmed special details."
+              className="mt-1 w-full rounded-xl bg-white/10 p-3"
+              value={form.concept}
+              onChange={(event) => setForm({ ...form, concept: event.target.value })}
+            />
+          </label>
+
+          <label className="block text-sm">
+            Planning stage
+            <select
+              className="mt-1 w-full rounded-xl bg-white/10 p-3"
+              value={form.status}
+              onChange={(event) =>
+                setForm({ ...form, status: event.target.value as EventStatus })
+              }
+            >
+              {statuses.map((status) => (
+                <option className="bg-black" key={status} value={status}>
+                  {STATUS_TONES[status].label}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       </details>
+
       <details open className="rounded-2xl border border-white/10 p-3">
-        <summary className="cursor-pointer font-serif text-xl">
-          Venue setup
-        </summary>
+        <summary className="cursor-pointer font-serif text-xl">Promotion facts</summary>
+        <div className="mt-3 space-y-3">
+          <label className="block text-sm">
+            Performers, DJs, bands, or hosts
+            <input
+              placeholder="Use confirmed public names and handles only"
+              className="mt-1 w-full rounded-xl bg-white/10 p-3"
+              value={form.performers}
+              onChange={(event) => setForm({ ...form, performers: event.target.value })}
+            />
+          </label>
+
+          <label className="block text-sm">
+            Music, genres, or event style
+            <input
+              placeholder="Example: cumbia, salsa, bachata, darkwave, post-punk"
+              className="mt-1 w-full rounded-xl bg-white/10 p-3"
+              value={form.genres}
+              onChange={(event) => setForm({ ...form, genres: event.target.value })}
+            />
+          </label>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block text-sm">
+              Admission or cover
+              <input
+                placeholder="Example: $15 before 10 PM"
+                className="mt-1 w-full rounded-xl bg-white/10 p-3"
+                value={form.admission}
+                onChange={(event) => setForm({ ...form, admission: event.target.value })}
+              />
+            </label>
+            <label className="block text-sm">
+              Age policy
+              <input
+                placeholder="Confirm for this event"
+                className="mt-1 w-full rounded-xl bg-white/10 p-3"
+                value={form.ageRestriction}
+                onChange={(event) =>
+                  setForm({ ...form, ageRestriction: event.target.value })
+                }
+              />
+            </label>
+          </div>
+
+          <label className="block text-sm">
+            Reservation or ticket link
+            <input
+              type="url"
+              inputMode="url"
+              placeholder="https://"
+              className="mt-1 w-full rounded-xl bg-white/10 p-3"
+              value={form.reservationUrl}
+              onChange={(event) =>
+                setForm({ ...form, reservationUrl: event.target.value })
+              }
+            />
+          </label>
+
+          <label className="block text-sm">
+            Existing flyer or primary media URL
+            <input
+              type="url"
+              inputMode="url"
+              placeholder="Optional — media can also be uploaded in the next step"
+              className="mt-1 w-full rounded-xl bg-white/10 p-3"
+              value={form.flyerUrl}
+              onChange={(event) => setForm({ ...form, flyerUrl: event.target.value })}
+            />
+          </label>
+        </div>
+      </details>
+
+      <details open className="rounded-2xl border border-white/10 p-3">
+        <summary className="cursor-pointer font-serif text-xl">Venue setup</summary>
         <div className="mt-3 space-y-3">
           {form.status === "cancelled" ? (
             <label className="block text-sm">
@@ -169,9 +263,7 @@ export function EventForm({ eventId }: { eventId?: string }) {
               <input
                 className="mt-1 w-full rounded-xl bg-white/10 p-3"
                 value={form.room}
-                onChange={(event) =>
-                  setForm({ ...form, room: event.target.value })
-                }
+                onChange={(event) => setForm({ ...form, room: event.target.value })}
               />
             </label>
             <label className="block text-sm">
@@ -179,28 +271,19 @@ export function EventForm({ eventId }: { eventId?: string }) {
               <input
                 className="mt-1 w-full rounded-xl bg-white/10 p-3"
                 value={form.owner}
-                onChange={(event) =>
-                  setForm({ ...form, owner: event.target.value })
-                }
+                onChange={(event) => setForm({ ...form, owner: event.target.value })}
               />
             </label>
           </div>
         </div>
       </details>
-      <details className="rounded-2xl border border-white/10 p-3">
-        <summary className="cursor-pointer font-serif text-xl">
-          More actions
-        </summary>
-        <p className="mt-3 text-sm text-white/55">
-          Duplicate, archive, restore, and cancellation actions remain available from the event overview.
-        </p>
-      </details>
+
       <div className="sticky bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-10 rounded-2xl border border-white/10 bg-[#0d0b0a]/95 p-2 md:bottom-4 md:inline-block">
         <button
           disabled={pending}
           className="min-h-11 w-full rounded-xl bg-amber-300 px-5 font-bold text-black disabled:opacity-60"
         >
-          {pending ? "Saving…" : "Save event"}
+          {pending ? "Saving…" : "Save event and prepare promotion"}
         </button>
       </div>
     </form>
