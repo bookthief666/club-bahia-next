@@ -4,11 +4,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const steps = [
-  { id: 'event', label: 'Event', short: 'Event', suffix: '' },
-  { id: 'campaign', label: 'Create campaign', short: 'Campaign', suffix: '/growth' },
-  { id: 'media', label: 'Add media', short: 'Media', suffix: '/assets' },
-  { id: 'prepare', label: 'Prepare posts', short: 'Review', suffix: '/publishing' },
-  { id: 'publish', label: 'Publish campaign', short: 'Publish', suffix: '/publishing/execute' },
+  { id: 'event', label: 'Event details', short: 'Event', suffix: '' },
+  { id: 'campaign', label: 'Create promotion', short: 'Promote', suffix: '/growth' },
+  { id: 'media', label: 'Choose media', short: 'Media', suffix: '/assets' },
+  { id: 'prepare', label: 'Review posts', short: 'Review', suffix: '/publishing' },
+  { id: 'publish', label: 'Promote event', short: 'Publish', suffix: '/publishing/execute' },
 ] as const;
 
 function activeStep(pathname: string): string {
@@ -29,10 +29,10 @@ export function CampaignWorkflowNav({ eventId }: { eventId: string }) {
       <div className="flex items-center justify-between gap-3 border-b border-white/8 px-4 py-3 sm:px-5">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[.22em] text-emerald-200/65">
-            Campaign workflow
+            Promotion steps
           </p>
           <p className="mt-1 text-sm text-white/65">
-            Follow the steps from event details to a finished promotion.
+            Move from confirmed event details to ready-to-publish promotion.
           </p>
         </div>
         <span className="shrink-0 rounded-full border border-amber-200/20 bg-amber-200/10 px-3 py-1 text-[11px] font-semibold text-amber-100">
@@ -41,7 +41,7 @@ export function CampaignWorkflowNav({ eventId }: { eventId: string }) {
       </div>
 
       <nav
-        aria-label="Campaign workflow"
+        aria-label="Event promotion steps"
         className="flex gap-2 overflow-x-auto px-3 py-3 [scrollbar-width:none] sm:px-4 [&::-webkit-scrollbar]:hidden"
       >
         {steps.map((step, index) => {
