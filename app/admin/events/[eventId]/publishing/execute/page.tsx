@@ -1,6 +1,7 @@
 import { CampaignLaunchClient } from '@/components/admin/publishing/CampaignLaunchClient';
 import { CampaignTrackingLinksClient } from '@/components/admin/publishing/CampaignTrackingLinksClient';
 import { InstagramPublishProofClient } from '@/components/admin/publishing/InstagramPublishProofClient';
+import { TikTokPrivatePublishClient } from '@/components/admin/publishing/TikTokPrivatePublishClient';
 import { WebsitePublishClient } from '@/components/admin/publishing/WebsitePublishClient';
 import { CampaignWorkflowNav } from '@/components/admin/workflow/CampaignWorkflowNav';
 
@@ -22,6 +23,9 @@ export default async function EventPublishingExecutionPage({
       </div>
       <div className="mb-5">
         <InstagramPublishProofClient eventId={eventId} />
+      </div>
+      <div className="mb-5">
+        <TikTokPrivatePublishClient eventId={eventId} />
       </div>
       <CampaignLaunchClient eventId={eventId} />
     </>
