@@ -27,7 +27,8 @@ export default async function PromotionSettingsPage() {
   const readiness = await getPromotionAutopilotReadiness();
   const queueStorageConfigured = isAdminWorkspaceStorageConfigured();
   const triggerConfigured = Boolean(
-    process.env.PUBLISHING_CRON_SECRET?.trim(),
+    process.env.PUBLISHING_CRON_SECRET?.trim() ||
+      process.env.CRON_SECRET?.trim(),
   );
   const schedulerReady = queueStorageConfigured && triggerConfigured;
 
