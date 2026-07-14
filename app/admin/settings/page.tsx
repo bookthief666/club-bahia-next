@@ -34,7 +34,7 @@ export default function PromotionSettingsPage() {
           Connect the accounts that will publish.
         </h1>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-white/58 sm:text-base">
-          The first controlled Instagram image publisher is built. It stays disabled until the venue account, exact API version, approved media host, encrypted receipt storage, and explicit live switch are all verified.
+          Instagram is the first live publishing lane and TikTok is the second. Facebook remains an optional Meta cross-post, while Google Business Profile follows as a local-discovery channel.
         </p>
         <div className="mt-5 flex flex-wrap gap-2 text-xs text-white/48">
           <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5">
@@ -49,7 +49,7 @@ export default function PromotionSettingsPage() {
         </div>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-2">
+      <section className="grid gap-4 xl:grid-cols-3">
         {readiness.accounts.map((account) => (
           <article
             key={account.provider}
@@ -158,9 +158,9 @@ export default function PromotionSettingsPage() {
         <p className="text-[10px] font-semibold uppercase tracking-[.18em] text-amber-100/65">
           Current safety boundary
         </p>
-        <h2 className="mt-1 font-serif text-2xl text-white">One controlled Instagram image can publish. Full autopilot remains gated.</h2>
+        <h2 className="mt-1 font-serif text-2xl text-white">Instagram image proof first. TikTok vertical video next.</h2>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-white/58">
-          Step 5 now contains a guarded live-publication panel. It only activates for approved Instagram copy and approved image media after every Meta safety check passes. Scheduled campaigns, Facebook, carousels, Reels, Stories, and Google posts remain disabled until their own adapters are verified.
+          Step 5 already contains the guarded Instagram image publisher. The next controlled adapter will prepare one vertical-video package for separate Instagram Reel and TikTok jobs, including platform-specific captions, account permissions, processing status, receipts, and duplicate protection. Facebook is no longer the next primary build target.
         </p>
         <Link
           href="/admin/events"
