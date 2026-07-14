@@ -2,10 +2,14 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { AdminLoginClient } from '@/components/admin/auth/AdminLoginClient';
+import type {
+  AdminAuthConfigurationStatus,
+  AdminAuthValueStatus,
+} from '@/lib/admin/auth/domain';
 import {
+  getAdminAuthConfigurationStatus,
   getCurrentAdminUser,
   isManagerAdminAuthConfigured,
-  isProductionAdminAuthConfigured,
 } from '@/lib/admin/auth/session';
 
 export const dynamic = 'force-dynamic';
@@ -20,6 +24,85 @@ function safeNext(value: string | undefined): string {
   return value;
 }
 
+function valueLabel(status: AdminAuthValueStatus): string {
+  if (!status.exists) return 'Missing';
+  if (!status.valid) return `Present, below ${status.minimumLength} characters`;
+  return 'Present, length valid';
+}
+
+function environmentLabel(
+  environment: AdminAuthConfigurationStatus['deploymentEnvironment'],
+): string {
+  return environment.charAt(0).toUpperCase() + environment.slice(1);
+}
+
+function configurationProblem(status: AdminAuthConfigurationStatus): string {
+  if (!status.authSecret.exists) {
+    return 'ADMIN_AUTH_SECRET is missing from this deployment.';
+  }
+  if (!status.authSecret.valid) {
+    return 'ADMIN_AUTH_SECRET is present but does not meet the 32-character requirement.';
+  }
+  if (!status.ownerPassword.exists) {
+    return 'ADMIN_OWNER_PASSWORD is missing from this deployment.';
+  }
+  if (!status.ownerPassword.valid) {
+    return 'ADMIN_OWNER_PASSWORD is present but does not meet the 12-character requirement.';
+  }
+  return 'No valid admin password is available in this deployment.';
+}
+
+function ConfigurationNotice({
+  status,
+}: {
+  status: AdminAuthConfigurationStatus;
+}) {
+  const rows = [
+    ['ADMIN_AUTH_SECRET', valueLabel(status.authSecret)],
+    ['ADMIN_OWNER_PASSWORD', valueLabel(status.ownerPassword)],
+    ['Deployment', environmentLabel(status.deploymentEnvironment)],
+    [
+      'Mock authentication',
+      status.mockAuthenticationEnabled ? 'Enabled' : 'Disabled',
+    ],
+  ];
+
+  return (
+    <div
+      role="alert"
+      className="mt-7 rounded-2xl border border-amber-200/18 bg-amber-200/[.06] p-4 sm:p-5"
+    >
+      <p className="font-semibold text-amber-50">Sign-in is not configured.</p>
+      <p className="mt-2 text-sm leading-6 text-amber-50/72">
+        {configurationProblem(status)}
+      </p>
+
+      <dl className="mt-4 overflow-hidden rounded-xl border border-white/8 bg-black/20">
+        {rows.map(([label, value]) => (
+          <div
+            key={label}
+            className="grid gap-1 border-b border-white/8 px-3 py-3 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-4"
+          >
+            <dt className="break-all font-mono text-[11px] text-white/46 sm:break-normal">
+              {label}
+            </dt>
+            <dd className="text-xs font-semibold text-amber-50/82 sm:text-right">
+              {value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+
+      <p className="mt-4 text-xs leading-5 text-amber-50/52">
+        Check that the variables target Preview and this branch, then redeploy.
+        Saved environment changes do not alter an existing deployment. Only
+        presence and minimum-length status are shown here; secret values are
+        never returned.
+      </p>
+    </div>
+  );
+}
+
 export default async function LoginPage({
   searchParams,
 }: {
@@ -30,7 +113,7 @@ export default async function LoginPage({
   const nextPath = safeNext(query.next);
   if (current) redirect(nextPath);
 
-  const configured = isProductionAdminAuthConfigured();
+  const authStatus = getAdminAuthConfigurationStatus();
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#050304] px-4 py-8 text-amber-50 sm:px-6 sm:py-12">
@@ -77,18 +160,13 @@ export default async function LoginPage({
               </Link>
             </div>
 
-            {configured ? (
+            {authStatus.configured ? (
               <AdminLoginClient
                 nextPath={nextPath}
                 managerEnabled={isManagerAdminAuthConfigured()}
               />
             ) : (
-              <div className="mt-7 rounded-2xl border border-amber-200/18 bg-amber-200/[.06] p-4">
-                <p className="font-semibold text-amber-50">Sign-in is not configured.</p>
-                <p className="mt-2 text-sm leading-6 text-amber-50/62">
-                  Add a 32-character ADMIN_AUTH_SECRET and a private ADMIN_OWNER_PASSWORD of at least 12 characters, then redeploy.
-                </p>
-              </div>
+              <ConfigurationNotice status={authStatus} />
             )}
 
             <p className="mt-6 text-xs leading-5 text-white/32">
