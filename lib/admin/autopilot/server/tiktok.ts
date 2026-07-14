@@ -24,7 +24,7 @@ export interface TikTokPublishingConfiguration {
   accessToken: string;
   enabled: boolean;
   audited: boolean;
-  verifiedMediaHost: string;
+  verifiedMediaHost?: string;
 }
 
 export interface TikTokCreatorInfo {
@@ -66,14 +66,17 @@ type FetchLike = (
 export function getTikTokPublishingConfiguration(): TikTokPublishingConfiguration {
   const accessToken = process.env.TIKTOK_ACCESS_TOKEN?.trim() ?? '';
   const verifiedMediaHost =
-    process.env.TIKTOK_VERIFIED_MEDIA_HOST?.trim().toLowerCase() ?? '';
+    process.env.TIKTOK_VERIFIED_MEDIA_HOST?.trim().toLowerCase() || undefined;
   if (accessToken.length < 20) {
     throw new TikTokPublishingError(
       'TIKTOK_ACCESS_TOKEN is not configured.',
       'configuration',
     );
   }
-  if (!verifiedMediaHost || verifiedMediaHost.includes('/') || verifiedMediaHost.includes(':')) {
+  if (
+    verifiedMediaHost &&
+    (verifiedMediaHost.includes('/') || verifiedMediaHost.includes(':'))
+  ) {
     throw new TikTokPublishingError(
       'TIKTOK_VERIFIED_MEDIA_HOST must be an exact verified hostname without a protocol or path.',
       'configuration',
@@ -228,6 +231,12 @@ function assertVerifiedVideoUrl(
   videoUrl: string,
   config: TikTokPublishingConfiguration,
 ): void {
+  if (!config.verifiedMediaHost) {
+    throw new TikTokPublishingError(
+      'TIKTOK_VERIFIED_MEDIA_HOST must be configured before a video can be initialized.',
+      'configuration',
+    );
+  }
   const parsed = new URL(videoUrl);
   if (
     parsed.protocol !== 'https:' ||
