@@ -20,18 +20,18 @@ const nav = [
     description: 'Plan and promote',
   },
   {
-    label: 'Reservations',
+    label: 'Guests',
     mobileLabel: 'Guests',
     href: '/admin/reservations',
     icon: '✦',
-    description: 'Guest requests',
+    description: 'Reservations and follow-up',
   },
   {
-    label: 'Calendar',
-    mobileLabel: 'Calendar',
+    label: 'Schedule',
+    mobileLabel: 'Schedule',
     href: '/admin/calendar',
     icon: '◷',
-    description: 'See the schedule',
+    description: 'Events and deadlines',
   },
 ];
 
@@ -42,63 +42,63 @@ function pageIdentity(pathname: string): {
 } {
   if (pathname.includes('/publishing/execute')) {
     return {
-      eyebrow: 'Campaign workflow · Step 5',
-      title: 'Publish campaign',
+      eyebrow: 'Promotion steps · Step 5',
+      title: 'Promote event',
       subtitle: 'Use the final copy and media, then record what went live.',
     };
   }
   if (pathname.endsWith('/publishing')) {
     return {
-      eyebrow: 'Campaign workflow · Step 4',
-      title: 'Prepare posts',
+      eyebrow: 'Promotion steps · Step 4',
+      title: 'Review posts',
       subtitle: 'Match each caption with the correct approved image or video.',
     };
   }
   if (pathname.endsWith('/assets')) {
     return {
-      eyebrow: 'Campaign workflow · Step 3',
-      title: 'Event media',
+      eyebrow: 'Promotion steps · Step 3',
+      title: 'Choose media',
       subtitle: 'Upload, organize, and approve flyers, Stories, and Reels.',
     };
   }
   if (pathname.endsWith('/growth')) {
     return {
-      eyebrow: 'Campaign workflow · Step 2',
-      title: 'Create campaign',
-      subtitle: 'Generate and approve the promotional plan and channel copy.',
+      eyebrow: 'Promotion steps · Step 2',
+      title: 'Create promotion',
+      subtitle: 'Generate and approve captions, reminders, and channel copy.',
     };
   }
   if (pathname.startsWith('/admin/reservations')) {
     return {
       eyebrow: 'Club Bahia operations',
-      title: 'Guest operations',
-      subtitle: 'Review website requests and follow up with guests.',
+      title: 'Guests',
+      subtitle: 'Review reservation requests and follow up with guests.',
     };
   }
   if (pathname.startsWith('/admin/calendar')) {
     return {
       eyebrow: 'Club Bahia operations',
-      title: 'Calendar',
-      subtitle: 'See events, launches, and important deadlines.',
+      title: 'Schedule',
+      subtitle: 'See events, promotion dates, and important deadlines.',
     };
   }
   if (pathname.includes('/new')) {
     return {
-      eyebrow: 'Campaign workflow · Step 1',
+      eyebrow: 'Promotion steps · Step 1',
       title: 'Create event',
       subtitle: 'Start with the information guests need to know.',
     };
   }
   if (pathname.includes('/edit')) {
     return {
-      eyebrow: 'Campaign workflow · Step 1',
+      eyebrow: 'Promotion steps · Step 1',
       title: 'Edit event',
       subtitle: 'Keep public event information accurate and current.',
     };
   }
   if (/^\/admin\/events\/[^/]+$/.test(pathname)) {
     return {
-      eyebrow: 'Campaign workflow · Step 1',
+      eyebrow: 'Promotion steps · Step 1',
       title: 'Event overview',
       subtitle: 'Review the event and continue into promotion.',
     };
@@ -107,7 +107,7 @@ function pageIdentity(pathname: string): {
     return {
       eyebrow: 'Club Bahia Growth OS',
       title: 'Events',
-      subtitle: 'Choose an event, then build and publish its campaign.',
+      subtitle: 'Choose an event, then create and publish its promotion.',
     };
   }
   return {
@@ -162,7 +162,7 @@ export function AdminShell({
             </p>
             <h1 className="mt-1 font-serif text-3xl text-white">Growth OS</h1>
             <p className="mt-2 text-xs leading-5 text-white/42">
-              Events, promotion, reservations, and publishing in one place.
+              Events, promotion, guests, and results in one place.
             </p>
           </Link>
 
@@ -179,7 +179,7 @@ export function AdminShell({
               {user.name}
             </p>
             <p className="mt-1 text-xs leading-5 text-white/42">
-              Private workspace session. Social delivery remains manual until provider connections are activated.
+              Private session. Social posting remains manual until approved provider connections are active.
             </p>
           </div>
 
