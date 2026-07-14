@@ -18,10 +18,12 @@ describe('Growth OS workspace access boundary', () => {
     );
   });
 
-  it('keeps publication claims and OAuth credentials server-only', () => {
+  it('keeps publication claims, OAuth credentials, and queue leases server-only', () => {
     expect(isAdminWorkspaceKind('autopilot-publication')).toBe(true);
     expect(isAdminWorkspaceKind('autopilot-credential')).toBe(true);
+    expect(isAdminWorkspaceKind('autopilot-queue')).toBe(true);
     expect(isClientAdminWorkspaceKind('autopilot-publication')).toBe(false);
     expect(isClientAdminWorkspaceKind('autopilot-credential')).toBe(false);
+    expect(isClientAdminWorkspaceKind('autopilot-queue')).toBe(false);
   });
 });
