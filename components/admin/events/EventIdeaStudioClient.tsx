@@ -46,7 +46,10 @@ function CompactList({ items }: { items: string[] }) {
     <ul className="mt-2 space-y-2 text-sm leading-6 text-white/58">
       {items.map((item) => (
         <li key={item} className="flex gap-2">
-          <span aria-hidden="true" className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-200/60" />
+          <span
+            aria-hidden="true"
+            className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-200/60"
+          />
           <span>{item}</span>
         </li>
       ))}
@@ -117,7 +120,7 @@ export function EventIdeaStudioClient() {
     }
   }
 
-  async function useConcept(concept: EventIdeaConcept) {
+  async function createFromConcept(concept: EventIdeaConcept) {
     setCreatingId(concept.id);
     setError('');
     try {
@@ -152,37 +155,52 @@ export function EventIdeaStudioClient() {
   return (
     <div className="space-y-5">
       <section className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-[radial-gradient(circle_at_90%_8%,rgba(246,183,60,.22),transparent_24rem),radial-gradient(circle_at_7%_95%,rgba(18,120,106,.25),transparent_26rem),linear-gradient(135deg,rgba(13,19,17,.98),rgba(28,14,13,.96))] p-5 shadow-[0_28px_90px_rgba(0,0,0,.42)] sm:p-7">
-        <div className="max-w-3xl">
-          <p className="text-[10px] font-semibold uppercase tracking-[.24em] text-emerald-200/70">
-            AI Event Idea Studio
-          </p>
-          <h1 className="mt-3 font-serif text-4xl text-white sm:text-5xl">
-            Turn a rough idea into a night worth testing.
-          </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-white/58 sm:text-base">
-            Describe the idea in ordinary language. The studio will develop three different operating concepts, expose the risks and unknowns, and create an editable event draft from the plan you choose.
-          </p>
-          <div className="mt-5 flex flex-wrap gap-2 text-xs text-white/48">
-            <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5">No invented profitability</span>
-            <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5">Three distinct approaches</span>
-            <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5">Human approval required</span>
-          </div>
+        <p className="text-[10px] font-semibold uppercase tracking-[.24em] text-emerald-200/70">
+          AI Event Idea Studio
+        </p>
+        <h1 className="mt-3 max-w-3xl font-serif text-4xl text-white sm:text-5xl">
+          Turn a rough idea into a night worth testing.
+        </h1>
+        <p className="mt-3 max-w-2xl text-sm leading-7 text-white/58 sm:text-base">
+          Describe the idea in ordinary language. The studio develops three different plans, exposes risks and unknowns, and creates an editable event draft from the plan you choose.
+        </p>
+        <div className="mt-5 flex flex-wrap gap-2 text-xs text-white/48">
+          <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5">
+            No invented financial claims
+          </span>
+          <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5">
+            Three distinct approaches
+          </span>
+          <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5">
+            Human approval required
+          </span>
         </div>
       </section>
 
-      <form onSubmit={generate} className="rounded-[1.5rem] border border-white/10 bg-[#12110f]/88 p-4 shadow-[0_20px_60px_rgba(0,0,0,.28)] sm:p-6">
+      <form
+        onSubmit={generate}
+        className="rounded-[1.5rem] border border-white/10 bg-[#12110f]/88 p-4 shadow-[0_20px_60px_rgba(0,0,0,.28)] sm:p-6"
+      >
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[.2em] text-amber-100/60">Start here</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[.2em] text-amber-100/60">
+              Start here
+            </p>
             <h2 className="mt-1 font-serif text-3xl text-white">Describe the opportunity</h2>
           </div>
-          <Link href="/admin/events/new" className="rounded-full border border-white/12 px-4 py-2 text-xs font-semibold text-white/60 transition hover:border-white/25 hover:text-white">
+          <Link
+            href="/admin/events/new"
+            className="rounded-full border border-white/12 px-4 py-2 text-xs font-semibold text-white/60 transition hover:border-white/25 hover:text-white"
+          >
             Enter confirmed event manually
           </Link>
         </div>
 
         {error ? (
-          <p role="alert" className="mt-4 rounded-2xl border border-red-200/15 bg-red-400/10 p-3 text-sm text-red-100">
+          <p
+            role="alert"
+            className="mt-4 rounded-2xl border border-red-200/15 bg-red-400/10 p-3 text-sm text-red-100"
+          >
             {error}
           </p>
         ) : null}
@@ -275,7 +293,7 @@ export function EventIdeaStudioClient() {
             Constraints or concerns
             <textarea
               rows={3}
-              placeholder="Example: limited staff, Thursday attendance uncertainty, performer budget, noise cutoff, or no original footage yet"
+              placeholder="Example: limited staff, Thursday attendance uncertainty, performer budget, or no original footage yet"
               className="mt-1 w-full rounded-2xl border border-white/10 bg-black/25 p-4 leading-6"
               value={form.constraints}
               onChange={(event) => update('constraints', event.target.value)}
@@ -295,11 +313,19 @@ export function EventIdeaStudioClient() {
         <section className="space-y-4">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[.2em] text-emerald-200/60">Compare before committing</p>
-              <h2 className="mt-1 font-serif text-3xl text-white">Three ways to build the night</h2>
+              <p className="text-[10px] font-semibold uppercase tracking-[.2em] text-emerald-200/60">
+                Compare before committing
+              </p>
+              <h2 className="mt-1 font-serif text-3xl text-white">
+                Three ways to build the night
+              </h2>
             </div>
             <div className="text-right text-xs text-white/42">
-              <p>{result.provider === 'openai' ? 'Developed with live AI' : 'Developed with starter logic'}</p>
+              <p>
+                {result.provider === 'openai'
+                  ? 'Developed with live AI'
+                  : 'Developed with starter logic'}
+              </p>
               {result.model ? <p className="mt-1">Model: {result.model}</p> : null}
             </div>
           </div>
@@ -312,63 +338,107 @@ export function EventIdeaStudioClient() {
 
           <div className="grid gap-4 xl:grid-cols-3">
             {result.concepts.map((concept, index) => (
-              <article key={concept.id} className="flex flex-col rounded-[1.5rem] border border-white/10 bg-[linear-gradient(155deg,rgba(19,19,17,.96),rgba(18,11,10,.94))] p-4 shadow-[0_20px_60px_rgba(0,0,0,.25)] sm:p-5">
+              <article
+                key={concept.id}
+                className="flex flex-col rounded-[1.5rem] border border-white/10 bg-[linear-gradient(155deg,rgba(19,19,17,.96),rgba(18,11,10,.94))] p-4 shadow-[0_20px_60px_rgba(0,0,0,.25)] sm:p-5"
+              >
                 <div className="flex items-start justify-between gap-3">
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-amber-200/20 bg-amber-200/10 text-sm font-bold text-amber-100">
                     {index + 1}
                   </span>
-                  <span className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[.12em] ${confidenceTone(concept.confidence)}`}>
+                  <span
+                    className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[.12em] ${confidenceTone(concept.confidence)}`}
+                  >
                     {EVENT_IDEA_CONFIDENCE_LABELS[concept.confidence]}
                   </span>
                 </div>
 
                 <h3 className="mt-4 font-serif text-3xl text-white">{concept.title}</h3>
-                <p className="mt-3 text-sm leading-7 text-white/62">{concept.oneLineConcept}</p>
+                <p className="mt-3 text-sm leading-7 text-white/62">
+                  {concept.oneLineConcept}
+                </p>
 
                 <div className="mt-4 space-y-3 rounded-2xl border border-white/8 bg-black/18 p-3">
                   <div>
-                    <p className="text-[10px] uppercase tracking-[.16em] text-white/35">Who it is for</p>
-                    <p className="mt-1 text-sm leading-6 text-white/64">{concept.intendedAudience}</p>
+                    <p className="text-[10px] uppercase tracking-[.16em] text-white/35">
+                      Who it is for
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-white/64">
+                      {concept.intendedAudience}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-[10px] uppercase tracking-[.16em] text-white/35">Format</p>
-                    <p className="mt-1 text-sm leading-6 text-white/64">{concept.programmingFormat}</p>
+                    <p className="text-[10px] uppercase tracking-[.16em] text-white/35">
+                      Format
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-white/64">
+                      {concept.programmingFormat}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-[10px] uppercase tracking-[.16em] text-white/35">Promotion angle</p>
-                    <p className="mt-1 text-sm leading-6 text-white/64">{concept.promotionAngle}</p>
+                    <p className="text-[10px] uppercase tracking-[.16em] text-white/35">
+                      Promotion angle
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-white/64">
+                      {concept.promotionAngle}
+                    </p>
                   </div>
                 </div>
 
                 <details className="mt-4 rounded-2xl border border-white/8 p-3">
-                  <summary className="cursor-pointer text-sm font-semibold text-white/78">Timing and first test</summary>
-                  <p className="mt-3 text-sm leading-6 text-white/58">{concept.recommendedTiming}</p>
-                  <p className="mt-2 text-sm leading-6 text-white/58">{concept.suggestedCadence}</p>
-                  <p className="mt-3 rounded-xl bg-emerald-200/[.06] p-3 text-sm leading-6 text-emerald-50/72">{concept.lowCostTest}</p>
+                  <summary className="cursor-pointer text-sm font-semibold text-white/78">
+                    Timing and first test
+                  </summary>
+                  <p className="mt-3 text-sm leading-6 text-white/58">
+                    {concept.recommendedTiming}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-white/58">
+                    {concept.suggestedCadence}
+                  </p>
+                  <p className="mt-3 rounded-xl bg-emerald-200/[.06] p-3 text-sm leading-6 text-emerald-50/72">
+                    {concept.lowCostTest}
+                  </p>
                 </details>
 
                 <details className="mt-3 rounded-2xl border border-white/8 p-3">
-                  <summary className="cursor-pointer text-sm font-semibold text-white/78">People and setup needed</summary>
-                  <CompactList items={[...concept.talentRequirements, ...concept.operationalRequirements]} />
+                  <summary className="cursor-pointer text-sm font-semibold text-white/78">
+                    People and setup needed
+                  </summary>
+                  <CompactList
+                    items={[
+                      ...concept.talentRequirements,
+                      ...concept.operationalRequirements,
+                    ]}
+                  />
                 </details>
 
                 <details className="mt-3 rounded-2xl border border-white/8 p-3">
-                  <summary className="cursor-pointer text-sm font-semibold text-white/78">Risks and unanswered questions</summary>
-                  <p className="mt-3 text-[10px] font-semibold uppercase tracking-[.16em] text-red-100/55">Risks</p>
+                  <summary className="cursor-pointer text-sm font-semibold text-white/78">
+                    Risks and unanswered questions
+                  </summary>
+                  <p className="mt-3 text-[10px] font-semibold uppercase tracking-[.16em] text-red-100/55">
+                    Risks
+                  </p>
                   <CompactList items={concept.risks} />
-                  <p className="mt-4 text-[10px] font-semibold uppercase tracking-[.16em] text-amber-100/55">Still need to know</p>
+                  <p className="mt-4 text-[10px] font-semibold uppercase tracking-[.16em] text-amber-100/55">
+                    Still need to know
+                  </p>
                   <CompactList items={concept.openQuestions} />
                 </details>
 
-                <p className="mt-4 text-sm leading-6 text-white/48">{concept.fitRationale}</p>
+                <p className="mt-4 text-sm leading-6 text-white/48">
+                  {concept.fitRationale}
+                </p>
 
                 <button
                   type="button"
                   disabled={Boolean(creatingId)}
-                  onClick={() => useConcept(concept)}
+                  onClick={() => createFromConcept(concept)}
                   className="mt-5 min-h-12 w-full rounded-full bg-emerald-300 px-5 text-sm font-bold text-black disabled:opacity-55"
                 >
-                  {creatingId === concept.id ? 'Creating event draft…' : 'Use this plan →'}
+                  {creatingId === concept.id
+                    ? 'Creating event draft…'
+                    : 'Use this plan →'}
                 </button>
               </article>
             ))}
