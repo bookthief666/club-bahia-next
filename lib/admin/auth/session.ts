@@ -9,6 +9,7 @@ import {
   ADMIN_SESSION_TTL_SECONDS,
   authenticateAdminCredential,
   createAdminSessionToken,
+  getAdminAuthConfigurationStatus,
   isManagerAdminAuthConfigured,
   isProductionAdminAuthConfigured,
   verifyAdminSessionToken,
@@ -18,11 +19,15 @@ export {
   ADMIN_SESSION_TTL_SECONDS,
   authenticateAdminCredential,
   createAdminSessionToken,
+  getAdminAuthConfigurationStatus,
   isManagerAdminAuthConfigured,
   isProductionAdminAuthConfigured,
   verifyAdminSessionToken,
 };
-export type { AdminLoginRole } from '@/lib/admin/auth/domain';
+export type {
+  AdminAuthConfigurationStatus,
+  AdminLoginRole,
+} from '@/lib/admin/auth/domain';
 
 export const ADMIN_SESSION_COOKIE = 'club_bahia_admin_session';
 
