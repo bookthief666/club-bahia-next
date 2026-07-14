@@ -1,6 +1,10 @@
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import type { AdminRole, AdminUser } from '@/lib/admin/domain';
-import type { AdminLoginRole } from '@/lib/admin/auth/domain';
+import {
+  inspectAdminAuthConfiguration,
+  type AdminAuthConfigurationStatus,
+  type AdminLoginRole,
+} from '@/lib/admin/auth/domain';
 
 export const ADMIN_SESSION_TTL_SECONDS = 60 * 60 * 12;
 
@@ -96,17 +100,23 @@ function payloadToUser(payload: AdminSessionPayload): AdminUser {
   };
 }
 
+export function getAdminAuthConfigurationStatus(): AdminAuthConfigurationStatus {
+  return inspectAdminAuthConfiguration({
+    authSecret: process.env.ADMIN_AUTH_SECRET,
+    ownerPassword: process.env.ADMIN_OWNER_PASSWORD,
+    managerPassword: process.env.ADMIN_MANAGER_PASSWORD,
+    nodeEnv: process.env.NODE_ENV,
+    vercelEnv: process.env.VERCEL_ENV,
+    devAuthEnabled: process.env.ADMIN_DEV_AUTH_ENABLED,
+  });
+}
+
 export function isProductionAdminAuthConfigured(): boolean {
-  return (
-    sessionSecret().length >= 32 &&
-    credentialProfiles().some((profile) => profile.password.length >= 12)
-  );
+  return getAdminAuthConfigurationStatus().configured;
 }
 
 export function isManagerAdminAuthConfigured(): boolean {
-  return credentialProfiles().some(
-    (profile) => profile.role === 'manager' && profile.password.length >= 12,
-  );
+  return getAdminAuthConfigurationStatus().managerPassword.valid;
 }
 
 export function authenticateAdminCredential(
