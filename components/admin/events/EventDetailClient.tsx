@@ -26,6 +26,19 @@ function PlanList({ title, items }: { title: string; items: string[] }) {
   );
 }
 
+function Fact({ label, value }: { label: string; value?: string }) {
+  return (
+    <div className="rounded-2xl border border-white/8 bg-black/15 p-3">
+      <p className="text-[10px] font-semibold uppercase tracking-[.16em] text-white/38">
+        {label}
+      </p>
+      <p className={`mt-2 text-sm leading-6 ${value ? 'text-white/68' : 'text-amber-100/55'}`}>
+        {value || 'Still needed before automatic publishing'}
+      </p>
+    </div>
+  );
+}
+
 export function EventDetailClient({ eventId }: { eventId: string }) {
   const [event, setEvent] = useState<OperationsEvent | null | undefined>();
 
@@ -61,42 +74,60 @@ export function EventDetailClient({ eventId }: { eventId: string }) {
         </p>
       </div>
 
+      <section className="rounded-[1.5rem] border border-white/10 bg-[#12110f]/82 p-4 sm:p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[.2em] text-emerald-100/60">
+              Promotion source of truth
+            </p>
+            <h2 className="mt-1 font-serif text-2xl text-white">Confirmed event facts</h2>
+          </div>
+          <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-[.12em] text-white/45">
+            Used across every channel
+          </span>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <Fact label="Performers" value={event.performers} />
+          <Fact label="Music or style" value={event.genres} />
+          <Fact label="Admission" value={event.admission} />
+          <Fact label="Age policy" value={event.ageRestriction} />
+          <Fact label="Reservation or ticket link" value={event.reservationUrl} />
+          <Fact label="Primary flyer or media" value={event.flyerUrl} />
+        </div>
+      </section>
+
       {event.ideaPlan ? (
-        <section className="rounded-[1.5rem] border border-emerald-200/12 bg-emerald-200/[.045] p-4 sm:p-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[.2em] text-emerald-100/60">
-                Event development plan
-              </p>
-              <h2 className="mt-1 font-serif text-2xl text-white">
-                Why this version is worth testing
-              </h2>
+        <details className="rounded-[1.5rem] border border-white/8 bg-white/[.025] p-4 sm:p-5">
+          <summary className="cursor-pointer text-sm font-semibold text-white/55">
+            Earlier experimental event-development notes
+          </summary>
+          <div className="mt-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[.2em] text-white/38">
+                  Labs archive
+                </p>
+                <h2 className="mt-1 font-serif text-2xl text-white/80">
+                  Saved Idea Studio plan
+                </h2>
+              </div>
+              <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-[.12em] text-white/45">
+                {EVENT_IDEA_CONFIDENCE_LABELS[event.ideaPlan.confidence]}
+              </span>
             </div>
-            <span className="rounded-full border border-amber-200/20 bg-amber-200/[.08] px-3 py-1 text-[10px] font-semibold uppercase tracking-[.12em] text-amber-100">
-              {EVENT_IDEA_CONFIDENCE_LABELS[event.ideaPlan.confidence]}
-            </span>
-          </div>
 
-          <p className="mt-4 text-sm leading-7 text-white/62">
-            {event.ideaPlan.fitRationale}
-          </p>
-
-          <div className="mt-5 grid gap-5 md:grid-cols-2">
-            <PlanList title="People needed" items={event.ideaPlan.talentRequirements} />
-            <PlanList title="Venue setup" items={event.ideaPlan.operationalRequirements} />
-            <PlanList title="Known risks" items={event.ideaPlan.risks} />
-            <PlanList title="Questions to answer" items={event.ideaPlan.openQuestions} />
-          </div>
-
-          <div className="mt-5 rounded-2xl border border-white/8 bg-black/15 p-3">
-            <p className="text-[10px] font-semibold uppercase tracking-[.16em] text-white/38">
-              Recommended first test
+            <p className="mt-4 text-sm leading-7 text-white/52">
+              {event.ideaPlan.fitRationale}
             </p>
-            <p className="mt-2 text-sm leading-7 text-white/64">
-              {event.ideaPlan.lowCostTest}
-            </p>
+
+            <div className="mt-5 grid gap-5 md:grid-cols-2">
+              <PlanList title="People needed" items={event.ideaPlan.talentRequirements} />
+              <PlanList title="Venue setup" items={event.ideaPlan.operationalRequirements} />
+              <PlanList title="Known risks" items={event.ideaPlan.risks} />
+              <PlanList title="Questions to answer" items={event.ideaPlan.openQuestions} />
+            </div>
           </div>
-        </section>
+        </details>
       ) : null}
 
       <EventActions event={event} />
