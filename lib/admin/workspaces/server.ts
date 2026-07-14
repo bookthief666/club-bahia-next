@@ -26,13 +26,21 @@ interface EncryptedAdminWorkspaceEnvelope {
   ciphertext: string;
 }
 
-function workspaceStorageSecret(): string {
-  const secret =
-    process.env.GROWTH_OS_DATA_SECRET ||
-    process.env.RESERVATION_DATA_SECRET ||
-    process.env.ADMIN_AUTH_SECRET ||
-    '';
-  if (secret.length < 32) {
+function workspaceStorageSecrets(): string[] {
+  return [
+    process.env.GROWTH_OS_DATA_SECRET,
+    process.env.RESERVATION_DATA_SECRET,
+    process.env.ADMIN_AUTH_SECRET,
+  ]
+    .map((value) => value ?? '')
+    .filter((value, index, values) =>
+      value.length >= 32 && values.indexOf(value) === index,
+    );
+}
+
+function primaryWorkspaceStorageSecret(): string {
+  const [secret] = workspaceStorageSecrets();
+  if (!secret) {
     throw new Error(
       'Shared Growth OS storage requires GROWTH_OS_DATA_SECRET, RESERVATION_DATA_SECRET, or ADMIN_AUTH_SECRET with at least 32 characters.',
     );
@@ -40,15 +48,19 @@ function workspaceStorageSecret(): string {
   return secret;
 }
 
-function encryptionKey(): Buffer {
-  return createHash('sha256').update(workspaceStorageSecret(), 'utf8').digest();
+function encryptionKey(secret: string): Buffer {
+  return createHash('sha256').update(secret, 'utf8').digest();
 }
 
 function encryptRecord(
   record: AdminWorkspaceRecord<unknown>,
 ): EncryptedAdminWorkspaceEnvelope {
   const iv = randomBytes(12);
-  const cipher = createCipheriv('aes-256-gcm', encryptionKey(), iv);
+  const cipher = createCipheriv(
+    'aes-256-gcm',
+    encryptionKey(primaryWorkspaceStorageSecret()),
+    iv,
+  );
   const plaintext = Buffer.from(JSON.stringify(record), 'utf8');
   const ciphertext = Buffer.concat([cipher.update(plaintext), cipher.final()]);
   const tag = cipher.getAuthTag();
@@ -78,26 +90,33 @@ function isEncryptedEnvelope(
 function decryptRecord(
   envelope: EncryptedAdminWorkspaceEnvelope,
 ): AdminWorkspaceRecord<unknown> {
-  const decipher = createDecipheriv(
-    'aes-256-gcm',
-    encryptionKey(),
-    Buffer.from(envelope.iv, 'base64url'),
-  );
-  decipher.setAuthTag(Buffer.from(envelope.tag, 'base64url'));
-  const plaintext = Buffer.concat([
-    decipher.update(Buffer.from(envelope.ciphertext, 'base64url')),
-    decipher.final(),
-  ]).toString('utf8');
-  const parsed = JSON.parse(plaintext) as unknown;
-  if (!isAdminWorkspaceRecord(parsed)) {
-    throw new Error('Stored Growth OS workspace failed validation.');
+  for (const secret of workspaceStorageSecrets()) {
+    try {
+      const decipher = createDecipheriv(
+        'aes-256-gcm',
+        encryptionKey(secret),
+        Buffer.from(envelope.iv, 'base64url'),
+      );
+      decipher.setAuthTag(Buffer.from(envelope.tag, 'base64url'));
+      const plaintext = Buffer.concat([
+        decipher.update(Buffer.from(envelope.ciphertext, 'base64url')),
+        decipher.final(),
+      ]).toString('utf8');
+      const parsed = JSON.parse(plaintext) as unknown;
+      if (isAdminWorkspaceRecord(parsed)) return parsed;
+    } catch {
+      // Try the next configured key so a dedicated secret can be added later
+      // without making records written with an earlier fallback unreadable.
+    }
   }
-  return parsed;
+  throw new Error('Stored Growth OS workspace could not be decrypted.');
 }
 
 export function isAdminWorkspaceStorageConfigured(): boolean {
   try {
-    return Boolean(process.env.BLOB_READ_WRITE_TOKEN && workspaceStorageSecret());
+    return Boolean(
+      process.env.BLOB_READ_WRITE_TOKEN && workspaceStorageSecrets().length,
+    );
   } catch {
     return false;
   }

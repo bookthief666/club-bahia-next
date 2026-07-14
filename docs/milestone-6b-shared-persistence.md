@@ -20,6 +20,7 @@ Existing browser-local records are migrated automatically the first time each wo
 - Blob objects contain encrypted envelopes, not readable event or campaign data.
 - A dedicated `GROWTH_OS_DATA_SECRET` is recommended.
 - Until that variable is added, the server falls back to `RESERVATION_DATA_SECRET`, then `ADMIN_AUTH_SECRET`.
+- Decryption tries every configured valid key, so adding a dedicated secret later does not make records written with an earlier fallback unreadable.
 - All three secrets must be at least 32 characters when used for this storage layer.
 - Records are append-only revisions instead of destructive overwrites.
 - Every revision records the authenticated user, role, update time, and revision number.
