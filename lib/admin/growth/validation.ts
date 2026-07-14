@@ -29,6 +29,48 @@ export const CampaignBriefSchema = z.object({
   mainAttraction: z.string().trim().min(1).max(600),
 });
 
+export const CampaignHashtagGroupsSchema = z.object({
+  branded: z.array(z.string().trim().min(1).max(100)).max(12),
+  localDiscovery: z.array(z.string().trim().min(1).max(100)).max(12),
+  musicCommunity: z.array(z.string().trim().min(1).max(100)).max(12),
+});
+
+export const CampaignStoryFrameSchema = z.object({
+  frame: z.number().int().min(1).max(20),
+  text: z.string().trim().min(1).max(500),
+  visualDirection: z.string().trim().max(700).optional(),
+  interaction: z.string().trim().max(300).optional(),
+});
+
+export const CampaignReelShotSchema = z
+  .object({
+    startSecond: z.number().int().min(0).max(180),
+    endSecond: z.number().int().min(1).max(180),
+    shot: z.string().trim().min(1).max(700),
+    onScreenText: z.string().trim().max(300).optional(),
+    voiceover: z.string().trim().max(700).optional(),
+  })
+  .refine((shot) => shot.endSecond > shot.startSecond, {
+    message: 'Reel shot must end after it starts.',
+  });
+
+export const CampaignStructuredContentSchema = z.object({
+  primaryHook: z.string().trim().max(500).optional(),
+  alternativeHooks: z.array(z.string().trim().min(1).max(500)).max(8).optional(),
+  shortCaption: z.string().trim().max(1500).optional(),
+  standardCaption: z.string().trim().max(5000).optional(),
+  longCaption: z.string().trim().max(7000).optional(),
+  hashtags: CampaignHashtagGroupsSchema.optional(),
+  storyFrames: z.array(CampaignStoryFrameSchema).max(12).optional(),
+  reelShots: z.array(CampaignReelShotSchema).max(20).optional(),
+  reelVoiceover: z.string().trim().max(2500).optional(),
+  reelThumbnailText: z.string().trim().max(160).optional(),
+  emailSubjects: z.array(z.string().trim().min(1).max(300)).max(8).optional(),
+  emailPreheader: z.string().trim().max(500).optional(),
+  smsVariants: z.array(z.string().trim().min(1).max(300)).max(6).optional(),
+  altText: z.string().trim().max(1000).optional(),
+});
+
 export const OperationsEventSchema = z.object({
   id: z.string().trim().min(1).max(160),
   title: z.string().trim().min(1).max(200),
@@ -97,6 +139,7 @@ export const CampaignContentItemSchema = z.object({
   publishAt: z.string().datetime().optional(),
   callToAction: z.string().trim().max(300).optional(),
   assetPrompt: z.string().trim().max(1600).optional(),
+  structured: CampaignStructuredContentSchema.optional(),
   updatedAt: z.string().datetime(),
 });
 
