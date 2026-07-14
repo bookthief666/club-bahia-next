@@ -6,6 +6,7 @@ import {
   TodayCard,
   UpcomingEventsCard,
 } from '@/components/admin/DashboardCards';
+import { AutopilotTodayClient } from '@/components/admin/publishing/AutopilotTodayClient';
 import { ReservationGrowthSnapshot } from '@/components/admin/reservations/ReservationGrowthSnapshot';
 import { createCommandCenterRepository } from '@/lib/admin/repository';
 import {
@@ -69,6 +70,7 @@ export default async function AdminDashboardPage() {
       </section>
 
       <AsyncStatePanels />
+      <AutopilotTodayClient />
 
       <div className="grid gap-3 min-[520px]:grid-cols-2 lg:grid-cols-4">
         <MetricTile label="Action Required" value={today.length} />
