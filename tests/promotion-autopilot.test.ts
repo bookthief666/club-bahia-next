@@ -7,8 +7,47 @@ import {
   invalidatePublishingApproval,
   isPublishingJobDue,
 } from '../lib/admin/autopilot/domain';
+import {
+  buildShortVideoPublicationDrafts,
+  createShortVideoPublishingJobs,
+} from '../lib/admin/autopilot/short-video';
+import type { CampaignContentItem } from '../lib/admin/growth/domain';
 
 const scheduledFor = '2026-08-08T02:00:00.000Z';
+
+const shortVideoItem: CampaignContentItem = {
+  id: 'reel',
+  channel: 'reel',
+  title: 'Vertical video',
+  body: '15-second Club Bahia video plan.',
+  status: 'approved',
+  publishingMode: 'manual',
+  callToAction: 'Reserve your night',
+  updatedAt: '2026-08-01T12:00:00.000Z',
+  structured: {
+    primaryHook: 'Darkwave Thursday at Club Bahia',
+    reelVoiceover: 'One night of darkwave and post-punk in Los Angeles.',
+    reelThumbnailText: 'DARKWAVE THURSDAY',
+    hashtags: {
+      branded: ['#ClubBahia'],
+      localDiscovery: ['#EchoPark', '#LosAngelesNightlife'],
+      musicCommunity: ['#Darkwave', '#PostPunk'],
+    },
+    shortVideoVariants: [
+      {
+        platform: 'instagram-reel',
+        caption: 'Instagram-specific caption.',
+        hashtags: ['#ClubBahia', '#InstagramReels'],
+      },
+      {
+        platform: 'tiktok',
+        caption: 'TikTok-specific caption.',
+        title: 'Darkwave Thursday',
+        hashtags: ['#ClubBahia', '#TikTokMusic'],
+      },
+    ],
+  },
+};
 
 describe('Promotion Autopilot publishing domain', () => {
   it('creates stable idempotency keys for the same publication version', () => {
@@ -110,5 +149,46 @@ describe('Promotion Autopilot publishing domain', () => {
         new Date('2026-08-08T02:01:00.000Z'),
       ),
     ).toBe(false);
+  });
+
+  it('fans one vertical-video package into separate Instagram and TikTok drafts and jobs', () => {
+    const drafts = buildShortVideoPublicationDrafts({
+      item: shortVideoItem,
+      eventTitle: 'Darkwave Thursday',
+    });
+    expect(drafts).toHaveLength(2);
+    expect(drafts[0]).toMatchObject({
+      provider: 'meta',
+      channel: 'instagram-reel',
+      caption: 'Instagram-specific caption.',
+    });
+    expect(drafts[1]).toMatchObject({
+      provider: 'tiktok',
+      channel: 'tiktok-video',
+      caption: 'TikTok-specific caption.',
+    });
+
+    const jobs = createShortVideoPublishingJobs({
+      eventId: 'evt-darkwave',
+      eventTitle: 'Darkwave Thursday',
+      item: shortVideoItem,
+      campaignSlug: 'darkwave-thursday',
+      reservationUrl: 'https://club-bahia.example/reservations',
+      hasApprovedVideo: true,
+      instagramScheduledFor: '2026-08-07T01:00:00.000Z',
+      tiktokScheduledFor: '2026-08-07T03:00:00.000Z',
+      now: new Date('2026-08-01T12:00:00.000Z'),
+    });
+
+    expect(jobs).toHaveLength(2);
+    expect(jobs[0].provider).toBe('meta');
+    expect(jobs[1].provider).toBe('tiktok');
+    expect(jobs[0].idempotencyKey).not.toBe(jobs[1].idempotencyKey);
+    expect(new URL(jobs[0].trackedUrl ?? '').searchParams.get('utm_source')).toBe(
+      'meta',
+    );
+    expect(new URL(jobs[1].trackedUrl ?? '').searchParams.get('utm_source')).toBe(
+      'tiktok',
+    );
   });
 });
