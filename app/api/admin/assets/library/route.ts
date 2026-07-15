@@ -331,8 +331,9 @@ export async function POST(request: Request) {
     }
 
     if (parsed.data.action === 'archive') {
+      const libraryAssetId = parsed.data.libraryAssetId;
       const current = catalog.assets.find(
-        (asset) => asset.id === parsed.data.libraryAssetId,
+        (asset) => asset.id === libraryAssetId,
       );
       if (!current) {
         return NextResponse.json(
@@ -355,8 +356,10 @@ export async function POST(request: Request) {
       return authorizedJson({ asset, revision: record.revision });
     }
 
+    const assignmentRequest = parsed.data;
+    const libraryAssetId = assignmentRequest.libraryAssetId;
     const current = catalog.assets.find(
-      (asset) => asset.id === parsed.data.libraryAssetId,
+      (asset) => asset.id === libraryAssetId,
     );
     if (!current || current.status !== 'active') {
       return NextResponse.json(
@@ -367,9 +370,9 @@ export async function POST(request: Request) {
 
     const assignment = assignmentFromLibrary({
       asset: current,
-      eventId: parsed.data.eventId,
-      platform: parsed.data.platform,
-      role: parsed.data.role,
+      eventId: assignmentRequest.eventId,
+      platform: assignmentRequest.platform,
+      role: assignmentRequest.role,
     });
     await put(
       eventAssetMetadataPath(assignment.eventId, assignment.id),
@@ -386,17 +389,17 @@ export async function POST(request: Request) {
     const usedAt = new Date().toISOString();
     const hasUsage = current.usageHistory.some(
       (usage) =>
-        usage.eventId === parsed.data.eventId &&
-        usage.platform === parsed.data.platform,
+        usage.eventId === assignmentRequest.eventId &&
+        usage.platform === assignmentRequest.platform,
     );
     const usageHistory = hasUsage
       ? current.usageHistory
       : [
           ...current.usageHistory,
           {
-            eventId: parsed.data.eventId,
-            eventTitle: parsed.data.eventTitle,
-            platform: parsed.data.platform,
+            eventId: assignmentRequest.eventId,
+            eventTitle: assignmentRequest.eventTitle,
+            platform: assignmentRequest.platform,
             usedAt,
           },
         ].slice(-200);
