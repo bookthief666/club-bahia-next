@@ -41,6 +41,7 @@ export interface PromotionTimeline {
   eventStartsAt: string;
   generatedAt: string;
   timeZone: typeof CLUB_BAHIA_TIME_ZONE;
+  cadenceLabel: string;
   compressed: boolean;
   compressionReason?: string;
   entries: PromotionTimelineEntry[];
@@ -59,7 +60,7 @@ interface TemplateEntry {
   automaticCandidate: boolean;
 }
 
-const TEMPLATE: TemplateEntry[] = [
+const STANDARD_TEMPLATE: TemplateEntry[] = [
   {
     phase: 'announcement',
     label: 'Main announcement',
@@ -160,6 +161,78 @@ const TEMPLATE: TemplateEntry[] = [
   },
 ];
 
+const RESIDENT_WEEKEND_TEMPLATE: TemplateEntry[] = [
+  {
+    phase: 'announcement',
+    label: 'Weekly announcement',
+    purpose: 'Confirm this week’s resident live night and its essential details.',
+    provider: 'meta',
+    channel: 'instagram-feed',
+    dayOffset: -7,
+    localTime: '12:00',
+    automaticCandidate: true,
+  },
+  {
+    phase: 'story-countdown',
+    label: 'Midweek Story',
+    purpose: 'Remind followers that the resident live night returns this week.',
+    provider: 'meta',
+    channel: 'instagram-story',
+    dayOffset: -4,
+    localTime: '17:30',
+    automaticCandidate: false,
+  },
+  {
+    phase: 'instagram-reel',
+    label: 'Instagram Reel',
+    purpose: 'Reuse the strongest approved live-band or dance-floor vertical video.',
+    provider: 'meta',
+    channel: 'instagram-reel',
+    dayOffset: -3,
+    localTime: '18:30',
+    automaticCandidate: false,
+  },
+  {
+    phase: 'tiktok-video',
+    label: 'TikTok vertical video',
+    purpose: 'Publish a platform-native cut of the approved recurring-night video.',
+    provider: 'tiktok',
+    channel: 'tiktok-video',
+    dayOffset: -2,
+    localTime: '19:00',
+    automaticCandidate: false,
+  },
+  {
+    phase: 'reservation-reminder',
+    label: 'Tomorrow reservation reminder',
+    purpose: 'Give guests one clear final reservation action the day before.',
+    provider: 'meta',
+    channel: 'instagram-feed',
+    dayOffset: -1,
+    localTime: '18:00',
+    automaticCandidate: true,
+  },
+  {
+    phase: 'tonight',
+    label: 'Tonight Story',
+    purpose: 'Reach guests making same-day plans without overposting the recurring night.',
+    provider: 'meta',
+    channel: 'instagram-story',
+    hoursBeforeStart: 5,
+    automaticCandidate: false,
+  },
+  {
+    phase: 'thank-you',
+    label: 'Thank-you and next weekend',
+    purpose: 'Thank attendees and direct interest toward the next resident night.',
+    provider: 'meta',
+    channel: 'instagram-feed',
+    dayOffset: 1,
+    localTime: '12:00',
+    automaticCandidate: true,
+  },
+];
+
 const COMPRESSION_PRIORITY: PromotionTimelinePhase[] = [
   'announcement',
   'instagram-reel',
@@ -169,6 +242,25 @@ const COMPRESSION_PRIORITY: PromotionTimelinePhase[] = [
   'tonight',
   'final-hours',
 ];
+
+function timelineTemplate(event: OperationsEvent): {
+  entries: TemplateEntry[];
+  label: string;
+} {
+  if (event.promotionTemplate?.cadence === 'resident-weekend') {
+    return {
+      entries: RESIDENT_WEEKEND_TEMPLATE,
+      label: 'Resident weekend · 7 touches',
+    };
+  }
+  if (event.promotionTemplate?.cadence === 'experimental-launch') {
+    return {
+      entries: STANDARD_TEMPLATE,
+      label: 'Experimental launch · 10 touches',
+    };
+  }
+  return { entries: STANDARD_TEMPLATE, label: 'Standard event · 10 touches' };
+}
 
 function venueCalendarInput(
   eventStartsAt: string,
@@ -241,15 +333,18 @@ export function buildPromotionTimeline(input: {
     throw new Error('The event needs a valid start time before a promotion timeline can be built.');
   }
 
+  const selected = timelineTemplate(input.event);
   const nowTime = now.getTime();
   const millisecondsUntilEvent = eventTime - nowTime;
-  const ideal = TEMPLATE.map((template) => ({
-    template,
-    scheduledFor: idealTime(template, input.event.startsAt),
-  })).filter(
-    (item): item is { template: TemplateEntry; scheduledFor: string } =>
-      Boolean(item.scheduledFor),
-  );
+  const ideal = selected.entries
+    .map((template) => ({
+      template,
+      scheduledFor: idealTime(template, input.event.startsAt),
+    }))
+    .filter(
+      (item): item is { template: TemplateEntry; scheduledFor: string } =>
+        Boolean(item.scheduledFor),
+    );
 
   const entries: PromotionTimelineEntry[] = [];
   const skipped = new Set<PromotionTimelinePhase>();
@@ -306,6 +401,7 @@ export function buildPromotionTimeline(input: {
     eventStartsAt: input.event.startsAt,
     generatedAt: now.toISOString(),
     timeZone: CLUB_BAHIA_TIME_ZONE,
+    cadenceLabel: selected.label,
     compressed,
     compressionReason: compressed
       ? 'The event was entered after part of the ideal campaign window, so missed high-value posts were redistributed into safe future slots.'
