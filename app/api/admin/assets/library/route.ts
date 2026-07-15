@@ -2,11 +2,21 @@ import { createHash } from 'node:crypto';
 import { put } from '@vercel/blob';
 import { NextResponse } from 'next/server';
 import type { EventAsset } from '@/lib/admin/assets/domain';
+import {
+  approvedDerivativeForPlatform,
+  getMediaDerivativePreset,
+  MEDIA_DERIVATIVE_PRESET_LABELS,
+  type MediaDerivative,
+} from '@/lib/admin/assets/derivatives';
 import type { MediaLibraryAsset } from '@/lib/admin/assets/library-domain';
 import {
   inferMediaOrientation,
   normalizeLibraryTags,
 } from '@/lib/admin/assets/library-domain';
+import {
+  loadMediaLibraryCatalog,
+  saveMediaLibraryCatalog,
+} from '@/lib/admin/assets/library-server';
 import {
   MediaLibraryAssetSchema,
   MediaLibraryMutationSchema,
@@ -17,20 +27,12 @@ import {
 } from '@/lib/admin/assets/server';
 import { requireAdminResourceAccess } from '@/lib/admin/auth/resource-access';
 import type { AdminUser } from '@/lib/admin/domain';
-import {
-  AdminWorkspaceConflictError,
-  type AdminWorkspaceRecord,
-} from '@/lib/admin/workspaces/domain';
-import {
-  getAdminWorkspaceRecord,
-  saveAdminWorkspaceRecord,
-} from '@/lib/admin/workspaces/server';
+import { AdminWorkspaceConflictError } from '@/lib/admin/workspaces/domain';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const NO_STORE_HEADERS = { 'Cache-Control': 'no-store, max-age=0' };
-const CATALOG_KEY = 'catalog';
 
 function authorize(request: Request): AdminUser | NextResponse {
   try {
@@ -57,43 +59,6 @@ function authorizedJson(body: unknown, init?: { status?: number }) {
   return response;
 }
 
-function normalizeCatalog(value: unknown): MediaLibraryAsset[] {
-  if (!Array.isArray(value)) return [];
-  return value
-    .map((item) => MediaLibraryAssetSchema.safeParse(item))
-    .filter((result) => result.success)
-    .map((result) => result.data as MediaLibraryAsset)
-    .sort((left, right) => {
-      if (left.status !== right.status) return left.status === 'active' ? -1 : 1;
-      return new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime();
-    });
-}
-
-async function loadCatalog(): Promise<{
-  record: AdminWorkspaceRecord<MediaLibraryAsset[]> | null;
-  assets: MediaLibraryAsset[];
-}> {
-  const record = await getAdminWorkspaceRecord<MediaLibraryAsset[]>(
-    'media-library',
-    CATALOG_KEY,
-  );
-  return { record, assets: normalizeCatalog(record?.value) };
-}
-
-async function saveCatalog(input: {
-  assets: MediaLibraryAsset[];
-  expectedRevision: number;
-  user: AdminUser;
-}) {
-  return saveAdminWorkspaceRecord({
-    kind: 'media-library',
-    key: CATALOG_KEY,
-    value: input.assets,
-    expectedRevision: input.expectedRevision,
-    user: input.user,
-  });
-}
-
 function libraryId(sourceEventId: string, sourceAssetId: string): string {
   const digest = createHash('sha256')
     .update(`${sourceEventId}:${sourceAssetId}`)
@@ -105,12 +70,13 @@ function libraryId(sourceEventId: string, sourceAssetId: string): string {
 function assignmentId(input: {
   eventId: string;
   libraryAssetId: string;
+  derivativeId?: string;
   platform?: string;
   role?: string;
 }): string {
   const digest = createHash('sha256')
     .update(
-      `${input.eventId}:${input.libraryAssetId}:${input.platform ?? ''}:${input.role ?? ''}`,
+      `${input.eventId}:${input.libraryAssetId}:${input.derivativeId ?? ''}:${input.platform ?? ''}:${input.role ?? ''}`,
     )
     .digest('hex')
     .slice(0, 22);
@@ -165,13 +131,21 @@ function importEventAsset(asset: EventAsset, eventTitle: string): MediaLibraryAs
     tags,
     performers: [],
     genres: [],
-    orientation: inferMediaOrientation({ kind: asset.kind, role: asset.role }),
+    orientation: inferMediaOrientation({
+      kind: asset.kind,
+      role: asset.role,
+      width: asset.width,
+      height: asset.height,
+    }),
+    width: asset.width,
+    height: asset.height,
     qualityRating: 3,
     rightsBasis: 'other-confirmed',
     rightsNote:
       'Permission was confirmed when this event asset was uploaded. Add source details before broad reuse.',
     credit: '',
     rightsConfirmedAt: asset.rightsConfirmedAt,
+    derivatives: [],
     usageHistory: [],
     usageCount: 0,
     createdAt: asset.uploadedAt || now,
@@ -184,23 +158,35 @@ function assignmentFromLibrary(input: {
   eventId: string;
   platform?: EventAsset['platforms'][number];
   role?: EventAsset['role'];
+  derivative?: MediaDerivative;
 }): EventAsset {
   const now = new Date().toISOString();
+  const derivative =
+    input.derivative ??
+    approvedDerivativeForPlatform({
+      derivatives: input.asset.derivatives,
+      platform: input.platform,
+    });
+  const name = derivative
+    ? `${input.asset.name} — ${MEDIA_DERIVATIVE_PRESET_LABELS[derivative.presetId]}`
+    : input.asset.name;
+
   return {
     id: assignmentId({
       eventId: input.eventId,
       libraryAssetId: input.asset.id,
+      derivativeId: derivative?.id,
       platform: input.platform,
       role: input.role,
     }),
     eventId: input.eventId,
-    name: input.asset.name,
-    pathname: input.asset.pathname,
-    url: input.asset.url,
-    downloadUrl: input.asset.downloadUrl,
-    contentType: input.asset.contentType,
-    size: input.asset.size,
-    kind: input.asset.kind,
+    name,
+    pathname: derivative?.pathname ?? input.asset.pathname,
+    url: derivative?.url ?? input.asset.url,
+    downloadUrl: derivative?.downloadUrl ?? input.asset.downloadUrl,
+    contentType: derivative?.contentType ?? input.asset.contentType,
+    size: derivative?.size ?? input.asset.size,
+    kind: derivative ? 'image' : input.asset.kind,
     role: input.role ?? input.asset.role,
     platforms: input.platform ? [input.platform] : input.asset.platforms,
     status: 'approved',
@@ -208,13 +194,19 @@ function assignmentFromLibrary(input: {
     notes: [
       input.asset.notes,
       `Reused from media library asset ${input.asset.id}.`,
+      derivative
+        ? `Prepared with ${MEDIA_DERIVATIVE_PRESET_LABELS[derivative.presetId]}.`
+        : '',
     ]
       .filter(Boolean)
       .join(' '),
     rightsConfirmedAt: input.asset.rightsConfirmedAt,
     uploadedAt: now,
     updatedAt: now,
+    width: derivative?.width ?? input.asset.width,
+    height: derivative?.height ?? input.asset.height,
     sourceLibraryAssetId: input.asset.id,
+    sourceLibraryDerivativeId: derivative?.id,
   };
 }
 
@@ -234,7 +226,7 @@ export async function GET(request: Request) {
   const authorization = authorize(request);
   if (authorization instanceof NextResponse) return authorization;
   try {
-    const catalog = await loadCatalog();
+    const catalog = await loadMediaLibraryCatalog();
     return authorizedJson({
       assets: catalog.assets,
       revision: catalog.record?.revision ?? 0,
@@ -273,7 +265,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const catalog = await loadCatalog();
+    const catalog = await loadMediaLibraryCatalog();
     const expectedRevision = catalog.record?.revision ?? 0;
 
     if (parsed.data.action === 'import-event-asset') {
@@ -298,13 +290,14 @@ export async function POST(request: Request) {
             platforms: candidate.platforms.length
               ? candidate.platforms
               : existing.platforms,
+            derivatives: existing.derivatives ?? [],
             updatedAt: new Date().toISOString(),
           }
         : candidate;
       const assets = existing
         ? catalog.assets.map((item) => (item.id === asset.id ? asset : item))
         : [asset, ...catalog.assets];
-      const record = await saveCatalog({
+      const record = await saveMediaLibraryCatalog({
         assets,
         expectedRevision,
         user: authorization,
@@ -322,12 +315,62 @@ export async function POST(request: Request) {
       const assets = exists
         ? catalog.assets.map((item) => (item.id === asset.id ? asset : item))
         : [asset, ...catalog.assets];
-      const record = await saveCatalog({
+      const record = await saveMediaLibraryCatalog({
         assets,
         expectedRevision,
         user: authorization,
       });
       return authorizedJson({ asset, revision: record.revision });
+    }
+
+    if (parsed.data.action === 'save-derivative') {
+      const current = catalog.assets.find(
+        (asset) => asset.id === parsed.data.libraryAssetId,
+      );
+      if (!current) {
+        return NextResponse.json(
+          { error: 'Media library asset not found.' },
+          { status: 404, headers: NO_STORE_HEADERS },
+        );
+      }
+      const preset = getMediaDerivativePreset(parsed.data.derivative.presetId);
+      if (
+        parsed.data.derivative.sourceAssetId !== current.id ||
+        parsed.data.derivative.width !== preset.width ||
+        parsed.data.derivative.height !== preset.height
+      ) {
+        return NextResponse.json(
+          { error: 'Derivative dimensions or source do not match the selected preset.' },
+          { status: 400, headers: NO_STORE_HEADERS },
+        );
+      }
+      const existingDerivative = (current.derivatives ?? []).find(
+        (item) => item.presetId === parsed.data.derivative.presetId,
+      );
+      const derivative: MediaDerivative = {
+        ...parsed.data.derivative,
+        createdAt:
+          existingDerivative?.createdAt ?? parsed.data.derivative.createdAt,
+        updatedAt: new Date().toISOString(),
+      };
+      const asset: MediaLibraryAsset = {
+        ...current,
+        derivatives: [
+          ...(current.derivatives ?? []).filter(
+            (item) => item.presetId !== derivative.presetId,
+          ),
+          derivative,
+        ],
+        updatedAt: derivative.updatedAt,
+      };
+      const record = await saveMediaLibraryCatalog({
+        assets: catalog.assets.map((item) =>
+          item.id === asset.id ? asset : item,
+        ),
+        expectedRevision,
+        user: authorization,
+      });
+      return authorizedJson({ asset, derivative, revision: record.revision });
     }
 
     if (parsed.data.action === 'archive') {
@@ -346,7 +389,7 @@ export async function POST(request: Request) {
         status: current.status === 'active' ? 'archived' : 'active',
         updatedAt: new Date().toISOString(),
       };
-      const record = await saveCatalog({
+      const record = await saveMediaLibraryCatalog({
         assets: catalog.assets.map((item) =>
           item.id === asset.id ? asset : item,
         ),
@@ -357,14 +400,36 @@ export async function POST(request: Request) {
     }
 
     const assignmentRequest = parsed.data;
-    const libraryAssetId = assignmentRequest.libraryAssetId;
     const current = catalog.assets.find(
-      (asset) => asset.id === libraryAssetId,
+      (asset) => asset.id === assignmentRequest.libraryAssetId,
     );
     if (!current || current.status !== 'active') {
       return NextResponse.json(
         { error: 'This media library asset is not available for reuse.' },
         { status: 404, headers: NO_STORE_HEADERS },
+      );
+    }
+    const explicitDerivative = assignmentRequest.derivativeId
+      ? (current.derivatives ?? []).find(
+          (item) =>
+            item.id === assignmentRequest.derivativeId &&
+            item.status === 'approved',
+        )
+      : undefined;
+    if (assignmentRequest.derivativeId && !explicitDerivative) {
+      return NextResponse.json(
+        { error: 'The selected platform version is not approved or no longer exists.' },
+        { status: 400, headers: NO_STORE_HEADERS },
+      );
+    }
+    if (
+      explicitDerivative &&
+      (assignmentRequest.platform === 'reel' ||
+        assignmentRequest.platform === 'tiktok')
+    ) {
+      return NextResponse.json(
+        { error: 'A static cover cannot replace the finished vertical video.' },
+        { status: 400, headers: NO_STORE_HEADERS },
       );
     }
 
@@ -373,6 +438,7 @@ export async function POST(request: Request) {
       eventId: assignmentRequest.eventId,
       platform: assignmentRequest.platform,
       role: assignmentRequest.role,
+      derivative: explicitDerivative,
     });
     await put(
       eventAssetMetadataPath(assignment.eventId, assignment.id),
@@ -410,7 +476,7 @@ export async function POST(request: Request) {
       lastUsedAt: hasUsage ? current.lastUsedAt : usedAt,
       updatedAt: usedAt,
     };
-    const record = await saveCatalog({
+    const record = await saveMediaLibraryCatalog({
       assets: catalog.assets.map((asset) =>
         asset.id === updated.id ? updated : asset,
       ),
