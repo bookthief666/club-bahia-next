@@ -111,6 +111,35 @@ export async function upsertPublishingQueueJob(input: {
   return saved.result;
 }
 
+export async function upsertPublishingQueueCampaign(input: {
+  eventId: string;
+  jobs: CreateQueueJobInput[];
+  user: AdminUser;
+}): Promise<PublishingQueueJob[]> {
+  if (!input.jobs.length) throw new Error('The campaign does not contain any posts.');
+  if (input.jobs.some((job) => job.eventId !== input.eventId)) {
+    throw new Error('Every campaign post must belong to the same event.');
+  }
+  const incoming = input.jobs.map((job) => createQueueJob(job));
+  const ids = new Set(incoming.map((job) => job.id));
+  if (ids.size !== incoming.length) {
+    throw new Error('Campaign posts must have unique queue identities.');
+  }
+
+  const saved = await mutateQueue({
+    user: input.user,
+    mutate: (queue) => {
+      let next = queue;
+      for (const job of incoming) next = upsertQueueJob(next, job);
+      return {
+        queue: next,
+        result: next.jobs.filter((job) => ids.has(job.id)),
+      };
+    },
+  });
+  return saved.result;
+}
+
 export async function approvePublishingQueueJob(input: {
   jobId: string;
   user: AdminUser;
@@ -122,6 +151,55 @@ export async function approvePublishingQueueJob(input: {
       const job = next.jobs.find((entry) => entry.id === input.jobId);
       if (!job) throw new Error('Publishing queue job not found.');
       return { queue: next, result: job };
+    },
+  });
+  return saved.result;
+}
+
+export interface CampaignApprovalResult {
+  jobs: PublishingQueueJob[];
+  blocked: Array<{ jobId: string; reason: string }>;
+}
+
+export async function approvePublishingQueueCampaign(input: {
+  eventId: string;
+  jobIds: string[];
+  user: AdminUser;
+}): Promise<CampaignApprovalResult> {
+  const ids = new Set(input.jobIds);
+  const saved = await mutateQueue({
+    user: input.user,
+    mutate: (queue) => {
+      let next = queue;
+      const blocked: CampaignApprovalResult['blocked'] = [];
+
+      for (const jobId of ids) {
+        const current = next.jobs.find((job) => job.id === jobId);
+        if (!current || current.eventId !== input.eventId) {
+          throw new Error('A campaign queue job could not be found for this event.');
+        }
+        if (current.status === 'published') continue;
+        if (current.status === 'cancelled') {
+          blocked.push({ jobId, reason: 'Cancelled posts cannot be approved.' });
+          continue;
+        }
+        if (current.executionSupport === 'connection-required') {
+          blocked.push({
+            jobId,
+            reason: 'Connect the publishing account before approving this post.',
+          });
+          continue;
+        }
+        next = approveQueueJob(next, jobId);
+      }
+
+      return {
+        queue: next,
+        result: {
+          jobs: next.jobs.filter((job) => ids.has(job.id)),
+          blocked,
+        },
+      };
     },
   });
   return saved.result;
