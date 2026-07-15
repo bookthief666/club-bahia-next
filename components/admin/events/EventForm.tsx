@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { EventStatus, OperationsEvent } from "@/lib/admin/domain";
 import { eventLocalDate, eventLocalTime, getVenueToday } from "@/lib/admin/date";
+import { buildInitialCampaignBrief } from "@/lib/admin/event-templates/campaign";
 import {
   RECURRING_EVENT_TEMPLATES,
   getRecurringEventTemplate,
@@ -17,6 +18,7 @@ import {
   newEventDefaults,
 } from "@/lib/admin/event-repository";
 import { getValidNextStatuses, STATUS_TONES } from "@/lib/admin/event-status";
+import { growthWorkspaceRepository } from "@/lib/admin/growth/repository";
 
 export function EventForm({ eventId }: { eventId?: string }) {
   const router = useRouter();
@@ -123,9 +125,17 @@ export function EventForm({ eventId }: { eventId?: string }) {
     setError("");
     try {
       const input = { ...form, promotionTemplate };
-      const saved = eventId
-        ? await eventRepository.updateEvent(eventId, input)
-        : await eventRepository.createEvent(input);
+      let saved: OperationsEvent;
+      if (eventId) {
+        saved = await eventRepository.updateEvent(eventId, input);
+      } else {
+        saved = await eventRepository.createEvent(input);
+        const workspace = await growthWorkspaceRepository.getWorkspace(saved);
+        await growthWorkspaceRepository.updateBrief(
+          saved,
+          buildInitialCampaignBrief(saved, workspace.brief),
+        );
+      }
       router.push(`/admin/events/${saved.id}`);
       router.refresh();
     } catch (err) {
