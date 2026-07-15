@@ -1,5 +1,5 @@
-import { createHash, randomUUID } from 'node:crypto';
-import { list, put } from '@vercel/blob';
+import { createHash } from 'node:crypto';
+import { put } from '@vercel/blob';
 import { NextResponse } from 'next/server';
 import type { EventAsset } from '@/lib/admin/assets/domain';
 import type { MediaLibraryAsset } from '@/lib/admin/assets/library-domain';
@@ -13,21 +13,28 @@ import {
 } from '@/lib/admin/assets/library-validation';
 import {
   eventAssetMetadataPath,
-  mediaLibraryMetadataPath,
-  mediaLibraryPrefix,
   setAssetSessionCookie,
 } from '@/lib/admin/assets/server';
 import { requireAdminResourceAccess } from '@/lib/admin/auth/resource-access';
+import type { AdminUser } from '@/lib/admin/domain';
+import {
+  AdminWorkspaceConflictError,
+  type AdminWorkspaceRecord,
+} from '@/lib/admin/workspaces/domain';
+import {
+  getAdminWorkspaceRecord,
+  saveAdminWorkspaceRecord,
+} from '@/lib/admin/workspaces/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const NO_STORE_HEADERS = { 'Cache-Control': 'no-store, max-age=0' };
+const CATALOG_KEY = 'catalog';
 
-function authorize(request: Request): NextResponse | null {
+function authorize(request: Request): AdminUser | NextResponse {
   try {
-    requireAdminResourceAccess(request);
-    return null;
+    return requireAdminResourceAccess(request);
   } catch (error) {
     return NextResponse.json(
       {
@@ -50,64 +57,41 @@ function authorizedJson(body: unknown, init?: { status?: number }) {
   return response;
 }
 
-async function fetchJson(url: string): Promise<unknown> {
-  const response = await fetch(`${url}?v=${Date.now()}`, { cache: 'no-store' });
-  if (!response.ok) throw new Error(`Could not read media metadata (${response.status}).`);
-  return response.json();
-}
-
-async function listLibraryAssets(): Promise<MediaLibraryAsset[]> {
-  const metadataBlobs: Array<{ url: string }> = [];
-  let cursor: string | undefined;
-
-  do {
-    const result = await list({ prefix: mediaLibraryPrefix(), limit: 1000, cursor });
-    metadataBlobs.push(
-      ...result.blobs
-        .filter((blob) => blob.pathname.endsWith('/metadata.json'))
-        .map((blob) => ({ url: blob.url })),
-    );
-    cursor = result.hasMore ? result.cursor : undefined;
-  } while (cursor && metadataBlobs.length < 1000);
-
-  const parsed = await Promise.all(
-    metadataBlobs.map(async ({ url }) => {
-      try {
-        const result = MediaLibraryAssetSchema.safeParse(await fetchJson(url));
-        return result.success ? (result.data as MediaLibraryAsset) : null;
-      } catch {
-        return null;
-      }
-    }),
-  );
-
-  return parsed
-    .filter((asset): asset is MediaLibraryAsset => asset !== null)
+function normalizeCatalog(value: unknown): MediaLibraryAsset[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => MediaLibraryAssetSchema.safeParse(item))
+    .filter((result) => result.success)
+    .map((result) => result.data as MediaLibraryAsset)
     .sort((left, right) => {
       if (left.status !== right.status) return left.status === 'active' ? -1 : 1;
       return new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime();
     });
 }
 
-async function readLibraryAsset(assetId: string): Promise<MediaLibraryAsset | null> {
-  const path = mediaLibraryMetadataPath(assetId);
-  const result = await list({ prefix: path, limit: 10 });
-  const blob = result.blobs.find((item) => item.pathname === path);
-  if (!blob) return null;
-  const parsed = MediaLibraryAssetSchema.safeParse(await fetchJson(blob.url));
-  return parsed.success ? (parsed.data as MediaLibraryAsset) : null;
+async function loadCatalog(): Promise<{
+  record: AdminWorkspaceRecord<MediaLibraryAsset[]> | null;
+  assets: MediaLibraryAsset[];
+}> {
+  const record = await getAdminWorkspaceRecord<MediaLibraryAsset[]>(
+    'media-library',
+    CATALOG_KEY,
+  );
+  return { record, assets: normalizeCatalog(record?.value) };
 }
 
-async function saveLibraryAsset(asset: MediaLibraryAsset): Promise<MediaLibraryAsset> {
-  const parsed = MediaLibraryAssetSchema.parse(asset) as MediaLibraryAsset;
-  await put(mediaLibraryMetadataPath(parsed.id), JSON.stringify(parsed), {
-    access: 'public',
-    addRandomSuffix: false,
-    allowOverwrite: true,
-    contentType: 'application/json',
-    cacheControlMaxAge: 60,
+async function saveCatalog(input: {
+  assets: MediaLibraryAsset[];
+  expectedRevision: number;
+  user: AdminUser;
+}) {
+  return saveAdminWorkspaceRecord({
+    kind: 'media-library',
+    key: CATALOG_KEY,
+    value: input.assets,
+    expectedRevision: input.expectedRevision,
+    user: input.user,
   });
-  return parsed;
 }
 
 function libraryId(sourceEventId: string, sourceAssetId: string): string {
@@ -116,6 +100,21 @@ function libraryId(sourceEventId: string, sourceAssetId: string): string {
     .digest('hex')
     .slice(0, 24);
   return `media-${digest}`;
+}
+
+function assignmentId(input: {
+  eventId: string;
+  libraryAssetId: string;
+  platform?: string;
+  role?: string;
+}): string {
+  const digest = createHash('sha256')
+    .update(
+      `${input.eventId}:${input.libraryAssetId}:${input.platform ?? ''}:${input.role ?? ''}`,
+    )
+    .digest('hex')
+    .slice(0, 22);
+  return `reuse-${digest}`;
 }
 
 function defaultCollections(asset: EventAsset, eventTitle: string) {
@@ -169,7 +168,8 @@ function importEventAsset(asset: EventAsset, eventTitle: string): MediaLibraryAs
     orientation: inferMediaOrientation({ kind: asset.kind, role: asset.role }),
     qualityRating: 3,
     rightsBasis: 'other-confirmed',
-    rightsNote: 'Permission was confirmed when this event asset was uploaded. Add source details before broad reuse.',
+    rightsNote:
+      'Permission was confirmed when this event asset was uploaded. Add source details before broad reuse.',
     credit: '',
     rightsConfirmedAt: asset.rightsConfirmedAt,
     usageHistory: [],
@@ -187,13 +187,18 @@ function assignmentFromLibrary(input: {
 }): EventAsset {
   const now = new Date().toISOString();
   return {
-    id: `reuse-${input.asset.id}-${randomUUID().slice(0, 8)}`,
+    id: assignmentId({
+      eventId: input.eventId,
+      libraryAssetId: input.asset.id,
+      platform: input.platform,
+      role: input.role,
+    }),
     eventId: input.eventId,
     name: input.asset.name,
     pathname: input.asset.pathname,
     url: input.asset.url,
     downloadUrl: input.asset.downloadUrl,
-    contentType: input.asset.contentType as EventAsset['contentType'],
+    contentType: input.asset.contentType,
     size: input.asset.size,
     kind: input.asset.kind,
     role: input.role ?? input.asset.role,
@@ -213,11 +218,27 @@ function assignmentFromLibrary(input: {
   };
 }
 
+function conflictResponse(error: AdminWorkspaceConflictError) {
+  return NextResponse.json(
+    {
+      error:
+        'The media library changed in another browser. Reload before saving again.',
+      expectedRevision: error.expectedRevision,
+      currentRevision: error.currentRevision,
+    },
+    { status: 409, headers: NO_STORE_HEADERS },
+  );
+}
+
 export async function GET(request: Request) {
-  const unauthorized = authorize(request);
-  if (unauthorized) return unauthorized;
+  const authorization = authorize(request);
+  if (authorization instanceof NextResponse) return authorization;
   try {
-    return authorizedJson({ assets: await listLibraryAssets() });
+    const catalog = await loadCatalog();
+    return authorizedJson({
+      assets: catalog.assets,
+      revision: catalog.record?.revision ?? 0,
+    });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Could not load media library.' },
@@ -227,8 +248,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const unauthorized = authorize(request);
-  if (unauthorized) return unauthorized;
+  const authorization = authorize(request);
+  if (authorization instanceof NextResponse) return authorization;
 
   let body: unknown;
   try {
@@ -243,68 +264,100 @@ export async function POST(request: Request) {
   const parsed = MediaLibraryMutationSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: 'Media library request failed validation.', details: parsed.error.flatten() },
+      {
+        error: 'Media library request failed validation.',
+        details: parsed.error.flatten(),
+      },
       { status: 400, headers: NO_STORE_HEADERS },
     );
   }
 
   try {
+    const catalog = await loadCatalog();
+    const expectedRevision = catalog.record?.revision ?? 0;
+
     if (parsed.data.action === 'import-event-asset') {
       const candidate = importEventAsset(
         parsed.data.asset as EventAsset,
         parsed.data.eventTitle,
       );
-      const existing = await readLibraryAsset(candidate.id);
-      const asset = await saveLibraryAsset(
-        existing
-          ? {
-              ...candidate,
-              ...existing,
-              status: 'active',
-              name: candidate.name,
-              url: candidate.url,
-              downloadUrl: candidate.downloadUrl,
-              pathname: candidate.pathname,
-              contentType: candidate.contentType,
-              size: candidate.size,
-              altText: candidate.altText || existing.altText,
-              notes: candidate.notes || existing.notes,
-              platforms: candidate.platforms.length
-                ? candidate.platforms
-                : existing.platforms,
-              updatedAt: new Date().toISOString(),
-            }
-          : candidate,
-      );
-      return authorizedJson({ asset });
+      const existing = catalog.assets.find((asset) => asset.id === candidate.id);
+      const asset: MediaLibraryAsset = existing
+        ? {
+            ...candidate,
+            ...existing,
+            status: 'active',
+            name: candidate.name,
+            url: candidate.url,
+            downloadUrl: candidate.downloadUrl,
+            pathname: candidate.pathname,
+            contentType: candidate.contentType,
+            size: candidate.size,
+            altText: candidate.altText || existing.altText,
+            notes: candidate.notes || existing.notes,
+            platforms: candidate.platforms.length
+              ? candidate.platforms
+              : existing.platforms,
+            updatedAt: new Date().toISOString(),
+          }
+        : candidate;
+      const assets = existing
+        ? catalog.assets.map((item) => (item.id === asset.id ? asset : item))
+        : [asset, ...catalog.assets];
+      const record = await saveCatalog({
+        assets,
+        expectedRevision,
+        user: authorization,
+      });
+      return authorizedJson({ asset, revision: record.revision });
     }
 
     if (parsed.data.action === 'upsert') {
-      const asset = await saveLibraryAsset({
+      const asset = MediaLibraryAssetSchema.parse({
         ...(parsed.data.asset as MediaLibraryAsset),
         tags: normalizeLibraryTags(parsed.data.asset.tags),
         updatedAt: new Date().toISOString(),
+      }) as MediaLibraryAsset;
+      const exists = catalog.assets.some((item) => item.id === asset.id);
+      const assets = exists
+        ? catalog.assets.map((item) => (item.id === asset.id ? asset : item))
+        : [asset, ...catalog.assets];
+      const record = await saveCatalog({
+        assets,
+        expectedRevision,
+        user: authorization,
       });
-      return authorizedJson({ asset });
+      return authorizedJson({ asset, revision: record.revision });
     }
 
     if (parsed.data.action === 'archive') {
-      const current = await readLibraryAsset(parsed.data.libraryAssetId);
+      const current = catalog.assets.find(
+        (asset) => asset.id === parsed.data.libraryAssetId,
+      );
       if (!current) {
         return NextResponse.json(
           { error: 'Media library asset not found.' },
           { status: 404, headers: NO_STORE_HEADERS },
         );
       }
-      const asset = await saveLibraryAsset({
+      const asset: MediaLibraryAsset = {
         ...current,
         status: current.status === 'active' ? 'archived' : 'active',
         updatedAt: new Date().toISOString(),
+      };
+      const record = await saveCatalog({
+        assets: catalog.assets.map((item) =>
+          item.id === asset.id ? asset : item,
+        ),
+        expectedRevision,
+        user: authorization,
       });
-      return authorizedJson({ asset });
+      return authorizedJson({ asset, revision: record.revision });
     }
 
-    const current = await readLibraryAsset(parsed.data.libraryAssetId);
+    const current = catalog.assets.find(
+      (asset) => asset.id === parsed.data.libraryAssetId,
+    );
     if (!current || current.status !== 'active') {
       return NextResponse.json(
         { error: 'This media library asset is not available for reuse.' },
@@ -331,32 +384,51 @@ export async function POST(request: Request) {
     );
 
     const usedAt = new Date().toISOString();
-    const usageHistory = [
-      ...current.usageHistory,
-      {
-        eventId: parsed.data.eventId,
-        eventTitle: parsed.data.eventTitle,
-        platform: parsed.data.platform,
-        usedAt,
-      },
-    ].slice(-200);
-    let usageWarning: string | undefined;
-    try {
-      await saveLibraryAsset({
-        ...current,
-        usageHistory,
-        usageCount: usageHistory.length,
-        lastUsedAt: usedAt,
-        updatedAt: usedAt,
-      });
-    } catch {
-      usageWarning = 'The event assignment was saved, but usage history needs to be refreshed.';
-    }
+    const hasUsage = current.usageHistory.some(
+      (usage) =>
+        usage.eventId === parsed.data.eventId &&
+        usage.platform === parsed.data.platform,
+    );
+    const usageHistory = hasUsage
+      ? current.usageHistory
+      : [
+          ...current.usageHistory,
+          {
+            eventId: parsed.data.eventId,
+            eventTitle: parsed.data.eventTitle,
+            platform: parsed.data.platform,
+            usedAt,
+          },
+        ].slice(-200);
+    const updated: MediaLibraryAsset = {
+      ...current,
+      usageHistory,
+      usageCount: usageHistory.length,
+      lastUsedAt: hasUsage ? current.lastUsedAt : usedAt,
+      updatedAt: usedAt,
+    };
+    const record = await saveCatalog({
+      assets: catalog.assets.map((asset) =>
+        asset.id === updated.id ? updated : asset,
+      ),
+      expectedRevision,
+      user: authorization,
+    });
 
-    return authorizedJson({ assignment, usageWarning });
+    return authorizedJson({
+      assignment,
+      asset: updated,
+      revision: record.revision,
+    });
   } catch (error) {
+    if (error instanceof AdminWorkspaceConflictError) {
+      return conflictResponse(error);
+    }
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Media library operation failed.' },
+      {
+        error:
+          error instanceof Error ? error.message : 'Media library operation failed.',
+      },
       { status: 500, headers: NO_STORE_HEADERS },
     );
   }
