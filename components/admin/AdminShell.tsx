@@ -20,6 +20,13 @@ const nav = [
     description: 'Plan and promote',
   },
   {
+    label: 'Media',
+    mobileLabel: 'Media',
+    href: '/admin/media',
+    icon: '▣',
+    description: 'Reusable photos and video',
+  },
+  {
     label: 'Guests',
     mobileLabel: 'Guests',
     href: '/admin/reservations',
@@ -47,6 +54,13 @@ function pageIdentity(pathname: string): {
       subtitle: 'Connect accounts and verify what can publish automatically.',
     };
   }
+  if (pathname === '/admin/media') {
+    return {
+      eyebrow: 'Promotion assets',
+      title: 'Media library',
+      subtitle: 'Reuse approved Club Bahia media without uploading it again.',
+    };
+  }
   if (pathname.includes('/publishing/execute')) {
     return {
       eyebrow: 'Promotion steps · Step 5',
@@ -65,7 +79,7 @@ function pageIdentity(pathname: string): {
     return {
       eyebrow: 'Promotion steps · Step 3',
       title: 'Choose media',
-      subtitle: 'Upload, organize, and approve flyers, Stories, and Reels.',
+      subtitle: 'Use recommended library media or upload something new.',
     };
   }
   if (pathname.endsWith('/growth')) {
@@ -293,7 +307,7 @@ export function AdminShell({
         </main>
 
         <nav
-          className="fixed inset-x-2 bottom-2 z-30 mx-auto grid h-[calc(4rem+env(safe-area-inset-bottom))] max-w-2xl grid-cols-4 gap-1 rounded-[1.2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(15,14,13,.96),rgba(8,8,8,.97))] p-1.5 pb-[calc(.375rem+env(safe-area-inset-bottom))] text-center text-[9px] shadow-[0_20px_70px_rgba(0,0,0,.6)] backdrop-blur-2xl sm:inset-x-4 sm:h-[calc(4.25rem+env(safe-area-inset-bottom))] sm:rounded-[1.35rem] sm:text-[10px] lg:hidden"
+          className="fixed inset-x-2 bottom-2 z-30 mx-auto grid h-[calc(4rem+env(safe-area-inset-bottom))] max-w-2xl grid-cols-5 gap-1 rounded-[1.2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(15,14,13,.96),rgba(8,8,8,.97))] p-1.5 pb-[calc(.375rem+env(safe-area-inset-bottom))] text-center text-[8px] shadow-[0_20px_70px_rgba(0,0,0,.6)] backdrop-blur-2xl sm:inset-x-4 sm:h-[calc(4.25rem+env(safe-area-inset-bottom))] sm:rounded-[1.35rem] sm:text-[10px] lg:hidden"
           aria-label="Mobile navigation"
         >
           {nav.map((item) => {
