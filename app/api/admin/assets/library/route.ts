@@ -106,10 +106,6 @@ function importEventAsset(asset: EventAsset, eventTitle: string): MediaLibraryAs
     throw new Error('Only approved event media can enter the reusable library.');
   }
   const now = new Date().toISOString();
-  const tags = normalizeLibraryTags([
-    asset.role,
-    ...eventTitle.split(/[^a-zA-Z0-9áéíóúñü]+/i),
-  ]);
   return {
     schemaVersion: 1,
     id: libraryId(asset.eventId, asset.id),
@@ -128,7 +124,10 @@ function importEventAsset(asset: EventAsset, eventTitle: string): MediaLibraryAs
     altText: asset.altText,
     notes: asset.notes,
     collections: defaultCollections(asset, eventTitle),
-    tags,
+    tags: normalizeLibraryTags([
+      asset.role,
+      ...eventTitle.split(/[^a-zA-Z0-9áéíóúñü]+/i),
+    ]),
     performers: [],
     genres: [],
     orientation: inferMediaOrientation({
@@ -167,10 +166,6 @@ function assignmentFromLibrary(input: {
       derivatives: input.asset.derivatives,
       platform: input.platform,
     });
-  const name = derivative
-    ? `${input.asset.name} — ${MEDIA_DERIVATIVE_PRESET_LABELS[derivative.presetId]}`
-    : input.asset.name;
-
   return {
     id: assignmentId({
       eventId: input.eventId,
@@ -180,7 +175,9 @@ function assignmentFromLibrary(input: {
       role: input.role,
     }),
     eventId: input.eventId,
-    name,
+    name: derivative
+      ? `${input.asset.name} — ${MEDIA_DERIVATIVE_PRESET_LABELS[derivative.presetId]}`
+      : input.asset.name,
     pathname: derivative?.pathname ?? input.asset.pathname,
     url: derivative?.url ?? input.asset.url,
     downloadUrl: derivative?.downloadUrl ?? input.asset.downloadUrl,
@@ -267,228 +264,227 @@ export async function POST(request: Request) {
   try {
     const catalog = await loadMediaLibraryCatalog();
     const expectedRevision = catalog.record?.revision ?? 0;
+    const mutation = parsed.data;
 
-    if (parsed.data.action === 'import-event-asset') {
-      const candidate = importEventAsset(
-        parsed.data.asset as EventAsset,
-        parsed.data.eventTitle,
-      );
-      const existing = catalog.assets.find((asset) => asset.id === candidate.id);
-      const asset: MediaLibraryAsset = existing
-        ? {
-            ...candidate,
-            ...existing,
-            status: 'active',
-            name: candidate.name,
-            url: candidate.url,
-            downloadUrl: candidate.downloadUrl,
-            pathname: candidate.pathname,
-            contentType: candidate.contentType,
-            size: candidate.size,
-            altText: candidate.altText || existing.altText,
-            notes: candidate.notes || existing.notes,
-            platforms: candidate.platforms.length
-              ? candidate.platforms
-              : existing.platforms,
-            derivatives: existing.derivatives ?? [],
-            updatedAt: new Date().toISOString(),
-          }
-        : candidate;
-      const assets = existing
-        ? catalog.assets.map((item) => (item.id === asset.id ? asset : item))
-        : [asset, ...catalog.assets];
-      const record = await saveMediaLibraryCatalog({
-        assets,
-        expectedRevision,
-        user: authorization,
-      });
-      return authorizedJson({ asset, revision: record.revision });
-    }
-
-    if (parsed.data.action === 'upsert') {
-      const asset = MediaLibraryAssetSchema.parse({
-        ...(parsed.data.asset as MediaLibraryAsset),
-        tags: normalizeLibraryTags(parsed.data.asset.tags),
-        updatedAt: new Date().toISOString(),
-      }) as MediaLibraryAsset;
-      const exists = catalog.assets.some((item) => item.id === asset.id);
-      const assets = exists
-        ? catalog.assets.map((item) => (item.id === asset.id ? asset : item))
-        : [asset, ...catalog.assets];
-      const record = await saveMediaLibraryCatalog({
-        assets,
-        expectedRevision,
-        user: authorization,
-      });
-      return authorizedJson({ asset, revision: record.revision });
-    }
-
-    if (parsed.data.action === 'save-derivative') {
-      const current = catalog.assets.find(
-        (asset) => asset.id === parsed.data.libraryAssetId,
-      );
-      if (!current) {
-        return NextResponse.json(
-          { error: 'Media library asset not found.' },
-          { status: 404, headers: NO_STORE_HEADERS },
+    switch (mutation.action) {
+      case 'import-event-asset': {
+        const candidate = importEventAsset(
+          mutation.asset as EventAsset,
+          mutation.eventTitle,
         );
+        const existing = catalog.assets.find((asset) => asset.id === candidate.id);
+        const asset: MediaLibraryAsset = existing
+          ? {
+              ...candidate,
+              ...existing,
+              status: 'active',
+              name: candidate.name,
+              url: candidate.url,
+              downloadUrl: candidate.downloadUrl,
+              pathname: candidate.pathname,
+              contentType: candidate.contentType,
+              size: candidate.size,
+              altText: candidate.altText || existing.altText,
+              notes: candidate.notes || existing.notes,
+              platforms: candidate.platforms.length
+                ? candidate.platforms
+                : existing.platforms,
+              derivatives: existing.derivatives ?? [],
+              updatedAt: new Date().toISOString(),
+            }
+          : candidate;
+        const record = await saveMediaLibraryCatalog({
+          assets: existing
+            ? catalog.assets.map((item) => (item.id === asset.id ? asset : item))
+            : [asset, ...catalog.assets],
+          expectedRevision,
+          user: authorization,
+        });
+        return authorizedJson({ asset, revision: record.revision });
       }
-      const preset = getMediaDerivativePreset(parsed.data.derivative.presetId);
-      if (
-        parsed.data.derivative.sourceAssetId !== current.id ||
-        parsed.data.derivative.width !== preset.width ||
-        parsed.data.derivative.height !== preset.height
-      ) {
-        return NextResponse.json(
-          { error: 'Derivative dimensions or source do not match the selected preset.' },
-          { status: 400, headers: NO_STORE_HEADERS },
+
+      case 'upsert': {
+        const asset = MediaLibraryAssetSchema.parse({
+          ...(mutation.asset as MediaLibraryAsset),
+          tags: normalizeLibraryTags(mutation.asset.tags),
+          updatedAt: new Date().toISOString(),
+        }) as MediaLibraryAsset;
+        const exists = catalog.assets.some((item) => item.id === asset.id);
+        const record = await saveMediaLibraryCatalog({
+          assets: exists
+            ? catalog.assets.map((item) => (item.id === asset.id ? asset : item))
+            : [asset, ...catalog.assets],
+          expectedRevision,
+          user: authorization,
+        });
+        return authorizedJson({ asset, revision: record.revision });
+      }
+
+      case 'save-derivative': {
+        const libraryAssetId = mutation.libraryAssetId;
+        const current = catalog.assets.find(
+          (asset) => asset.id === libraryAssetId,
         );
-      }
-      const existingDerivative = (current.derivatives ?? []).find(
-        (item) => item.presetId === parsed.data.derivative.presetId,
-      );
-      const derivative: MediaDerivative = {
-        ...parsed.data.derivative,
-        createdAt:
-          existingDerivative?.createdAt ?? parsed.data.derivative.createdAt,
-        updatedAt: new Date().toISOString(),
-      };
-      const asset: MediaLibraryAsset = {
-        ...current,
-        derivatives: [
-          ...(current.derivatives ?? []).filter(
-            (item) => item.presetId !== derivative.presetId,
+        if (!current) {
+          return NextResponse.json(
+            { error: 'Media library asset not found.' },
+            { status: 404, headers: NO_STORE_HEADERS },
+          );
+        }
+        const preset = getMediaDerivativePreset(mutation.derivative.presetId);
+        if (
+          mutation.derivative.sourceAssetId !== current.id ||
+          mutation.derivative.width !== preset.width ||
+          mutation.derivative.height !== preset.height
+        ) {
+          return NextResponse.json(
+            { error: 'Derivative dimensions or source do not match the selected preset.' },
+            { status: 400, headers: NO_STORE_HEADERS },
+          );
+        }
+        const existing = (current.derivatives ?? []).find(
+          (item) => item.presetId === mutation.derivative.presetId,
+        );
+        const derivative: MediaDerivative = {
+          ...mutation.derivative,
+          createdAt: existing?.createdAt ?? mutation.derivative.createdAt,
+          updatedAt: new Date().toISOString(),
+        };
+        const asset: MediaLibraryAsset = {
+          ...current,
+          derivatives: [
+            ...(current.derivatives ?? []).filter(
+              (item) => item.presetId !== derivative.presetId,
+            ),
+            derivative,
+          ],
+          updatedAt: derivative.updatedAt,
+        };
+        const record = await saveMediaLibraryCatalog({
+          assets: catalog.assets.map((item) =>
+            item.id === asset.id ? asset : item,
           ),
-          derivative,
-        ],
-        updatedAt: derivative.updatedAt,
-      };
-      const record = await saveMediaLibraryCatalog({
-        assets: catalog.assets.map((item) =>
-          item.id === asset.id ? asset : item,
-        ),
-        expectedRevision,
-        user: authorization,
-      });
-      return authorizedJson({ asset, derivative, revision: record.revision });
-    }
-
-    if (parsed.data.action === 'archive') {
-      const libraryAssetId = parsed.data.libraryAssetId;
-      const current = catalog.assets.find(
-        (asset) => asset.id === libraryAssetId,
-      );
-      if (!current) {
-        return NextResponse.json(
-          { error: 'Media library asset not found.' },
-          { status: 404, headers: NO_STORE_HEADERS },
-        );
+          expectedRevision,
+          user: authorization,
+        });
+        return authorizedJson({ asset, derivative, revision: record.revision });
       }
-      const asset: MediaLibraryAsset = {
-        ...current,
-        status: current.status === 'active' ? 'archived' : 'active',
-        updatedAt: new Date().toISOString(),
-      };
-      const record = await saveMediaLibraryCatalog({
-        assets: catalog.assets.map((item) =>
-          item.id === asset.id ? asset : item,
-        ),
-        expectedRevision,
-        user: authorization,
-      });
-      return authorizedJson({ asset, revision: record.revision });
-    }
 
-    const assignmentRequest = parsed.data;
-    const current = catalog.assets.find(
-      (asset) => asset.id === assignmentRequest.libraryAssetId,
-    );
-    if (!current || current.status !== 'active') {
-      return NextResponse.json(
-        { error: 'This media library asset is not available for reuse.' },
-        { status: 404, headers: NO_STORE_HEADERS },
-      );
-    }
-    const explicitDerivative = assignmentRequest.derivativeId
-      ? (current.derivatives ?? []).find(
-          (item) =>
-            item.id === assignmentRequest.derivativeId &&
-            item.status === 'approved',
-        )
-      : undefined;
-    if (assignmentRequest.derivativeId && !explicitDerivative) {
-      return NextResponse.json(
-        { error: 'The selected platform version is not approved or no longer exists.' },
-        { status: 400, headers: NO_STORE_HEADERS },
-      );
-    }
-    if (
-      explicitDerivative &&
-      (assignmentRequest.platform === 'reel' ||
-        assignmentRequest.platform === 'tiktok')
-    ) {
-      return NextResponse.json(
-        { error: 'A static cover cannot replace the finished vertical video.' },
-        { status: 400, headers: NO_STORE_HEADERS },
-      );
-    }
+      case 'archive': {
+        const libraryAssetId = mutation.libraryAssetId;
+        const current = catalog.assets.find(
+          (asset) => asset.id === libraryAssetId,
+        );
+        if (!current) {
+          return NextResponse.json(
+            { error: 'Media library asset not found.' },
+            { status: 404, headers: NO_STORE_HEADERS },
+          );
+        }
+        const asset: MediaLibraryAsset = {
+          ...current,
+          status: current.status === 'active' ? 'archived' : 'active',
+          updatedAt: new Date().toISOString(),
+        };
+        const record = await saveMediaLibraryCatalog({
+          assets: catalog.assets.map((item) =>
+            item.id === asset.id ? asset : item,
+          ),
+          expectedRevision,
+          user: authorization,
+        });
+        return authorizedJson({ asset, revision: record.revision });
+      }
 
-    const assignment = assignmentFromLibrary({
-      asset: current,
-      eventId: assignmentRequest.eventId,
-      platform: assignmentRequest.platform,
-      role: assignmentRequest.role,
-      derivative: explicitDerivative,
-    });
-    await put(
-      eventAssetMetadataPath(assignment.eventId, assignment.id),
-      JSON.stringify(assignment),
-      {
-        access: 'public',
-        addRandomSuffix: false,
-        allowOverwrite: true,
-        contentType: 'application/json',
-        cacheControlMaxAge: 60,
-      },
-    );
-
-    const usedAt = new Date().toISOString();
-    const hasUsage = current.usageHistory.some(
-      (usage) =>
-        usage.eventId === assignmentRequest.eventId &&
-        usage.platform === assignmentRequest.platform,
-    );
-    const usageHistory = hasUsage
-      ? current.usageHistory
-      : [
-          ...current.usageHistory,
+      case 'assign-to-event': {
+        const libraryAssetId = mutation.libraryAssetId;
+        const current = catalog.assets.find(
+          (asset) => asset.id === libraryAssetId,
+        );
+        if (!current || current.status !== 'active') {
+          return NextResponse.json(
+            { error: 'This media library asset is not available for reuse.' },
+            { status: 404, headers: NO_STORE_HEADERS },
+          );
+        }
+        const explicitDerivative = mutation.derivativeId
+          ? (current.derivatives ?? []).find(
+              (item) =>
+                item.id === mutation.derivativeId && item.status === 'approved',
+            )
+          : undefined;
+        if (mutation.derivativeId && !explicitDerivative) {
+          return NextResponse.json(
+            { error: 'The selected platform version is not approved or no longer exists.' },
+            { status: 400, headers: NO_STORE_HEADERS },
+          );
+        }
+        if (
+          explicitDerivative &&
+          (mutation.platform === 'reel' || mutation.platform === 'tiktok')
+        ) {
+          return NextResponse.json(
+            { error: 'A static cover cannot replace the finished vertical video.' },
+            { status: 400, headers: NO_STORE_HEADERS },
+          );
+        }
+        const assignment = assignmentFromLibrary({
+          asset: current,
+          eventId: mutation.eventId,
+          platform: mutation.platform,
+          role: mutation.role,
+          derivative: explicitDerivative,
+        });
+        await put(
+          eventAssetMetadataPath(assignment.eventId, assignment.id),
+          JSON.stringify(assignment),
           {
-            eventId: assignmentRequest.eventId,
-            eventTitle: assignmentRequest.eventTitle,
-            platform: assignmentRequest.platform,
-            usedAt,
+            access: 'public',
+            addRandomSuffix: false,
+            allowOverwrite: true,
+            contentType: 'application/json',
+            cacheControlMaxAge: 60,
           },
-        ].slice(-200);
-    const updated: MediaLibraryAsset = {
-      ...current,
-      usageHistory,
-      usageCount: usageHistory.length,
-      lastUsedAt: hasUsage ? current.lastUsedAt : usedAt,
-      updatedAt: usedAt,
-    };
-    const record = await saveMediaLibraryCatalog({
-      assets: catalog.assets.map((asset) =>
-        asset.id === updated.id ? updated : asset,
-      ),
-      expectedRevision,
-      user: authorization,
-    });
+        );
 
-    return authorizedJson({
-      assignment,
-      asset: updated,
-      revision: record.revision,
-    });
+        const usedAt = new Date().toISOString();
+        const hasUsage = current.usageHistory.some(
+          (usage) =>
+            usage.eventId === mutation.eventId &&
+            usage.platform === mutation.platform,
+        );
+        const usageHistory = hasUsage
+          ? current.usageHistory
+          : [
+              ...current.usageHistory,
+              {
+                eventId: mutation.eventId,
+                eventTitle: mutation.eventTitle,
+                platform: mutation.platform,
+                usedAt,
+              },
+            ].slice(-200);
+        const asset: MediaLibraryAsset = {
+          ...current,
+          usageHistory,
+          usageCount: usageHistory.length,
+          lastUsedAt: hasUsage ? current.lastUsedAt : usedAt,
+          updatedAt: usedAt,
+        };
+        const record = await saveMediaLibraryCatalog({
+          assets: catalog.assets.map((item) =>
+            item.id === asset.id ? asset : item,
+          ),
+          expectedRevision,
+          user: authorization,
+        });
+        return authorizedJson({
+          assignment,
+          asset,
+          revision: record.revision,
+        });
+      }
+    }
   } catch (error) {
     if (error instanceof AdminWorkspaceConflictError) {
       return conflictResponse(error);
