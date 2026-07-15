@@ -204,7 +204,7 @@ export function EventMediaRecommendationsClient({
     }
   }
 
-  async function useRecommendation(
+  async function assignRecommendation(
     lane: MediaRecommendationLane,
     libraryAsset: MediaLibraryAsset,
   ) {
@@ -393,7 +393,7 @@ export function EventMediaRecommendationsClient({
                         <button
                           type="button"
                           disabled={Boolean(workingId)}
-                          onClick={() => void useRecommendation(lane, recommendation.asset)}
+                          onClick={() => void assignRecommendation(lane, recommendation.asset)}
                           className="mt-3 min-h-10 w-full rounded-full bg-emerald-200 px-3 text-xs font-bold text-black disabled:opacity-40"
                         >
                           {workingId === actionId ? 'Assigning…' : 'Use for this post'}
