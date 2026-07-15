@@ -8,6 +8,7 @@ import {
   summarizePublishingQueueToday,
   upsertQueueJob,
 } from '../lib/admin/autopilot/queue-domain';
+import { PublishingQueueActionSchema } from '../lib/admin/autopilot/queue-validation';
 
 const now = new Date('2026-08-08T18:00:00.000Z');
 
@@ -33,6 +34,30 @@ function instagramJob(overrides: Record<string, unknown> = {}) {
     },
     new Date('2026-08-01T12:00:00.000Z'),
   );
+}
+
+function campaignJobInput(id: string, channel: 'instagram-feed' | 'instagram-story') {
+  return {
+    id,
+    eventId: 'event-1',
+    eventTitle: 'Saturday at Club Bahia',
+    contentItemId: `${channel}-copy`,
+    label: channel === 'instagram-feed' ? 'Main announcement' : 'Story countdown',
+    provider: 'meta' as const,
+    channel,
+    scheduledFor: '2026-08-08T23:00:00.000Z',
+    approvalMode: 'approve-campaign' as const,
+    payload: {
+      caption: 'Club Bahia this Saturday.',
+      mediaUrl:
+        'https://store.public.blob.vercel-storage.com/events/flyer.jpg',
+      mediaKind: 'image' as const,
+    },
+    executionSupport:
+      channel === 'instagram-feed'
+        ? ('automatic' as const)
+        : ('provider-proof-required' as const),
+  };
 }
 
 describe('durable Promotion Autopilot queue', () => {
@@ -155,5 +180,25 @@ describe('durable Promotion Autopilot queue', () => {
     expect(summary.publishingToday).toHaveLength(1);
     expect(summary.needsApproval).toHaveLength(1);
     expect(summary.problems).toHaveLength(1);
+  });
+
+  it('accepts one atomic full-campaign request including review-gated Stories', () => {
+    const parsed = PublishingQueueActionSchema.safeParse({
+      action: 'upsert-campaign',
+      eventId: 'event-1',
+      jobs: [
+        campaignJobInput('event-1-announcement', 'instagram-feed'),
+        campaignJobInput('event-1-countdown', 'instagram-story'),
+      ],
+    });
+
+    expect(parsed.success).toBe(true);
+    expect(
+      PublishingQueueActionSchema.safeParse({
+        action: 'approve-campaign',
+        eventId: 'event-1',
+        jobIds: ['event-1-announcement', 'event-1-countdown'],
+      }).success,
+    ).toBe(true);
   });
 });
