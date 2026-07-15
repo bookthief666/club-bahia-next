@@ -1,5 +1,6 @@
 import { AutopilotScheduleClient } from '@/components/admin/publishing/AutopilotScheduleClient';
 import { CampaignLaunchClient } from '@/components/admin/publishing/CampaignLaunchClient';
+import { CampaignTimelineClient } from '@/components/admin/publishing/CampaignTimelineClient';
 import { CampaignTrackingLinksClient } from '@/components/admin/publishing/CampaignTrackingLinksClient';
 import { InstagramPublishProofClient } from '@/components/admin/publishing/InstagramPublishProofClient';
 import { InstagramReelProofClient } from '@/components/admin/publishing/InstagramReelProofClient';
@@ -22,6 +23,9 @@ export default async function EventPublishingExecutionPage({
       </div>
       <div className="mb-5">
         <CampaignTrackingLinksClient eventId={eventId} />
+      </div>
+      <div className="mb-5">
+        <CampaignTimelineClient eventId={eventId} />
       </div>
       <div className="mb-5">
         <AutopilotScheduleClient eventId={eventId} />
