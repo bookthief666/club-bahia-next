@@ -5,9 +5,11 @@ import {
 } from '@/lib/admin/autopilot/queue-domain';
 import { PublishingQueueActionSchema } from '@/lib/admin/autopilot/queue-validation';
 import {
+  approvePublishingQueueCampaign,
   approvePublishingQueueJob,
   cancelPublishingQueueJob,
   getPublishingQueue,
+  upsertPublishingQueueCampaign,
   upsertPublishingQueueJob,
 } from '@/lib/admin/autopilot/server/queue-store';
 import { requireAdminRequest } from '@/lib/admin/auth/session';
@@ -110,12 +112,31 @@ export async function POST(request: Request) {
       });
       return json({ job: safeJob(job) });
     }
+    if (parsed.data.action === 'upsert-campaign') {
+      const jobs = await upsertPublishingQueueCampaign({
+        eventId: parsed.data.eventId,
+        jobs: parsed.data.jobs,
+        user,
+      });
+      return json({ jobs: jobs.map(safeJob) });
+    }
     if (parsed.data.action === 'approve') {
       const job = await approvePublishingQueueJob({
         jobId: parsed.data.jobId,
         user,
       });
       return json({ job: safeJob(job) });
+    }
+    if (parsed.data.action === 'approve-campaign') {
+      const result = await approvePublishingQueueCampaign({
+        eventId: parsed.data.eventId,
+        jobIds: parsed.data.jobIds,
+        user,
+      });
+      return json({
+        jobs: result.jobs.map(safeJob),
+        blocked: result.blocked,
+      });
     }
     const job = await cancelPublishingQueueJob({
       jobId: parsed.data.jobId,
