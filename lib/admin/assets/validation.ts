@@ -55,6 +55,12 @@ export const EventAssetSchema = z.object({
   rightsConfirmedAt: z.string().datetime(),
   uploadedAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
+  sourceLibraryAssetId: z
+    .string()
+    .trim()
+    .regex(/^[a-zA-Z0-9_-]+$/)
+    .max(160)
+    .optional(),
 });
 
 export const EventAssetUploadPayloadSchema = z.object({
