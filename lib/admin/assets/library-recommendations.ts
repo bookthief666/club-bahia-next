@@ -95,7 +95,15 @@ function scoreAsset(input: {
   requiredKind?: MediaLibraryAsset['kind'];
   now: Date;
 }): MediaRecommendation | null {
-  const { asset, event, platform, preferredRoles, preferredOrientations, requiredKind, now } = input;
+  const {
+    asset,
+    event,
+    platform,
+    preferredRoles,
+    preferredOrientations,
+    requiredKind,
+    now,
+  } = input;
   if (asset.status !== 'active') return null;
   if (requiredKind && asset.kind !== requiredKind) return null;
 
@@ -119,7 +127,9 @@ function scoreAsset(input: {
 
   if (preferredOrientations.includes(asset.orientation)) {
     score += 14;
-    reasons.push(`${asset.orientation.replaceAll('-', ' ')} format fits this placement`);
+    reasons.push(
+      `${asset.orientation.replaceAll('-', ' ')} format fits this placement`,
+    );
   } else if (asset.orientation === 'unknown') {
     warnings.push('Orientation has not been confirmed');
   }
@@ -130,7 +140,7 @@ function scoreAsset(input: {
   );
   if (collectionMatch) {
     score += collectionMatch === 'club-bahia-evergreen' ? 8 : 28;
-    reasons.push(
+    reasons.unshift(
       collectionMatch === 'club-bahia-evergreen'
         ? 'Approved Club Bahia evergreen media'
         : 'Matches this recurring-night template',
@@ -148,7 +158,9 @@ function scoreAsset(input: {
     ...asset.performers.flatMap(words),
     ...asset.genres.flatMap(words),
   ]);
-  const overlap = [...assetTerms].filter((term) => eventTerms.has(term)).slice(0, 4);
+  const overlap = [...assetTerms]
+    .filter((term) => eventTerms.has(term))
+    .slice(0, 4);
   if (overlap.length) {
     score += overlap.length * 5;
     reasons.push(`Matches ${overlap.join(', ')}`);
@@ -216,7 +228,10 @@ export function buildMediaRecommendationLanes(input: {
         }),
       )
       .filter((item): item is MediaRecommendation => item !== null)
-      .sort((left, right) => right.score - left.score || left.asset.name.localeCompare(right.asset.name))
+      .sort(
+        (left, right) =>
+          right.score - left.score || left.asset.name.localeCompare(right.asset.name),
+      )
       .slice(0, limit),
   }));
 }
