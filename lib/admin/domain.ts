@@ -1,4 +1,5 @@
 import type { EventIdeaConcept } from '@/lib/admin/event-ideas/domain';
+import type { EventPromotionTemplateSnapshot } from '@/lib/admin/event-templates/domain';
 
 export type AdminRole = 'owner' | 'manager' | 'producer' | 'marketing' | 'door' | 'viewer';
 
@@ -34,6 +35,7 @@ export interface OperationsEvent {
   ageRestriction?: string;
   reservationUrl?: string;
   flyerUrl?: string;
+  promotionTemplate?: EventPromotionTemplateSnapshot;
   ideaPlan?: EventIdeaConcept;
   archivedAt?: string;
   cancelledAt?: string;
