@@ -1,5 +1,6 @@
 import type { OperationsEvent } from '@/lib/admin/domain';
 import type { EventAssetPlatform, EventAssetRole } from './domain';
+import { approvedDerivativeForPlatform } from './derivatives';
 import type {
   MediaLibraryAsset,
   MediaLibraryCollectionId,
@@ -110,6 +111,39 @@ function scoreAsset(input: {
   let score = asset.qualityRating * 8;
   const reasons: string[] = [`Quality rated ${asset.qualityRating}/5`];
   const warnings: string[] = [];
+
+  const approvedDerivative = approvedDerivativeForPlatform({
+    derivatives: asset.derivatives,
+    platform,
+  });
+  if (approvedDerivative) {
+    score += 26;
+    reasons.unshift('Approved platform-ready crop is available');
+  } else if (
+    platform === 'instagram-feed' ||
+    platform === 'instagram-story' ||
+    platform === 'website'
+  ) {
+    warnings.push('No approved platform crop yet; the original will be used');
+  }
+
+  if (platform === 'reel') {
+    const covers = (asset.derivatives ?? []).filter(
+      (derivative) =>
+        derivative.status === 'approved' &&
+        (derivative.presetId === 'instagram-reel-cover' ||
+          derivative.presetId === 'tiktok-cover'),
+    );
+    if (covers.length === 2) {
+      score += 10;
+      reasons.push('Instagram and TikTok covers are approved');
+    } else if (covers.length === 1) {
+      score += 5;
+      reasons.push('One vertical-video cover is approved');
+    } else {
+      warnings.push('Reel and TikTok covers still need preparation');
+    }
+  }
 
   if (asset.platforms.includes(platform)) {
     score += 22;
