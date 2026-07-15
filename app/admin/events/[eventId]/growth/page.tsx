@@ -1,7 +1,5 @@
-import { AiProviderBanner } from '@/components/admin/growth/AiProviderBanner';
 import { CampaignAuditPanelClient } from '@/components/admin/growth/CampaignAuditPanelClient';
-import { CampaignOverviewGuideClient } from '@/components/admin/growth/CampaignOverviewGuideClient';
-import { EventGrowthWorkspaceClient } from '@/components/admin/growth/EventGrowthWorkspaceClient';
+import { PromotionStudioClient } from '@/components/admin/growth/PromotionStudioClient';
 import { CampaignWorkflowNav } from '@/components/admin/workflow/CampaignWorkflowNav';
 
 export default async function EventGrowthPage({
@@ -14,12 +12,8 @@ export default async function EventGrowthPage({
   return (
     <>
       <CampaignWorkflowNav eventId={eventId} />
-      <CampaignOverviewGuideClient eventId={eventId} />
-      <AiProviderBanner />
+      <PromotionStudioClient eventId={eventId} />
       <CampaignAuditPanelClient eventId={eventId} />
-      <div id="campaign-workspace" className="scroll-mt-28">
-        <EventGrowthWorkspaceClient eventId={eventId} />
-      </div>
     </>
   );
 }
