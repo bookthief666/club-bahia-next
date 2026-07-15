@@ -1,10 +1,17 @@
 import { z } from 'zod';
+import { MEDIA_DERIVATIVE_PRESETS } from './derivatives';
 import {
   EventAssetKindSchema,
   EventAssetPlatformSchema,
   EventAssetRoleSchema,
   EventAssetSchema,
 } from './validation';
+
+const SafeLibraryIdSchema = z
+  .string()
+  .trim()
+  .regex(/^[a-zA-Z0-9_-]+$/)
+  .max(160);
 
 const MediaLibraryCollectionSchema = z.enum([
   'club-bahia-evergreen',
@@ -35,6 +42,33 @@ const MediaRightsBasisSchema = z.enum([
   'other-confirmed',
 ]);
 
+export const MediaDerivativePresetSchema = z.enum(
+  MEDIA_DERIVATIVE_PRESETS.map((preset) => preset.id) as [
+    (typeof MEDIA_DERIVATIVE_PRESETS)[number]['id'],
+    ...(typeof MEDIA_DERIVATIVE_PRESETS)[number]['id'][],
+  ],
+);
+
+export const MediaDerivativeSchema = z.object({
+  id: SafeLibraryIdSchema,
+  presetId: MediaDerivativePresetSchema,
+  sourceAssetId: SafeLibraryIdSchema,
+  pathname: z.string().trim().min(1).max(1200),
+  url: z.string().url().max(2000),
+  downloadUrl: z.string().url().max(2000),
+  contentType: z.literal('image/jpeg'),
+  size: z.number().int().min(1).max(25 * 1024 * 1024),
+  width: z.number().int().min(1).max(5000),
+  height: z.number().int().min(1).max(5000),
+  focalX: z.number().min(0).max(1),
+  focalY: z.number().min(0).max(1),
+  zoom: z.number().min(1).max(3),
+  frameTimeSeconds: z.number().min(0).max(21600).optional(),
+  status: z.enum(['draft', 'approved']),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
 const MediaLibraryUsageSchema = z.object({
   eventId: z.string().trim().min(1).max(160),
   eventTitle: z.string().trim().min(1).max(300),
@@ -44,7 +78,7 @@ const MediaLibraryUsageSchema = z.object({
 
 export const MediaLibraryAssetSchema = z.object({
   schemaVersion: z.literal(1),
-  id: z.string().trim().regex(/^[a-zA-Z0-9_-]+$/).max(160),
+  id: SafeLibraryIdSchema,
   sourceEventId: z.string().trim().min(1).max(160),
   sourceAssetId: z.string().trim().min(1).max(160),
   name: z.string().trim().min(1).max(300),
@@ -79,6 +113,7 @@ export const MediaLibraryAssetSchema = z.object({
   credit: z.string().trim().max(300),
   rightsConfirmedAt: z.string().datetime(),
   capturedAt: z.string().datetime().optional(),
+  derivatives: z.array(MediaDerivativeSchema).max(20).default([]),
   usageHistory: z.array(MediaLibraryUsageSchema).max(200),
   usageCount: z.number().int().min(0).max(100000),
   lastUsedAt: z.string().datetime().optional(),
@@ -97,10 +132,17 @@ export const MediaLibraryUpsertSchema = z.object({
   asset: MediaLibraryAssetSchema,
 });
 
+export const MediaLibraryDerivativeSaveSchema = z.object({
+  action: z.literal('save-derivative'),
+  libraryAssetId: SafeLibraryIdSchema,
+  derivative: MediaDerivativeSchema,
+});
+
 export const MediaLibraryAssignSchema = z.object({
   action: z.literal('assign-to-event'),
-  libraryAssetId: z.string().trim().regex(/^[a-zA-Z0-9_-]+$/).max(160),
-  eventId: z.string().trim().regex(/^[a-zA-Z0-9_-]+$/).max(160),
+  libraryAssetId: SafeLibraryIdSchema,
+  derivativeId: SafeLibraryIdSchema.optional(),
+  eventId: SafeLibraryIdSchema,
   eventTitle: z.string().trim().min(1).max(300),
   platform: EventAssetPlatformSchema.optional(),
   role: EventAssetRoleSchema.optional(),
@@ -108,14 +150,20 @@ export const MediaLibraryAssignSchema = z.object({
 
 export const MediaLibraryArchiveSchema = z.object({
   action: z.literal('archive'),
-  libraryAssetId: z.string().trim().regex(/^[a-zA-Z0-9_-]+$/).max(160),
+  libraryAssetId: SafeLibraryIdSchema,
 });
 
 export const MediaLibraryMutationSchema = z.discriminatedUnion('action', [
   MediaLibraryImportSchema,
   MediaLibraryUpsertSchema,
+  MediaLibraryDerivativeSaveSchema,
   MediaLibraryAssignSchema,
   MediaLibraryArchiveSchema,
 ]);
+
+export const MediaDerivativeUploadPayloadSchema = z.object({
+  libraryAssetId: SafeLibraryIdSchema,
+  presetId: MediaDerivativePresetSchema,
+});
 
 export type MediaLibraryMutation = z.infer<typeof MediaLibraryMutationSchema>;
