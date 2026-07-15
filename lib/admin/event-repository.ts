@@ -57,6 +57,7 @@ export type EventInput = Pick<OperationsEvent, 'title' | 'concept' | 'room' | 'o
   ageRestriction?: string;
   reservationUrl?: string;
   flyerUrl?: string;
+  promotionTemplate?: OperationsEvent['promotionTemplate'];
   ideaPlan?: EventIdeaConcept;
 };
 
@@ -103,6 +104,7 @@ export function newEventDefaults(now = new Date()): EventInput {
     ageRestriction: '',
     reservationUrl: '',
     flyerUrl: '',
+    promotionTemplate: undefined,
   };
 }
 
@@ -226,6 +228,9 @@ export class BrowserFixtureEventRepository implements EventRepository {
       ageRestriction: cleanOptional(input.ageRestriction),
       reservationUrl: cleanOptional(input.reservationUrl),
       flyerUrl: cleanOptional(input.flyerUrl),
+      promotionTemplate: input.promotionTemplate
+        ? clone(input.promotionTemplate)
+        : undefined,
       ideaPlan: input.ideaPlan ? clone(input.ideaPlan) : undefined,
     };
     events.push(event);
@@ -271,6 +276,12 @@ export class BrowserFixtureEventRepository implements EventRepository {
           : cleanOptional(input.reservationUrl),
       flyerUrl:
         input.flyerUrl === undefined ? undefined : cleanOptional(input.flyerUrl),
+      promotionTemplate:
+        input.promotionTemplate === undefined
+          ? undefined
+          : input.promotionTemplate
+            ? clone(input.promotionTemplate)
+            : undefined,
       ideaPlan: input.ideaPlan ? clone(input.ideaPlan) : undefined,
     };
 
@@ -339,6 +350,7 @@ export class BrowserFixtureEventRepository implements EventRepository {
       ageRestriction: original.ageRestriction,
       reservationUrl: original.reservationUrl,
       flyerUrl: original.flyerUrl,
+      promotionTemplate: original.promotionTemplate,
       ideaPlan: original.ideaPlan,
     });
   }
