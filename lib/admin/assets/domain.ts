@@ -44,6 +44,7 @@ export interface EventAsset {
   rightsConfirmedAt: string;
   uploadedAt: string;
   updatedAt: string;
+  sourceLibraryAssetId?: string;
 }
 
 export interface EventAssetReadinessItem {
