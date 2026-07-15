@@ -37,6 +37,12 @@ export const EventAssetPlatformSchema = z.enum([
   'print',
 ]);
 
+const SafeAssetIdSchema = z
+  .string()
+  .trim()
+  .regex(/^[a-zA-Z0-9_-]+$/)
+  .max(160);
+
 export const EventAssetSchema = z.object({
   id: z.string().trim().min(1).max(160),
   eventId: z.string().trim().min(1).max(160),
@@ -55,21 +61,19 @@ export const EventAssetSchema = z.object({
   rightsConfirmedAt: z.string().datetime(),
   uploadedAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
-  sourceLibraryAssetId: z
-    .string()
-    .trim()
-    .regex(/^[a-zA-Z0-9_-]+$/)
-    .max(160)
-    .optional(),
+  width: z.number().int().min(1).max(20000).optional(),
+  height: z.number().int().min(1).max(20000).optional(),
+  sourceLibraryAssetId: SafeAssetIdSchema.optional(),
+  sourceLibraryDerivativeId: SafeAssetIdSchema.optional(),
 });
 
 export const EventAssetUploadPayloadSchema = z.object({
-  eventId: z.string().trim().regex(/^[a-zA-Z0-9_-]+$/).max(160),
-  assetId: z.string().trim().regex(/^[a-zA-Z0-9_-]+$/).max(160),
+  eventId: SafeAssetIdSchema,
+  assetId: SafeAssetIdSchema,
 });
 
 export const EventAssetDeleteSchema = z.object({
-  eventId: z.string().trim().regex(/^[a-zA-Z0-9_-]+$/).max(160),
-  assetId: z.string().trim().regex(/^[a-zA-Z0-9_-]+$/).max(160),
+  eventId: SafeAssetIdSchema,
+  assetId: SafeAssetIdSchema,
   fileUrl: z.string().url().max(2000),
 });
