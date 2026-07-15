@@ -33,6 +33,12 @@ export function Footer() {
           © {new Date().getFullYear()} {venue.name}. Historic Latin nightlife in
           Los Angeles.
         </p>
+        <Link
+          href="/staff"
+          className="rounded-full px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-50/28 transition hover:bg-white/[.04] hover:text-amber-50/58 focus:outline-none focus:ring-2 focus:ring-red-500"
+        >
+          Staff login
+        </Link>
       </div>
     </footer>
   );
