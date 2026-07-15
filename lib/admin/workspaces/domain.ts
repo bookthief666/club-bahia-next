@@ -8,6 +8,7 @@ export const ADMIN_WORKSPACE_KINDS = [
   'autopilot-publication',
   'autopilot-credential',
   'autopilot-queue',
+  'media-library',
 ] as const;
 
 export type AdminWorkspaceKind = (typeof ADMIN_WORKSPACE_KINDS)[number];
