@@ -1,6 +1,8 @@
 import type { OperationsEvent } from '@/lib/admin/domain';
+import { flattenHashtagGroups } from '@/lib/admin/growth/composer';
 import type {
   CampaignChannel,
+  CampaignContentItem,
   CampaignQualityIssue,
   CampaignQualityReport,
   EventGrowthWorkspace,
@@ -54,6 +56,151 @@ function spanishSections(workspace: EventGrowthWorkspace): string {
     .toLowerCase();
 }
 
+function hasOptOut(body: string): boolean {
+  return /\b(reply|text|responde)\s+(stop|alto|cancel|cancelar)\b|\bopt\s*out\b|\bdarse\s+de\s+baja\b/i.test(
+    body,
+  );
+}
+
+function normalizedCaption(value: string): string {
+  return value.toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+function socialVariantChecks(
+  item: CampaignContentItem,
+  issues: CampaignQualityIssue[],
+): void {
+  if (item.channel === 'instagram-feed') {
+    const variants = [
+      item.structured?.shortCaption,
+      item.structured?.standardCaption,
+      item.structured?.longCaption,
+    ].filter((value): value is string => Boolean(value?.trim()));
+    const uniqueVariants = new Set(variants.map(normalizedCaption));
+    if (uniqueVariants.size < 2) {
+      issues.push(
+        issue(
+          'instagram-caption-choices',
+          'info',
+          'Instagram needs more useful caption choices',
+          'Provide at least two meaningfully different lengths so the manager can choose quickly without regenerating the whole campaign.',
+          item.channel,
+        ),
+      );
+    }
+
+    const hashtags = flattenHashtagGroups(item.structured?.hashtags);
+    if (hashtags.length < 3 || hashtags.length > 8) {
+      issues.push(
+        issue(
+          'instagram-hashtag-count',
+          'warning',
+          'Instagram hashtag set needs refinement',
+          `The current package contains ${hashtags.length} unique hashtags. Keep the approved set focused at roughly 3–8 relevant tags.`,
+          item.channel,
+        ),
+      );
+    }
+  }
+
+  if (item.channel === 'instagram-story') {
+    const frames = item.structured?.storyFrames ?? [];
+    if (frames.length < 4) {
+      issues.push(
+        issue(
+          'story-frame-count',
+          'warning',
+          'Story sequence is incomplete',
+          'Prepare at least four concise frames covering hook, atmosphere or talent, verified details, and action.',
+          item.channel,
+        ),
+      );
+    }
+    if (frames.some((frame) => frame.text.length > 180)) {
+      issues.push(
+        issue(
+          'story-frame-density',
+          'warning',
+          'A Story frame is too text-heavy',
+          'Shorten the frame so it remains readable on a phone without covering the creative.',
+          item.channel,
+        ),
+      );
+    }
+  }
+
+  if (item.channel === 'reel') {
+    const variants = item.structured?.shortVideoVariants ?? [];
+    const instagram = variants.find(
+      (variant) => variant.platform === 'instagram-reel',
+    );
+    const tiktok = variants.find((variant) => variant.platform === 'tiktok');
+    if (!instagram) {
+      issues.push(
+        issue(
+          'missing-instagram-reel-caption',
+          'error',
+          'Instagram Reel caption is missing',
+          'Create a platform-specific Instagram Reel caption before approval.',
+          item.channel,
+        ),
+      );
+    }
+    if (!tiktok) {
+      issues.push(
+        issue(
+          'missing-tiktok-caption',
+          'error',
+          'TikTok caption is missing',
+          'Create a separate TikTok caption before approval.',
+          item.channel,
+        ),
+      );
+    }
+    if (
+      instagram &&
+      tiktok &&
+      normalizedCaption(instagram.caption) === normalizedCaption(tiktok.caption)
+    ) {
+      issues.push(
+        issue(
+          'duplicated-short-video-caption',
+          'warning',
+          'Instagram and TikTok captions are identical',
+          'Keep the shared video, but adapt the hook, length, hashtags, and posting note for each platform.',
+          item.channel,
+        ),
+      );
+    }
+    if ((item.structured?.reelShots ?? []).length < 4) {
+      issues.push(
+        issue(
+          'short-video-plan',
+          'warning',
+          'Vertical-video edit plan is incomplete',
+          'Include a clear opening hook, atmosphere or talent, verified details, and final action.',
+          item.channel,
+        ),
+      );
+    }
+  }
+
+  if (
+    ['instagram-feed', 'instagram-story', 'reel'].includes(item.channel) &&
+    !item.structured?.altText?.trim()
+  ) {
+    issues.push(
+      issue(
+        `missing-alt-text-${item.channel}`,
+        'info',
+        'Accessibility description is missing',
+        'Add factual alt text for the approved visual media.',
+        item.channel,
+      ),
+    );
+  }
+}
+
 export function buildCampaignQualityReport(
   event: OperationsEvent,
   workspace: EventGrowthWorkspace,
@@ -96,7 +243,18 @@ export function buildCampaignQualityReport(
     );
   }
 
-  const englishCtaPattern = /\b(reserve now|buy tickets|learn more|book now)\b/i;
+  if (/\b(epic night|unforgettable experience|you do not want to miss|best night ever)\b/i.test(combinedCopy)) {
+    issues.push(
+      issue(
+        'generic-hype-language',
+        'info',
+        'Generic promotional language remains',
+        'Replace empty hype with a concrete performer, sound, atmosphere, verified offer, or reason to attend.',
+      ),
+    );
+  }
+
+  const englishCtaPattern = /\b(reserve now|buy tickets|learn more|book now|reserve your)\b/i;
   if (
     workspace.brief.language === 'spanish' &&
     englishCtaPattern.test(combinedCopy)
@@ -148,18 +306,13 @@ export function buildCampaignQualityReport(
         'sms-length',
         'error',
         'SMS exceeds 300 characters',
-        `The SMS is ${sms.body.length} characters. Shorten it before sending.`,
+        `The recommended SMS is ${sms.body.length} characters. Choose or edit a shorter variant before sending.`,
         'sms',
       ),
     );
   }
 
-  if (
-    sms &&
-    !/\b(reply|text|responde)\s+(stop|alto|cancel|cancelar)\b|\bopt\s*out\b|\bdarse\s+de\s+baja\b/i.test(
-      sms.body,
-    )
-  ) {
+  if (sms && !hasOptOut(sms.body)) {
     issues.push(
       issue(
         'sms-opt-out',
@@ -167,6 +320,44 @@ export function buildCampaignQualityReport(
         'SMS is missing opt-out language',
         'Add a clear instruction such as “Reply STOP to opt out” before approval.',
         'sms',
+      ),
+    );
+  }
+
+  for (const [index, variant] of (sms?.structured?.smsVariants ?? []).entries()) {
+    if (variant.length > 300) {
+      issues.push(
+        issue(
+          `sms-variant-length-${index}`,
+          'warning',
+          `SMS option ${index + 1} is too long`,
+          `This option is ${variant.length} characters. Shorten it to 300 or fewer.`,
+          'sms',
+        ),
+      );
+    }
+    if (!hasOptOut(variant)) {
+      issues.push(
+        issue(
+          `sms-variant-opt-out-${index}`,
+          'error',
+          `SMS option ${index + 1} lacks opt-out language`,
+          'Every SMS option must preserve the consent and opt-out instruction.',
+          'sms',
+        ),
+      );
+    }
+  }
+
+  const email = workspace.content.find((item) => item.channel === 'email');
+  if (email && (email.structured?.emailSubjects ?? []).length < 2) {
+    issues.push(
+      issue(
+        'email-subject-options',
+        'info',
+        'Email needs more subject-line choices',
+        'Provide at least two materially different subject lines for quick review.',
+        'email',
       ),
     );
   }
@@ -220,12 +411,13 @@ export function buildCampaignQualityReport(
         ),
       );
     }
+    socialVariantChecks(item, issues);
   }
 
   const penalty = issues.reduce((total, item) => {
-    if (item.severity === 'error') return total + 22;
-    if (item.severity === 'warning') return total + 10;
-    return total + 4;
+    if (item.severity === 'error') return total + 18;
+    if (item.severity === 'warning') return total + 8;
+    return total + 3;
   }, 0);
 
   return {
