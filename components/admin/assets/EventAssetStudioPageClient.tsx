@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import type { OperationsEvent } from '@/lib/admin/domain';
 import { eventRepository } from '@/lib/admin/event-repository';
 import { EventAssetStudioClient } from './EventAssetStudioClient';
+import { EventMediaRecommendationsClient } from './EventMediaRecommendationsClient';
 import { MediaSessionLockBridge } from './MediaSessionLockBridge';
 
 export function EventAssetStudioPageClient({ eventId }: { eventId: string }) {
@@ -55,13 +56,22 @@ export function EventAssetStudioPageClient({ eventId }: { eventId: string }) {
         >
           ← Back to event
         </Link>
-        <Link
-          href={`/admin/events/${event.id}/publishing`}
-          className="inline-flex min-h-11 items-center rounded-full border border-emerald-200/25 bg-emerald-200/10 px-5 text-sm font-bold text-emerald-100"
-        >
-          Next: Prepare posts →
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/admin/media"
+            className="inline-flex min-h-10 items-center rounded-full border border-white/12 px-4 text-xs font-semibold text-white/52"
+          >
+            Media library
+          </Link>
+          <Link
+            href={`/admin/events/${event.id}/publishing`}
+            className="inline-flex min-h-11 items-center rounded-full border border-emerald-200/25 bg-emerald-200/10 px-5 text-sm font-bold text-emerald-100"
+          >
+            Next: Prepare posts →
+          </Link>
+        </div>
       </div>
+      <EventMediaRecommendationsClient event={event} />
       <EventAssetStudioClient eventId={event.id} eventTitle={event.title} />
     </>
   );
