@@ -3,12 +3,16 @@ import { buildPromotionTimeline } from '../lib/admin/autopilot/campaign-plan';
 import type { OperationsEvent } from '../lib/admin/domain';
 
 function eventAt(startsAt: string): OperationsEvent {
+  const parsed = new Date(startsAt);
+  const endsAt = Number.isNaN(parsed.getTime())
+    ? startsAt
+    : new Date(parsed.getTime() + 5 * 3_600_000).toISOString();
   return {
     id: 'evt-campaign-plan',
     title: 'Club Bahia Saturday Night',
     concept: 'Live music and dancing.',
     startsAt,
-    endsAt: new Date(new Date(startsAt).getTime() + 5 * 3_600_000).toISOString(),
+    endsAt,
     status: 'approved',
     room: 'Main room',
     capacityTarget: 250,
