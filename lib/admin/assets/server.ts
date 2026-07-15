@@ -3,6 +3,7 @@ import 'server-only';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { NextResponse } from 'next/server';
 import type { EventAsset } from './domain';
+import type { MediaDerivativePresetId } from './derivatives';
 
 export const ASSET_ACCESS_HEADER = 'x-admin-asset-key';
 export const ASSET_SESSION_COOKIE = 'club_bahia_asset_session';
@@ -150,6 +151,17 @@ export function mediaLibraryAssetFolder(assetId: string): string {
 
 export function mediaLibraryMetadataPath(assetId: string): string {
   return `${mediaLibraryAssetFolder(assetId)}/metadata.json`;
+}
+
+export function mediaLibraryDerivativeFolder(assetId: string): string {
+  return `${mediaLibraryAssetFolder(assetId)}/derivatives`;
+}
+
+export function mediaLibraryDerivativePath(
+  assetId: string,
+  presetId: MediaDerivativePresetId,
+): string {
+  return `${mediaLibraryDerivativeFolder(assetId)}/${cleanAssetSegment(presetId)}.jpg`;
 }
 
 export function isEventAsset(value: unknown): value is EventAsset {
