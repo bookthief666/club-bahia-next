@@ -83,6 +83,40 @@ export const CampaignStructuredContentSchema = z.object({
   altText: z.string().trim().max(1000).optional(),
 });
 
+const EventPromotionTemplateSnapshotSchema = z.object({
+  schemaVersion: z.literal(1),
+  id: z.enum(['azucar-friday', 'azucar-saturday', 'bahia-nocturna']),
+  name: z.string().trim().min(1).max(200),
+  summary: z.string().trim().max(500),
+  eventTitleBase: z.string().trim().min(1).max(200),
+  concept: z.string().trim().max(1200),
+  preferredWeekday: z.number().int().min(0).max(6),
+  startTime: z.string().regex(/^\d{2}:\d{2}$/),
+  room: z.string().trim().max(160),
+  performers: z.string().trim().max(500),
+  genres: z.string().trim().max(300),
+  admission: z.string().trim().max(160),
+  ageRestriction: z.string().trim().max(80),
+  targetAudience: z.string().trim().max(500),
+  tone: z.string().trim().max(300),
+  offer: z.string().trim().max(240),
+  language: z.enum(['english', 'spanish', 'bilingual']),
+  cadence: z.enum(['resident-weekend', 'experimental-launch', 'standard']),
+  hashtags: CampaignHashtagGroupsSchema,
+  visualDirection: z.string().trim().max(1200),
+  preferredMediaRoles: z
+    .array(
+      z.enum([
+        'primary-flyer',
+        'feed-creative',
+        'story-creative',
+        'reel-video',
+        'venue-photo',
+      ]),
+    )
+    .max(10),
+});
+
 export const OperationsEventSchema = z.object({
   id: z.string().trim().min(1).max(160),
   title: z.string().trim().min(1).max(200),
@@ -110,6 +144,13 @@ export const OperationsEventSchema = z.object({
   riskFlags: z.array(z.string().trim().max(300)).max(30),
   revenueTarget: z.number().int().min(0).max(1_000_000_000),
   committedCosts: z.number().int().min(0).max(1_000_000_000),
+  performers: z.string().trim().max(500).optional(),
+  genres: z.string().trim().max(300).optional(),
+  admission: z.string().trim().max(160).optional(),
+  ageRestriction: z.string().trim().max(80).optional(),
+  reservationUrl: z.string().trim().max(500).optional(),
+  flyerUrl: z.string().trim().max(500).optional(),
+  promotionTemplate: EventPromotionTemplateSnapshotSchema.optional(),
   archivedAt: z.string().datetime().optional(),
   cancelledAt: z.string().datetime().optional(),
   cancellationReason: z.string().trim().max(1000).optional(),
@@ -135,6 +176,15 @@ export const AiCampaignItemSchema = z.object({
   body: z.string().trim().min(1).max(7000),
   callToAction: z.string().trim().max(300),
   assetPrompt: z.string().trim().max(1600),
+  primaryHook: z.string().trim().max(500),
+  captionVariants: z.array(z.string().trim().min(1).max(7000)).max(3),
+  hashtags: CampaignHashtagGroupsSchema,
+  storyFrames: z.array(CampaignStoryFrameSchema).max(6),
+  shortVideoVariants: z.array(CampaignShortVideoVariantSchema).max(2),
+  emailSubjects: z.array(z.string().trim().min(1).max(300)).max(4),
+  emailPreheader: z.string().trim().max(500),
+  smsVariants: z.array(z.string().trim().min(1).max(300)).max(3),
+  altText: z.string().trim().max(1000),
 });
 
 export const AiCampaignSchema = z.object({
@@ -184,6 +234,97 @@ export const CampaignItemGenerationResultSchema = z
 
 export const CAMPAIGN_CHANNELS = CampaignChannelSchema.options;
 
+const hashtagGroupJsonSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['branded', 'localDiscovery', 'musicCommunity'],
+  properties: {
+    branded: { type: 'array', maxItems: 12, items: { type: 'string' } },
+    localDiscovery: { type: 'array', maxItems: 12, items: { type: 'string' } },
+    musicCommunity: { type: 'array', maxItems: 12, items: { type: 'string' } },
+  },
+} as const;
+
+const storyFrameJsonSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['frame', 'text', 'visualDirection', 'interaction'],
+  properties: {
+    frame: { type: 'integer' },
+    text: { type: 'string' },
+    visualDirection: { type: 'string' },
+    interaction: { type: 'string' },
+  },
+} as const;
+
+const shortVideoVariantJsonSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['platform', 'caption', 'title', 'hashtags', 'postingNotes'],
+  properties: {
+    platform: { type: 'string', enum: ['instagram-reel', 'tiktok'] },
+    caption: { type: 'string' },
+    title: { type: 'string' },
+    hashtags: { type: 'array', maxItems: 12, items: { type: 'string' } },
+    postingNotes: { type: 'string' },
+  },
+} as const;
+
+const aiCampaignItemJsonSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: [
+    'channel',
+    'body',
+    'callToAction',
+    'assetPrompt',
+    'primaryHook',
+    'captionVariants',
+    'hashtags',
+    'storyFrames',
+    'shortVideoVariants',
+    'emailSubjects',
+    'emailPreheader',
+    'smsVariants',
+    'altText',
+  ],
+  properties: {
+    channel: { type: 'string', enum: CAMPAIGN_CHANNELS },
+    body: { type: 'string' },
+    callToAction: { type: 'string' },
+    assetPrompt: { type: 'string' },
+    primaryHook: { type: 'string' },
+    captionVariants: {
+      type: 'array',
+      maxItems: 3,
+      items: { type: 'string' },
+    },
+    hashtags: hashtagGroupJsonSchema,
+    storyFrames: {
+      type: 'array',
+      maxItems: 6,
+      items: storyFrameJsonSchema,
+    },
+    shortVideoVariants: {
+      type: 'array',
+      maxItems: 2,
+      items: shortVideoVariantJsonSchema,
+    },
+    emailSubjects: {
+      type: 'array',
+      maxItems: 4,
+      items: { type: 'string' },
+    },
+    emailPreheader: { type: 'string' },
+    smsVariants: {
+      type: 'array',
+      maxItems: 3,
+      items: { type: 'string' },
+    },
+    altText: { type: 'string' },
+  },
+} as const;
+
 export const AI_CAMPAIGN_JSON_SCHEMA = {
   type: 'object',
   additionalProperties: false,
@@ -193,29 +334,9 @@ export const AI_CAMPAIGN_JSON_SCHEMA = {
       type: 'array',
       minItems: 7,
       maxItems: 7,
-      items: {
-        type: 'object',
-        additionalProperties: false,
-        required: ['channel', 'body', 'callToAction', 'assetPrompt'],
-        properties: {
-          channel: { type: 'string', enum: CAMPAIGN_CHANNELS },
-          body: { type: 'string' },
-          callToAction: { type: 'string' },
-          assetPrompt: { type: 'string' },
-        },
-      },
+      items: aiCampaignItemJsonSchema,
     },
   },
 } as const;
 
-export const AI_CAMPAIGN_ITEM_JSON_SCHEMA = {
-  type: 'object',
-  additionalProperties: false,
-  required: ['channel', 'body', 'callToAction', 'assetPrompt'],
-  properties: {
-    channel: { type: 'string', enum: CAMPAIGN_CHANNELS },
-    body: { type: 'string' },
-    callToAction: { type: 'string' },
-    assetPrompt: { type: 'string' },
-  },
-} as const;
+export const AI_CAMPAIGN_ITEM_JSON_SCHEMA = aiCampaignItemJsonSchema;
