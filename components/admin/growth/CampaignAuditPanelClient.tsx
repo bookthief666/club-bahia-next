@@ -66,6 +66,7 @@ export function CampaignAuditPanelClient({ eventId }: { eventId: string }) {
   if (!event || !workspace || !workspace.content.length || !report) return null;
 
   async function restoreRevision(revisionId: string) {
+    if (!event) return;
     setPending(true);
     setMessage('');
     try {
