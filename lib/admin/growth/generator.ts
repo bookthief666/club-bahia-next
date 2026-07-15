@@ -66,18 +66,46 @@ function buildDetails(brief: CampaignBrief, spanish = false): string {
   return details.join(' · ');
 }
 
-function hashtagGroups(brief: CampaignBrief): CampaignHashtagGroups {
+function uniqueHashtags(values: string[]): string[] {
+  const seen = new Set<string>();
+  return values.filter((value) => {
+    const normalized = value.trim();
+    if (!normalized || !normalized.startsWith('#')) return false;
+    const key = normalized.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function hashtagGroups(
+  event: OperationsEvent,
+  brief: CampaignBrief,
+): CampaignHashtagGroups {
   const genreTags = clean(brief.genres)
     .split(',')
     .map((genre) => genre.trim().replace(/[^a-zA-Z0-9]/g, ''))
     .filter(Boolean)
     .slice(0, 4)
     .map((genre) => `#${genre}`);
+  const template = event.promotionTemplate?.hashtags;
 
   return {
-    branded: ['#ClubBahia', '#BahiaSunset'],
-    localDiscovery: ['#EchoPark', '#LosAngelesNightlife', '#SunsetBoulevard'],
-    musicCommunity: genreTags,
+    branded: uniqueHashtags([
+      ...(template?.branded ?? []),
+      '#ClubBahia',
+      '#BahiaSunset',
+    ]).slice(0, 4),
+    localDiscovery: uniqueHashtags([
+      ...(template?.localDiscovery ?? []),
+      '#EchoPark',
+      '#LosAngelesNightlife',
+      '#SunsetBoulevard',
+    ]).slice(0, 4),
+    musicCommunity: uniqueHashtags([
+      ...(template?.musicCommunity ?? []),
+      ...genreTags,
+    ]).slice(0, 6),
   };
 }
 
@@ -94,10 +122,34 @@ function structuredWebsite(
   };
 }
 
-function buildContentItems(
+function eventGroundedBrief(
   event: OperationsEvent,
   brief: CampaignBrief,
+): CampaignBrief {
+  const template = event.promotionTemplate;
+  return {
+    ...brief,
+    performers:
+      event.performers?.trim() || brief.performers || template?.performers || '',
+    genres: event.genres?.trim() || brief.genres || template?.genres || '',
+    admission:
+      event.admission?.trim() || brief.admission || template?.admission || '',
+    ageRestriction:
+      event.ageRestriction?.trim() ||
+      brief.ageRestriction ||
+      template?.ageRestriction ||
+      '',
+    reservationUrl:
+      event.reservationUrl?.trim() || brief.reservationUrl || '',
+    mainAttraction: event.concept.trim() || brief.mainAttraction,
+  };
+}
+
+function buildContentItems(
+  event: OperationsEvent,
+  inputBrief: CampaignBrief,
 ): CampaignContentItem[] {
+  const brief = eventGroundedBrief(event, inputBrief);
   const theme = clean(brief.theme) || event.title;
   const attraction = clean(brief.mainAttraction) || clean(event.concept) || theme;
   const offer = clean(brief.offer) || 'Reserve your night';
@@ -107,7 +159,8 @@ function buildContentItems(
   const detailsEn = buildDetails(brief);
   const detailsEs = buildDetails(brief, true);
   const targetAudience = clean(brief.targetAudience) || 'Los Angeles nightlife audiences';
-  const hashtags = hashtagGroups(brief);
+  const hashtags = hashtagGroups(event, brief);
+  const visualDirection = event.promotionTemplate?.visualDirection;
   const now = new Date().toISOString();
 
   const websiteEn = [
@@ -242,7 +295,14 @@ function buildContentItems(
       publishingMode: publishingModeFor('instagram-feed'),
       publishAt: scheduledIso(event, 12, 18),
       callToAction: offer,
-      assetPrompt: `Editorial nightlife flyer for ${event.title}; ${theme}; ${attraction}; dark tropical noir; warm amber light; premium club photography; strong hierarchy for title, date, doors, and call to action; aimed at ${targetAudience}`,
+      assetPrompt: [
+        `Editorial nightlife flyer for ${event.title}`,
+        theme,
+        attraction,
+        visualDirection || 'dark tropical noir; warm amber light; premium club photography',
+        'strong hierarchy for title, date, doors, and call to action',
+        `aimed at ${targetAudience}`,
+      ].join('; '),
       body: instagramBody,
       structured: {
         primaryHook: joinLanguage(instagramHookEn, instagramHookEs, brief.language, true),
@@ -274,10 +334,27 @@ function buildContentItems(
       structured: {
         primaryHook: event.title,
         storyFrames: [
-          { frame: 1, text: event.title, visualDirection: 'Use the strongest event image or title card.' },
-          { frame: 2, text: attraction, visualDirection: 'Show atmosphere, talent, or dance-floor energy.' },
-          { frame: 3, text: detailsEn || detailsEs || 'One night at Club Bahia', interaction: 'Add a countdown sticker.' },
-          { frame: 4, text: offer, interaction: 'Add the reservation link sticker.' },
+          {
+            frame: 1,
+            text: event.title,
+            visualDirection:
+              visualDirection || 'Use the strongest event image or title card.',
+          },
+          {
+            frame: 2,
+            text: attraction,
+            visualDirection: 'Show atmosphere, talent, or dance-floor energy.',
+          },
+          {
+            frame: 3,
+            text: detailsEn || detailsEs || 'One night at Club Bahia',
+            interaction: 'Add a countdown sticker.',
+          },
+          {
+            frame: 4,
+            text: offer,
+            interaction: 'Add the reservation link sticker.',
+          },
         ],
         altText: `Instagram Story sequence for ${event.title} at Club Bahia.`,
       },
@@ -291,15 +368,40 @@ function buildContentItems(
       publishingMode: publishingModeFor('reel'),
       publishAt: scheduledIso(event, 5, 18),
       callToAction: offer,
-      assetPrompt: `15-second vertical nightlife teaser for ${event.title}; fast cuts of Club Bahia exterior, dance floor, performers, food or drink details, and crowd energy; kinetic title cards; end card with date, doors, and ${offer}`,
+      assetPrompt: [
+        `15-second vertical nightlife teaser for ${event.title}`,
+        visualDirection || 'fast cuts of Club Bahia exterior, dance floor, performers, and crowd energy',
+        'kinetic readable title cards',
+        `end card with date, doors, and ${offer}`,
+      ].join('; '),
       body: reelBody,
       structured: {
         primaryHook: `${event.title} at Club Bahia`,
         reelShots: [
-          { startSecond: 0, endSecond: 3, shot: 'Club Bahia exterior or strongest establishing shot.', onScreenText: event.title },
-          { startSecond: 3, endSecond: 8, shot: `Fast atmosphere cuts that communicate ${attraction}.` },
-          { startSecond: 8, endSecond: 11, shot: brief.performers ? `Feature ${clean(brief.performers)}.` : 'Show crowd, lights, and dance-floor energy.' },
-          { startSecond: 11, endSecond: 15, shot: 'Final event-details card.', onScreenText: offer },
+          {
+            startSecond: 0,
+            endSecond: 3,
+            shot: 'Club Bahia exterior or strongest establishing shot.',
+            onScreenText: event.title,
+          },
+          {
+            startSecond: 3,
+            endSecond: 8,
+            shot: `Fast atmosphere cuts that communicate ${attraction}.`,
+          },
+          {
+            startSecond: 8,
+            endSecond: 11,
+            shot: brief.performers
+              ? `Feature ${clean(brief.performers)}.`
+              : 'Show crowd, lights, and dance-floor energy.',
+          },
+          {
+            startSecond: 11,
+            endSecond: 15,
+            shot: 'Final event-details card.',
+            onScreenText: offer,
+          },
         ],
         reelVoiceover: joinLanguage(
           `${event.title} is coming to Club Bahia. ${offer}.`,
@@ -411,7 +513,9 @@ export class FixtureCampaignGenerator implements CampaignGenerator {
     brief: CampaignBrief,
     channel: CampaignChannel,
   ): Promise<CampaignContentItem> {
-    const item = buildContentItems(event, brief).find((candidate) => candidate.channel === channel);
+    const item = buildContentItems(event, brief).find(
+      (candidate) => candidate.channel === channel,
+    );
     if (!item) throw new Error(`Unsupported campaign channel: ${channel}`);
     return item;
   }
