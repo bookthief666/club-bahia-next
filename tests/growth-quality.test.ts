@@ -54,13 +54,22 @@ function workspace(overrides: Partial<EventGrowthWorkspace> = {}): EventGrowthWo
 }
 
 describe('campaign quality checks', () => {
-  it('flags missing conversion URL and mixed-language CTA', () => {
-    const report = buildCampaignQualityReport(event, workspace());
+  it('flags missing conversion URL and an actual mixed-language CTA', () => {
+    const current = workspace();
+    const content = current.content.map((item, index) =>
+      index === 0 ? { ...item, body: `${item.body}\n\nReserve now` } : item,
+    );
+    const report = buildCampaignQualityReport(event, { ...current, content });
     const ids = report.issues.map((item) => item.id);
 
     expect(ids).toContain('missing-conversion-url');
     expect(ids).toContain('mixed-language-cta');
     expect(report.score).toBeLessThan(100);
+  });
+
+  it('does not flag the deterministic Spanish CTA when it is translated', () => {
+    const report = buildCampaignQualityReport(event, workspace());
+    expect(report.issues.map((item) => item.id)).not.toContain('mixed-language-cta');
   });
 
   it('flags campaigns that omit the single public event name', () => {
