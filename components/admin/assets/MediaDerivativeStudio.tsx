@@ -17,7 +17,7 @@ const LIBRARY_API = '/api/admin/assets/library';
 const SOURCE_API = '/api/admin/assets/library/source';
 const DERIVATIVE_UPLOAD_API = '/api/admin/assets/library/derivatives/upload';
 
-function headers(accessCode: string): HeadersInit {
+function headers(accessCode: string): Record<string, string> {
   return accessCode ? { 'x-admin-asset-key': accessCode } : {};
 }
 
