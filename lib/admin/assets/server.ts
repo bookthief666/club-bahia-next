@@ -140,6 +140,18 @@ export function eventAssetMetadataPath(eventId: string, assetId: string): string
   return `${eventAssetFolder(eventId, assetId)}/metadata.json`;
 }
 
+export function mediaLibraryPrefix(): string {
+  return 'club-bahia/media-library/assets/';
+}
+
+export function mediaLibraryAssetFolder(assetId: string): string {
+  return `${mediaLibraryPrefix()}${cleanAssetSegment(assetId)}`;
+}
+
+export function mediaLibraryMetadataPath(assetId: string): string {
+  return `${mediaLibraryAssetFolder(assetId)}/metadata.json`;
+}
+
 export function isEventAsset(value: unknown): value is EventAsset {
   return Boolean(value && typeof value === 'object' && 'eventId' in value && 'url' in value);
 }
