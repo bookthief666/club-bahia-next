@@ -3,6 +3,7 @@ import type {
   EventAssetPlatform,
   EventAssetRole,
 } from './domain';
+import type { MediaDerivative } from './derivatives';
 
 export type MediaLibraryCollectionId =
   | 'club-bahia-evergreen'
@@ -70,6 +71,7 @@ export interface MediaLibraryAsset {
   credit: string;
   rightsConfirmedAt: string;
   capturedAt?: string;
+  derivatives?: MediaDerivative[];
   usageHistory: MediaLibraryUsage[];
   usageCount: number;
   lastUsedAt?: string;
