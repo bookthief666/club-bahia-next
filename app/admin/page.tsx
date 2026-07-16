@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { AsyncStatePanels } from '@/components/admin/AsyncStatePanels';
 import {
   AtRiskCard,
@@ -7,6 +8,7 @@ import {
   UpcomingEventsCard,
 } from '@/components/admin/DashboardCards';
 import { AutopilotTodayClient } from '@/components/admin/publishing/AutopilotTodayClient';
+import { PromotionReviewInboxClient } from '@/components/admin/review/PromotionReviewInboxClient';
 import { ReservationGrowthSnapshot } from '@/components/admin/reservations/ReservationGrowthSnapshot';
 import { createCommandCenterRepository } from '@/lib/admin/repository';
 import {
@@ -28,7 +30,16 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-export default async function AdminDashboardPage() {
+export default async function AdminDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string }>;
+}) {
+  const { view } = await searchParams;
+  if (view === 'review') {
+    return <PromotionReviewInboxClient />;
+  }
+
   const [data, websiteReservations] = await Promise.all([
     createCommandCenterRepository().getDashboardData(),
     listStoredReservations(),
@@ -65,6 +76,17 @@ export default async function AdminDashboardPage() {
             {new Date(data.generatedAt)
               .toUTCString()
               .replace(/:\d{2} GMT$/, ' GMT')}
+          </p>
+        </div>
+        <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-white/8 pt-4">
+          <Link
+            href="/admin?view=review"
+            className="inline-flex min-h-11 items-center rounded-full bg-cyan-100 px-5 text-sm font-bold text-black"
+          >
+            Open promotion review inbox →
+          </Link>
+          <p className="max-w-2xl text-xs leading-5 text-white/40">
+            Review copy, missing media, safe approvals, and publishing problems across every active event without opening each campaign separately.
           </p>
         </div>
       </section>
