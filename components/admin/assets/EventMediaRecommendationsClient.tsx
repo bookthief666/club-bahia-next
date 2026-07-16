@@ -163,6 +163,7 @@ export function EventMediaRecommendationsClient({
     const saved = sessionStorage.getItem(ACCESS_SESSION_KEY) ?? '';
     setAccessCode(saved);
     void load(saved);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [event.id]);
 
   const librarySourceKeys = useMemo(
