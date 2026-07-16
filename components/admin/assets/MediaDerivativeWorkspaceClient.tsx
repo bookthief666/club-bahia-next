@@ -6,6 +6,8 @@ import {
   mediaDerivativePresetsForKind,
 } from '@/lib/admin/assets/derivatives';
 import type { MediaLibraryAsset } from '@/lib/admin/assets/library-domain';
+import type { OperationsEvent } from '@/lib/admin/domain';
+import { eventRepository } from '@/lib/admin/event-repository';
 import { MediaDerivativeStudio } from './MediaDerivativeStudio';
 
 const LIBRARY_API = '/api/admin/assets/library';
@@ -13,6 +15,7 @@ const ACCESS_SESSION_KEY = 'club-bahia-event-assets-access';
 
 export function MediaDerivativeWorkspaceClient() {
   const [assets, setAssets] = useState<MediaLibraryAsset[]>([]);
+  const [events, setEvents] = useState<OperationsEvent[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [accessCode, setAccessCode] = useState('');
   const [needsUnlock, setNeedsUnlock] = useState(false);
@@ -23,10 +26,13 @@ export function MediaDerivativeWorkspaceClient() {
     setPending(true);
     setMessage('');
     try {
-      const response = await fetch(LIBRARY_API, {
-        cache: 'no-store',
-        headers: code ? { 'x-admin-asset-key': code } : {},
-      });
+      const [response, loadedEvents] = await Promise.all([
+        fetch(LIBRARY_API, {
+          cache: 'no-store',
+          headers: code ? { 'x-admin-asset-key': code } : {},
+        }),
+        eventRepository.listEvents(),
+      ]);
       const result = (await response.json()) as {
         assets?: MediaLibraryAsset[];
         error?: string;
@@ -41,6 +47,11 @@ export function MediaDerivativeWorkspaceClient() {
           (asset.kind === 'image' || asset.kind === 'video'),
       );
       setAssets(eligible);
+      setEvents(
+        loadedEvents.filter(
+          (event) => event.status !== 'archived' && event.status !== 'cancelled',
+        ),
+      );
       setSelectedId((current) =>
         eligible.some((asset) => asset.id === current)
           ? current
@@ -59,10 +70,16 @@ export function MediaDerivativeWorkspaceClient() {
     const saved = sessionStorage.getItem(ACCESS_SESSION_KEY) ?? '';
     setAccessCode(saved);
     void load(saved);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const selected = assets.find((asset) => asset.id === selectedId);
+  const logoAssets = useMemo(
+    () =>
+      assets.filter(
+        (asset) => asset.kind === 'image' && asset.role === 'logo',
+      ),
+    [assets],
+  );
   const readySets = useMemo(
     () =>
       assets.filter((asset) => {
@@ -76,6 +93,14 @@ export function MediaDerivativeWorkspaceClient() {
       total +
       (asset.derivatives ?? []).filter((derivative) => derivative.status === 'draft')
         .length,
+    0,
+  );
+  const brandedCount = assets.reduce(
+    (total, asset) =>
+      total +
+      (asset.derivatives ?? []).filter(
+        (derivative) => derivative.status === 'approved' && Boolean(derivative.overlay),
+      ).length,
     0,
   );
 
@@ -122,21 +147,23 @@ export function MediaDerivativeWorkspaceClient() {
             Platform Version Builder
           </p>
           <h2 className="mt-1 font-serif text-3xl text-white sm:text-4xl">
-            Prepare every crop without touching the original.
+            Prepare crops and finished event graphics.
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-white/48">
-            Create feed, Story, cover, website, and Google-ready JPEGs. Each format keeps its own focal point, zoom, safe-area preview, and approval state.
+            Create clean reusable formats or event-specific graphics with Club Bahia identity, title, date, time, CTA, focal point, zoom, and independent approval.
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-2xl border border-white/9 bg-black/18 p-3 text-center">
-            <p className="text-[9px] uppercase tracking-[.13em] text-white/32">Complete sets</p>
-            <p className="mt-1 text-2xl font-semibold text-emerald-100">{readySets}</p>
-          </div>
-          <div className="rounded-2xl border border-white/9 bg-black/18 p-3 text-center">
-            <p className="text-[9px] uppercase tracking-[.13em] text-white/32">Drafts</p>
-            <p className="mt-1 text-2xl font-semibold text-amber-100">{draftCount}</p>
-          </div>
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            ['Clean sets', readySets],
+            ['Branded', brandedCount],
+            ['Drafts', draftCount],
+          ].map(([label, value]) => (
+            <div key={label as string} className="rounded-2xl border border-white/9 bg-black/18 p-3 text-center">
+              <p className="text-[9px] uppercase tracking-[.13em] text-white/32">{label as string}</p>
+              <p className="mt-1 text-2xl font-semibold text-emerald-100">{value as number}</p>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -155,7 +182,7 @@ export function MediaDerivativeWorkspaceClient() {
             >
               {assets.map((asset) => (
                 <option key={asset.id} value={asset.id}>
-                  {asset.name} · {asset.kind} · {derivativeReadinessCount(asset.derivatives)}/{mediaDerivativePresetsForKind(asset.kind).length} approved
+                  {asset.name} · {asset.kind} · {derivativeReadinessCount(asset.derivatives)}/{mediaDerivativePresetsForKind(asset.kind).length} clean formats approved
                 </option>
               ))}
             </select>
@@ -163,6 +190,8 @@ export function MediaDerivativeWorkspaceClient() {
           {selected ? (
             <MediaDerivativeStudio
               asset={selected}
+              events={events}
+              logoAssets={logoAssets.filter((logo) => logo.id !== selected.id)}
               accessCode={accessCode}
               onSaved={(saved) =>
                 setAssets((current) =>
