@@ -47,6 +47,13 @@ function pageIdentity(pathname: string): {
   title: string;
   subtitle: string;
 } {
+  if (pathname.startsWith('/admin/overview')) {
+    return {
+      eyebrow: 'Owner presentation',
+      title: 'Growth OS overview',
+      subtitle: 'A concise walkthrough of the business value and complete operating loop.',
+    };
+  }
   if (pathname.startsWith('/admin/settings')) {
     return {
       eyebrow: 'Promotion Autopilot',
@@ -249,6 +256,16 @@ export function AdminShell({
           </nav>
 
           <div className="mt-auto space-y-2">
+            <Link
+              href="/admin/overview"
+              className={`flex min-h-11 items-center justify-center rounded-2xl border px-4 text-xs font-semibold transition ${
+                pathname.startsWith('/admin/overview')
+                  ? 'border-emerald-200/20 bg-emerald-200/10 text-emerald-100'
+                  : 'border-white/10 text-white/50 hover:border-white/20 hover:text-white'
+              }`}
+            >
+              Owner overview
+            </Link>
             <Link
               href="/admin/settings"
               className={`flex min-h-11 items-center justify-center rounded-2xl border px-4 text-xs font-semibold transition ${
