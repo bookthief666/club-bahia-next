@@ -181,7 +181,7 @@ describe('universal promotion review inbox', () => {
     expect(item.blockingReasons.join(' ')).toContain('Unlock event media');
   });
 
-  it('promotes provider failures above ordinary copy-review lanes', () => {
+  it('promotes provider failures above ordinary copy-review lanes and blocks batch approval', () => {
     const created = createQueueJob(
       {
         id: 'queue-website',
@@ -213,6 +213,8 @@ describe('universal promotion review inbox', () => {
     ]);
 
     expect(item.lane).toBe('problems');
+    expect(item.bulkApprovable).toBe(false);
+    expect(item.blockingReasons.join(' ')).toContain('publishing job');
     expect(item.queue[0]).toMatchObject({
       status: 'failed',
       lastError: 'Provider rejected the request.',
