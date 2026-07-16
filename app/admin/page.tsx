@@ -80,13 +80,19 @@ export default async function AdminDashboardPage({
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-white/8 pt-4">
           <Link
-            href="/admin?view=review"
-            className="inline-flex min-h-11 items-center rounded-full bg-cyan-100 px-5 text-sm font-bold text-black"
+            href="/admin/overview"
+            className="inline-flex min-h-11 items-center rounded-full bg-amber-300 px-5 text-sm font-bold text-black"
           >
-            Open promotion review inbox →
+            Owner overview →
+          </Link>
+          <Link
+            href="/admin?view=review"
+            className="inline-flex min-h-11 items-center rounded-full border border-cyan-200/20 bg-cyan-200/[.07] px-5 text-sm font-bold text-cyan-100"
+          >
+            Promotion review inbox
           </Link>
           <p className="max-w-2xl text-xs leading-5 text-white/40">
-            Review copy, missing media, safe approvals, and publishing problems across every active event without opening each campaign separately.
+            Use the owner overview for a concise business walkthrough, or open the review inbox for daily cross-event work.
           </p>
         </div>
       </section>
