@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { loadMediaLibraryCatalog } from '@/lib/admin/assets/library-server';
 import {
   approveVideoEditProject,
   prepareVideoEditDraft,
@@ -7,6 +8,7 @@ import {
   loadVideoEditProject,
   saveVideoEditProject,
 } from '@/lib/admin/assets/video-edit-server';
+import { canonicalizeVideoEditSources } from '@/lib/admin/assets/video-edit-sources';
 import { VideoEditMutationSchema } from '@/lib/admin/assets/video-edit-validation';
 import { requireAdminResourceAccess } from '@/lib/admin/auth/resource-access';
 import { AdminWorkspaceConflictError } from '@/lib/admin/workspaces/domain';
@@ -93,10 +95,15 @@ export async function POST(request: Request) {
   }
 
   try {
+    const catalog = await loadMediaLibraryCatalog();
+    const canonical = canonicalizeVideoEditSources({
+      project: mutation.project,
+      assets: catalog.assets,
+    });
     const project =
       mutation.action === 'approve'
-        ? approveVideoEditProject(mutation.project)
-        : prepareVideoEditDraft(mutation.project);
+        ? approveVideoEditProject(canonical)
+        : prepareVideoEditDraft(canonical);
     const record = await saveVideoEditProject({
       eventId: mutation.eventId,
       project,
