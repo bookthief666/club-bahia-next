@@ -23,9 +23,11 @@ describe('Growth OS workspace access boundary', () => {
     expect(isAdminWorkspaceKind('autopilot-credential')).toBe(true);
     expect(isAdminWorkspaceKind('autopilot-queue')).toBe(true);
     expect(isAdminWorkspaceKind('media-library')).toBe(true);
+    expect(isAdminWorkspaceKind('video-edit')).toBe(true);
     expect(isClientAdminWorkspaceKind('autopilot-publication')).toBe(false);
     expect(isClientAdminWorkspaceKind('autopilot-credential')).toBe(false);
     expect(isClientAdminWorkspaceKind('autopilot-queue')).toBe(false);
     expect(isClientAdminWorkspaceKind('media-library')).toBe(false);
+    expect(isClientAdminWorkspaceKind('video-edit')).toBe(false);
   });
 });
