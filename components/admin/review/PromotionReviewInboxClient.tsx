@@ -120,7 +120,7 @@ export function PromotionReviewInboxClient() {
     setPending('media');
     setMessage('');
     try {
-      await assignPromotionReviewMedia(candidates);
+      await assignPromotionReviewMedia({ items: candidates, records });
       await refresh(false);
       setMessage(
         `${candidates.length} post${candidates.length === 1 ? '' : 's'} received the strongest compatible approved media.`,
