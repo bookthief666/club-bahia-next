@@ -6,6 +6,20 @@ export const dynamic = 'force-dynamic';
 export default function AdminMediaLibraryPage() {
   return (
     <div className="space-y-5">
+      <section className="flex flex-wrap items-center justify-between gap-3 rounded-[1.2rem] border border-emerald-200/14 bg-emerald-200/[.045] px-4 py-3">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[.18em] text-emerald-100/65">
+            Direct staff access
+          </p>
+          <p className="mt-1 text-sm leading-6 text-white/55">
+            Media opens with the normal Growth OS staff session. There is no separate asset password or second unlock step.
+          </p>
+        </div>
+        <span className="rounded-full border border-emerald-200/18 bg-emerald-200/[.07] px-3 py-1 text-xs font-semibold text-emerald-100">
+          Ready to use
+        </span>
+      </section>
+
       <MediaLibraryClient />
 
       <details className="group rounded-[1.45rem] border border-white/9 bg-white/[.025] p-4 sm:p-5">

@@ -53,6 +53,8 @@ await expectStatus('/events', [200]);
 await expectStatus('/reservations', [200]);
 await expectLoginRedirect('/staff');
 await expectLoginRedirect('/admin');
+await expectLoginRedirect('/admin/overview');
+await expectLoginRedirect('/admin/media');
 await expectLoginRedirect('/admin/review');
 await expectLoginRedirect('/admin/reservations/follow-up');
 await expectStatus('/api/admin/activation/readiness', [401]);
