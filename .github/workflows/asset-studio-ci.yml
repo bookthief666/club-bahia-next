@@ -1,0 +1,72 @@
+name: Growth OS CI
+
+on:
+  push:
+    branches:
+      - main
+      - codex/milestone-6a-production-auth-foundation
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: growth-os-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --silent
+
+      - name: Run tests and capture output
+        shell: bash
+        run: |
+          set +e
+          npm test > test.log 2>&1
+          echo "$?" > test.exit
+          exit 0
+
+      - name: Run production build and capture output
+        shell: bash
+        run: |
+          set +e
+          npm run build > build.log 2>&1
+          echo "$?" > build.exit
+          exit 0
+
+      - name: Upload verification logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: growth-os-verification-logs
+          path: |
+            test.log
+            build.log
+            test.exit
+            build.exit
+          retention-days: 3
+
+      - name: Report verification result
+        shell: bash
+        run: |
+          echo "Test exit: $(cat test.exit)"
+          echo "Build exit: $(cat build.exit)"
+          if [ "$(cat test.exit)" != "0" ] || [ "$(cat build.exit)" != "0" ]; then
+            echo "Verification failed. Download the uploaded logs for details."
+            exit 1
+          fi

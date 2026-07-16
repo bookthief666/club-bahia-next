@@ -49,7 +49,12 @@ const scenes: CinematicScene[] = [
     alt: bahiaAssets.discoBallEmptyDanceFloor.alt,
     imageClassName: 'object-[50%_42%]',
     tone: 'from-[#050304]/28 via-[#230509]/14 to-black/14',
-    cta: { label: 'Start Reservation', href: '/reservations', heading: 'Reserve the Night', eyebrow: 'Your Friday or Saturday.' },
+    cta: {
+      label: 'Start Reservation',
+      href: '/reservations',
+      heading: 'Reserve the Night',
+      eyebrow: 'Your Friday or Saturday.',
+    },
   },
 ];
 

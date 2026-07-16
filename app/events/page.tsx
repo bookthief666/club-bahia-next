@@ -1,18 +1,40 @@
-import type { Metadata } from "next";
-import { EventsExperience } from "@/components/events/EventsExperience";
+import type { Metadata } from 'next';
+import { EventsExperience } from '@/components/events/EventsExperience';
+import { buildPublicProgramCatalog } from '@/lib/public-events/catalog';
+import { listPublicEventCards } from '@/lib/public-events/server';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: "Upcoming Events",
+  title: 'Live Music & Upcoming Events',
   description:
-    "Explore Club Bahia programming for live music, dance nights, private events, birthdays, and reservation inquiries.",
+    'See confirmed Club Bahia events, Azucar LA live Latin weekends, dancing, birthdays, private events, and online reservation requests.',
   openGraph: {
-    title: "Upcoming Events | Club Bahia",
+    title: 'Live Music & Upcoming Events | Club Bahia',
     description:
-      "Upcoming Club Bahia programming, private events, birthdays, and reservations on Sunset Boulevard.",
-    url: "/events",
+      'Confirmed special events and Azucar LA resident live weekends at Club Bahia on Sunset Boulevard in Los Angeles.',
+    url: '/events',
   },
 };
 
-export default function EventsPage() {
-  return <EventsExperience />;
+export default async function EventsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ empty?: string }>;
+}) {
+  const query = await searchParams;
+  const cards = await listPublicEventCards({
+    includePreview: process.env.VERCEL_ENV === 'preview',
+  });
+  const catalog = buildPublicProgramCatalog(cards);
+  const forceEmpty =
+    process.env.VERCEL_ENV === 'preview' && query.empty === '1';
+
+  return (
+    <EventsExperience
+      scheduledEvents={forceEmpty ? [] : catalog.scheduledEvents}
+      residentPrograms={catalog.residentPrograms}
+      evergreenPrograms={catalog.evergreenPrograms}
+    />
+  );
 }
