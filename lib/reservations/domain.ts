@@ -64,6 +64,7 @@ export const StoredReservationSchema = z.object({
   contactedAt: z.string().datetime().optional(),
   confirmedAt: z.string().datetime().optional(),
   cancelledAt: z.string().datetime().optional(),
+  followUpAt: z.string().datetime().optional(),
   staffNote: z.string().trim().max(1000).optional().default(''),
 });
 
@@ -73,6 +74,7 @@ export const ReservationStatusUpdateSchema = z.object({
   id: z.string().trim().min(1).max(120),
   status: ReservationStatusSchema,
   staffNote: z.string().trim().max(1000).optional(),
+  followUpAt: z.union([z.string().datetime(), z.null()]).optional(),
 });
 
 export interface ReservationReceipt {

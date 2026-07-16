@@ -30,6 +30,7 @@ export function reservationsToCsv(reservations: StoredReservation[]): string {
     'Referrer',
     'Landing Page',
     'Contacted At',
+    'Follow Up At',
     'Confirmed At',
     'Cancelled At',
   ];
@@ -56,6 +57,7 @@ export function reservationsToCsv(reservations: StoredReservation[]): string {
     reservation.attribution.referrer,
     reservation.attribution.landingPage,
     reservation.contactedAt,
+    reservation.followUpAt,
     reservation.confirmedAt,
     reservation.cancelledAt,
   ]);
