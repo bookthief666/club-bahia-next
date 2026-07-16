@@ -72,9 +72,43 @@ export function EventAssetStudioPageClient({ eventId }: { eventId: string }) {
           </Link>
         </div>
       </div>
+
+      <section className="mb-5 rounded-2xl border border-emerald-200/12 bg-emerald-200/[.045] p-4">
+        <p className="text-[10px] font-semibold uppercase tracking-[.2em] text-emerald-100/60">
+          Fast media path
+        </p>
+        <p className="mt-2 text-sm leading-6 text-white/52">
+          Use a recommended approved asset or upload one strong photo or finished vertical video. Custom crops, branded graphics, and multi-clip editing are optional production tools—not requirements for every event.
+        </p>
+      </section>
+
       <EventMediaRecommendationsClient event={event} />
-      <VerticalVideoStudioClient event={event} />
       <EventAssetStudioClient eventId={event.id} eventTitle={event.title} />
+
+      <details className="group mt-5 rounded-[1.45rem] border border-white/9 bg-white/[.025] p-4 sm:p-5">
+        <summary className="cursor-pointer list-none">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[.2em] text-white/38">
+                Advanced production tool
+              </p>
+              <h2 className="mt-1 font-serif text-2xl text-white/82">
+                Build a custom 15-second video sequence
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-white/45">
+                Use this only when no approved finished vertical video is available. It creates and approves an edit recipe; it does not render or publish an MP4.
+              </p>
+            </div>
+            <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs font-semibold text-white/48 group-open:text-amber-100">
+              <span className="group-open:hidden">Open editor</span>
+              <span className="hidden group-open:inline">Close editor</span>
+            </span>
+          </div>
+        </summary>
+        <div className="mt-5 border-t border-white/8 pt-5">
+          <VerticalVideoStudioClient event={event} />
+        </div>
+      </details>
     </>
   );
 }
