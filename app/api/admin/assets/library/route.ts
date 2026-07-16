@@ -6,6 +6,7 @@ import {
   approvedDerivativeForPlatform,
   getMediaDerivativePreset,
   MEDIA_DERIVATIVE_PRESET_LABELS,
+  mediaDerivativeVariantKey,
   type MediaDerivative,
 } from '@/lib/admin/assets/derivatives';
 import type { MediaLibraryAsset } from '@/lib/admin/assets/library-domain';
@@ -21,6 +22,7 @@ import {
   MediaLibraryAssetSchema,
   MediaLibraryMutationSchema,
 } from '@/lib/admin/assets/library-validation';
+import { mediaOverlayVariantKey } from '@/lib/admin/assets/overlays';
 import {
   eventAssetMetadataPath,
   setAssetSessionCookie,
@@ -165,6 +167,7 @@ function assignmentFromLibrary(input: {
     approvedDerivativeForPlatform({
       derivatives: input.asset.derivatives,
       platform: input.platform,
+      eventId: input.eventId,
     });
   return {
     id: assignmentId({
@@ -193,6 +196,9 @@ function assignmentFromLibrary(input: {
       `Reused from media library asset ${input.asset.id}.`,
       derivative
         ? `Prepared with ${MEDIA_DERIVATIVE_PRESET_LABELS[derivative.presetId]}.`
+        : '',
+      derivative?.overlay
+        ? `Branded for event ${derivative.overlay.eventId}.`
         : '',
     ]
       .filter(Boolean)
@@ -332,21 +338,40 @@ export async function POST(request: Request) {
           );
         }
         const preset = getMediaDerivativePreset(mutation.derivative.presetId);
+        const variantKey = mutation.derivative.variantKey || 'base';
+        const expectedVariantKey = mediaOverlayVariantKey(
+          mutation.derivative.overlay,
+        );
         if (
           mutation.derivative.sourceAssetId !== current.id ||
           mutation.derivative.width !== preset.width ||
-          mutation.derivative.height !== preset.height
+          mutation.derivative.height !== preset.height ||
+          variantKey !== expectedVariantKey
         ) {
           return NextResponse.json(
-            { error: 'Derivative dimensions or source do not match the selected preset.' },
+            { error: 'Derivative dimensions, source, or event variant do not match the selected preset.' },
             { status: 400, headers: NO_STORE_HEADERS },
           );
         }
+        if (mutation.derivative.overlay?.logoAssetId) {
+          const logo = catalog.assets.find(
+            (asset) => asset.id === mutation.derivative.overlay?.logoAssetId,
+          );
+          if (!logo || logo.status !== 'active' || logo.kind !== 'image') {
+            return NextResponse.json(
+              { error: 'The selected Club Bahia logo asset is not available.' },
+              { status: 400, headers: NO_STORE_HEADERS },
+            );
+          }
+        }
         const existing = (current.derivatives ?? []).find(
-          (item) => item.presetId === mutation.derivative.presetId,
+          (item) =>
+            item.presetId === mutation.derivative.presetId &&
+            mediaDerivativeVariantKey(item) === variantKey,
         );
         const derivative: MediaDerivative = {
           ...mutation.derivative,
+          variantKey,
           createdAt: existing?.createdAt ?? mutation.derivative.createdAt,
           updatedAt: new Date().toISOString(),
         };
@@ -354,7 +379,11 @@ export async function POST(request: Request) {
           ...current,
           derivatives: [
             ...(current.derivatives ?? []).filter(
-              (item) => item.presetId !== derivative.presetId,
+              (item) =>
+                !(
+                  item.presetId === derivative.presetId &&
+                  mediaDerivativeVariantKey(item) === variantKey
+                ),
             ),
             derivative,
           ],
@@ -416,6 +445,15 @@ export async function POST(request: Request) {
         if (mutation.derivativeId && !explicitDerivative) {
           return NextResponse.json(
             { error: 'The selected platform version is not approved or no longer exists.' },
+            { status: 400, headers: NO_STORE_HEADERS },
+          );
+        }
+        if (
+          explicitDerivative?.overlay &&
+          explicitDerivative.overlay.eventId !== mutation.eventId
+        ) {
+          return NextResponse.json(
+            { error: 'This branded graphic belongs to a different event.' },
             { status: 400, headers: NO_STORE_HEADERS },
           );
         }
