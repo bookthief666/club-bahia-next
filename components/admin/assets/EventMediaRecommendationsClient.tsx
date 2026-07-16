@@ -8,6 +8,7 @@ import type {
   EventAssetPlatform,
   EventAssetRole,
 } from '@/lib/admin/assets/domain';
+import { approvedDerivativeForPlatform } from '@/lib/admin/assets/derivatives';
 import type { MediaLibraryAsset } from '@/lib/admin/assets/library-domain';
 import {
   buildMediaRecommendationLanes,
@@ -55,7 +56,26 @@ const LANE_ASSIGNMENT: Record<
   },
 };
 
-function preview(asset: MediaLibraryAsset) {
+function preview(
+  asset: MediaLibraryAsset,
+  platform: EventAssetPlatform,
+  eventId: string,
+) {
+  const derivative = approvedDerivativeForPlatform({
+    derivatives: asset.derivatives,
+    platform,
+    eventId,
+  });
+  if (derivative && platform !== 'reel' && platform !== 'tiktok') {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={derivative.url}
+        alt={asset.altText || asset.name}
+        className="h-40 w-full rounded-xl bg-black/30 object-contain"
+      />
+    );
+  }
   if (asset.kind === 'image') {
     return (
       // eslint-disable-next-line @next/next/no-img-element
@@ -84,7 +104,7 @@ function preview(asset: MediaLibraryAsset) {
   );
 }
 
-function headers(accessCode: string): HeadersInit {
+function headers(accessCode: string): Record<string, string> {
   return accessCode ? { 'x-admin-asset-key': accessCode } : {};
 }
 
@@ -143,7 +163,6 @@ export function EventMediaRecommendationsClient({
     const saved = sessionStorage.getItem(ACCESS_SESSION_KEY) ?? '';
     setAccessCode(saved);
     void load(saved);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [event.id]);
 
   const librarySourceKeys = useMemo(
@@ -209,11 +228,22 @@ export function EventMediaRecommendationsClient({
     libraryAsset: MediaLibraryAsset,
   ) {
     const assignmentRule = LANE_ASSIGNMENT[lane.id];
+    const preferredDerivative =
+      assignmentRule.platform === 'reel' || assignmentRule.platform === 'tiktok'
+        ? undefined
+        : approvedDerivativeForPlatform({
+            derivatives: libraryAsset.derivatives,
+            platform: assignmentRule.platform,
+            eventId: event.id,
+          });
     setWorkingId(`${lane.id}:${libraryAsset.id}`);
     setMessage('');
     try {
       let eventAsset = eventAssets.find(
-        (asset) => asset.sourceLibraryAssetId === libraryAsset.id,
+        (asset) =>
+          asset.sourceLibraryAssetId === libraryAsset.id &&
+          asset.platforms.includes(assignmentRule.platform) &&
+          asset.sourceLibraryDerivativeId === preferredDerivative?.id,
       );
       if (!eventAsset) {
         const response = await fetch(LIBRARY_API, {
@@ -225,6 +255,7 @@ export function EventMediaRecommendationsClient({
           body: JSON.stringify({
             action: 'assign-to-event',
             libraryAssetId: libraryAsset.id,
+            derivativeId: preferredDerivative?.id,
             eventId: event.id,
             eventTitle: event.title,
             platform: assignmentRule.platform,
@@ -240,7 +271,16 @@ export function EventMediaRecommendationsClient({
           throw new Error(result.error || 'Could not reuse this media for the event.');
         }
         eventAsset = result.assignment;
-        setEventAssets((current) => [result.assignment as EventAsset, ...current]);
+        setEventAssets((current) => [
+          result.assignment as EventAsset,
+          ...current.filter(
+            (asset) =>
+              !(
+                asset.sourceLibraryAssetId === libraryAsset.id &&
+                asset.platforms.includes(assignmentRule.platform)
+              ),
+          ),
+        ]);
         if (result.usageWarning) setMessage(result.usageWarning);
       }
 
@@ -251,7 +291,7 @@ export function EventMediaRecommendationsClient({
         eventAsset.id,
       );
       setMessage(
-        `${libraryAsset.name} is now the primary ${lane.label.toLowerCase()} asset for ${event.title}.`,
+        `${libraryAsset.name} is now the primary ${lane.label.toLowerCase()} asset for ${event.title}${preferredDerivative?.overlay ? ' using the approved event-branded graphic' : ''}.`,
       );
       await load(accessCode);
     } catch (error) {
@@ -309,7 +349,7 @@ export function EventMediaRecommendationsClient({
           </p>
           <h2 className="mt-1 font-serif text-3xl text-white">Recommended media</h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-white/48">
-            Recommendations consider the recurring-night template, platform format, asset role, quality, tags, rights, and how recently the media was used.
+            Recommendations prioritize a graphic branded for this event, then approved clean crops, template fit, quality, rights, tags, and recent usage.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -366,7 +406,7 @@ export function EventMediaRecommendationsClient({
                             : 'border-white/8 bg-black/18'
                         }`}
                       >
-                        {preview(recommendation.asset)}
+                        {preview(recommendation.asset, lane.platform, event.id)}
                         <div className="mt-3 flex items-start justify-between gap-2">
                           <div className="min-w-0">
                             <p className="truncate text-sm font-semibold text-white">
