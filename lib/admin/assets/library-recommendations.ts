@@ -1,6 +1,9 @@
 import type { OperationsEvent } from '@/lib/admin/domain';
 import type { EventAssetPlatform, EventAssetRole } from './domain';
-import { approvedDerivativeForPlatform } from './derivatives';
+import {
+  approvedDerivativeForPlatform,
+  mediaDerivativeVariantKey,
+} from './derivatives';
 import type {
   MediaLibraryAsset,
   MediaLibraryCollectionId,
@@ -87,6 +90,10 @@ function daysSince(value: string | undefined, now: Date): number | undefined {
   return Math.max(0, (now.getTime() - time) / 86_400_000);
 }
 
+function eventVariantKey(eventId: string): string {
+  return `event-${eventId.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 100)}`;
+}
+
 function scoreAsset(input: {
   asset: MediaLibraryAsset;
   event: OperationsEvent;
@@ -115,10 +122,16 @@ function scoreAsset(input: {
   const approvedDerivative = approvedDerivativeForPlatform({
     derivatives: asset.derivatives,
     platform,
+    eventId: event.id,
   });
   if (approvedDerivative) {
-    score += 26;
-    reasons.unshift('Approved platform-ready crop is available');
+    const brandedForEvent = approvedDerivative.overlay?.eventId === event.id;
+    score += brandedForEvent ? 36 : 26;
+    reasons.unshift(
+      brandedForEvent
+        ? 'Approved graphic is branded for this event'
+        : 'Approved platform-ready crop is available',
+    );
   } else if (
     platform === 'instagram-feed' ||
     platform === 'instagram-story' ||
@@ -128,16 +141,26 @@ function scoreAsset(input: {
   }
 
   if (platform === 'reel') {
+    const allowedVariants = new Set([eventVariantKey(event.id), 'base']);
     const covers = (asset.derivatives ?? []).filter(
       (derivative) =>
         derivative.status === 'approved' &&
+        allowedVariants.has(mediaDerivativeVariantKey(derivative)) &&
         (derivative.presetId === 'instagram-reel-cover' ||
           derivative.presetId === 'tiktok-cover'),
     );
-    if (covers.length === 2) {
-      score += 10;
-      reasons.push('Instagram and TikTok covers are approved');
-    } else if (covers.length === 1) {
+    const coveredPresets = new Set(covers.map((derivative) => derivative.presetId));
+    const eventBranded = covers.some(
+      (derivative) => derivative.overlay?.eventId === event.id,
+    );
+    if (coveredPresets.size === 2) {
+      score += eventBranded ? 14 : 10;
+      reasons.push(
+        eventBranded
+          ? 'Event-branded Reel and TikTok covers are approved'
+          : 'Instagram and TikTok covers are approved',
+      );
+    } else if (coveredPresets.size === 1) {
       score += 5;
       reasons.push('One vertical-video cover is approved');
     } else {
