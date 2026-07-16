@@ -1,7 +1,7 @@
-import { PromotionReviewInboxClient } from '@/components/admin/review/PromotionReviewInboxClient';
+import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
 export default function PromotionReviewInboxPage() {
-  return <PromotionReviewInboxClient />;
+  redirect('/admin?view=review');
 }
