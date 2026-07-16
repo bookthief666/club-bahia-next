@@ -1,8 +1,6 @@
 import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
 import { NextResponse } from 'next/server';
-import {
-  mediaLibraryDerivativeFolder,
-} from '@/lib/admin/assets/server';
+import { mediaLibraryDerivativePath } from '@/lib/admin/assets/server';
 import { MediaDerivativeUploadPayloadSchema } from '@/lib/admin/assets/library-validation';
 import { requireAdminResourceAccess } from '@/lib/admin/auth/resource-access';
 
@@ -36,8 +34,12 @@ export async function POST(request: Request): Promise<NextResponse> {
         const parsed = MediaDerivativeUploadPayloadSchema.parse(
           JSON.parse(clientPayload ?? '{}'),
         );
-        const expectedFolder = `${mediaLibraryDerivativeFolder(parsed.libraryAssetId)}/`;
-        if (!pathname.startsWith(expectedFolder) || pathname.includes('..')) {
+        const expectedPath = mediaLibraryDerivativePath(
+          parsed.libraryAssetId,
+          parsed.presetId,
+          parsed.variantKey,
+        );
+        if (pathname !== expectedPath || pathname.includes('..')) {
           throw new Error('The derivative pathname is not authorized.');
         }
         return {
