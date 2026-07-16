@@ -9,9 +9,11 @@ const steps = [
   { id: 'media', label: 'Choose media', short: 'Media', suffix: '/assets' },
   { id: 'prepare', label: 'Review posts', short: 'Review', suffix: '/publishing' },
   { id: 'publish', label: 'Promote event', short: 'Publish', suffix: '/publishing/execute' },
+  { id: 'results', label: 'Review results', short: 'Results', suffix: '/results' },
 ] as const;
 
 function activeStep(pathname: string): string {
+  if (pathname.endsWith('/results')) return 'results';
   if (pathname.includes('/publishing/execute')) return 'publish';
   if (pathname.endsWith('/publishing')) return 'prepare';
   if (pathname.endsWith('/assets')) return 'media';
@@ -32,7 +34,7 @@ export function CampaignWorkflowNav({ eventId }: { eventId: string }) {
             Promotion steps
           </p>
           <p className="mt-1 text-sm text-white/65">
-            Move from confirmed event details to ready-to-publish promotion.
+            Move from confirmed event facts to measurable campaign outcomes.
           </p>
         </div>
         <span className="shrink-0 rounded-full border border-amber-200/20 bg-amber-200/10 px-3 py-1 text-[11px] font-semibold text-amber-100">
@@ -74,7 +76,11 @@ export function CampaignWorkflowNav({ eventId }: { eventId: string }) {
                 {index + 1}
               </span>
               <span className="min-w-0">
-                <span className={`block truncate text-[10px] uppercase tracking-[.15em] ${isActive ? 'text-white/58' : 'text-white/38'}`}>
+                <span
+                  className={`block truncate text-[10px] uppercase tracking-[.15em] ${
+                    isActive ? 'text-white/58' : 'text-white/38'
+                  }`}
+                >
                   {step.short}
                 </span>
                 <span className="mt-0.5 block truncate text-sm font-semibold">
