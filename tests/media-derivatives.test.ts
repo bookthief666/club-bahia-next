@@ -3,12 +3,21 @@ import type { OperationsEvent } from '../lib/admin/domain';
 import {
   approvedDerivativeForPlatform,
   calculateMediaCoverCrop,
+  derivativeReadinessCount,
+  findMediaDerivative,
   MEDIA_DERIVATIVE_PRESETS,
   type MediaDerivative,
 } from '../lib/admin/assets/derivatives';
 import type { MediaLibraryAsset } from '../lib/admin/assets/library-domain';
 import { buildMediaRecommendationLanes } from '../lib/admin/assets/library-recommendations';
 import { MediaLibraryAssetSchema } from '../lib/admin/assets/library-validation';
+import {
+  buildDefaultMediaOverlay,
+  mediaDerivativeRecordId,
+  mediaOverlayIsComplete,
+  mediaOverlayVariantKey,
+  type MediaOverlayRecipe,
+} from '../lib/admin/assets/overlays';
 import { EventAssetSchema } from '../lib/admin/assets/validation';
 
 const NOW = '2026-07-16T00:00:00.000Z';
@@ -16,15 +25,19 @@ const NOW = '2026-07-16T00:00:00.000Z';
 function derivative(
   presetId: MediaDerivative['presetId'],
   status: MediaDerivative['status'] = 'approved',
+  overlay?: MediaOverlayRecipe,
 ): MediaDerivative {
   const preset = MEDIA_DERIVATIVE_PRESETS.find((item) => item.id === presetId)!;
+  const variantKey = mediaOverlayVariantKey(overlay);
   return {
-    id: `media-one-${presetId}`,
+    id: mediaDerivativeRecordId({ assetId: 'media-one', presetId, overlay }),
     presetId,
     sourceAssetId: 'media-one',
-    pathname: `club-bahia/media/${presetId}.jpg`,
-    url: `https://assets.example.com/${presetId}.jpg`,
-    downloadUrl: `https://assets.example.com/${presetId}.jpg?download=1`,
+    variantKey,
+    overlay,
+    pathname: `club-bahia/media/${presetId}/${variantKey}.jpg`,
+    url: `https://assets.example.com/${presetId}/${variantKey}.jpg`,
+    downloadUrl: `https://assets.example.com/${presetId}/${variantKey}.jpg?download=1`,
     contentType: 'image/jpeg',
     size: 120000,
     width: preset.width,
@@ -77,7 +90,7 @@ function libraryAsset(overrides: Partial<MediaLibraryAsset> = {}): MediaLibraryA
   };
 }
 
-function event(): OperationsEvent {
+function event(overrides: Partial<OperationsEvent> = {}): OperationsEvent {
   return {
     id: 'event-friday',
     title: 'Azucar LA — Friday, July 17',
@@ -96,15 +109,15 @@ function event(): OperationsEvent {
     performers: 'Azucar LA',
     genres: 'cumbia, salsa, bachata',
     promotionTemplate: {
+      schemaVersion: 1,
       id: 'azucar-friday',
-      version: 1,
       name: 'Azucar LA — Friday',
       summary: 'Recurring resident night',
       eventTitleBase: 'Azucar LA',
-      weekday: 5,
+      concept: 'Live Latin dance music.',
+      preferredWeekday: 5,
       startTime: '21:00',
       room: 'Main room',
-      concept: 'Live Latin dance music.',
       performers: 'Azucar LA',
       genres: 'cumbia, salsa, bachata',
       admission: '',
@@ -116,9 +129,9 @@ function event(): OperationsEvent {
       cadence: 'resident-weekend',
       hashtags: { branded: [], localDiscovery: [], musicCommunity: [] },
       visualDirection: 'Warm live-band energy.',
-      mediaPreferences: [],
-      capturedAt: NOW,
+      preferredMediaRoles: [],
     },
+    ...overrides,
   };
 }
 
@@ -189,12 +202,87 @@ describe('platform media derivatives', () => {
     ).toBeUndefined();
   });
 
-  it('boosts an approved platform-ready crop above an otherwise equal original', () => {
+  it('builds complete Azucar overlay defaults from event facts', () => {
+    const overlay = buildDefaultMediaOverlay(
+      event(),
+      'instagram-feed-portrait',
+    );
+    expect(overlay.styleId).toBe('azucar-warm');
+    expect(overlay.title).toContain('Azucar LA');
+    expect(overlay.dateLabel).toBe('Friday, July 17');
+    expect(overlay.timeLabel).toBe('9:00 PM');
+    expect(overlay.cta).toBe('Reserve your Friday night');
+    expect(mediaOverlayIsComplete(overlay)).toBe(true);
+  });
+
+  it('keeps clean and event-branded variants separate for the same preset', () => {
+    const overlay = buildDefaultMediaOverlay(
+      event(),
+      'instagram-feed-portrait',
+    );
+    const derivatives = [
+      derivative('instagram-feed-portrait'),
+      derivative('instagram-feed-portrait', 'approved', overlay),
+    ];
+    expect(
+      findMediaDerivative({
+        derivatives,
+        presetId: 'instagram-feed-portrait',
+        variantKey: 'base',
+      })?.overlay,
+    ).toBeUndefined();
+    expect(
+      findMediaDerivative({
+        derivatives,
+        presetId: 'instagram-feed-portrait',
+        variantKey: 'event-event-friday',
+      })?.overlay?.eventId,
+    ).toBe('event-friday');
+    expect(derivativeReadinessCount(derivatives, 'base')).toBe(1);
+    expect(derivativeReadinessCount(derivatives, 'event-event-friday')).toBe(1);
+  });
+
+  it('prefers a branded derivative for the current event and ignores another event', () => {
+    const currentOverlay = buildDefaultMediaOverlay(
+      event(),
+      'instagram-feed-portrait',
+    );
+    const otherOverlay = {
+      ...currentOverlay,
+      eventId: 'event-saturday',
+      title: 'Azucar LA — Saturday',
+    };
+    const derivatives = [
+      derivative('instagram-feed-portrait'),
+      derivative('instagram-feed-portrait', 'approved', otherOverlay),
+      derivative('instagram-feed-portrait', 'approved', currentOverlay),
+    ];
+    expect(
+      approvedDerivativeForPlatform({
+        derivatives,
+        platform: 'instagram-feed',
+        eventId: 'event-friday',
+      })?.overlay?.eventId,
+    ).toBe('event-friday');
+    expect(
+      approvedDerivativeForPlatform({
+        derivatives,
+        platform: 'instagram-feed',
+        eventId: 'event-unknown',
+      })?.variantKey,
+    ).toBe('base');
+  });
+
+  it('boosts an approved event-branded graphic above an otherwise equal original', () => {
     const originalOnly = libraryAsset({ id: 'original-only', name: 'Original only' });
+    const brandedOverlay = buildDefaultMediaOverlay(
+      event(),
+      'instagram-feed-portrait',
+    );
     const prepared = libraryAsset({
       id: 'prepared',
       name: 'Prepared',
-      derivatives: [derivative('instagram-feed-portrait')],
+      derivatives: [derivative('instagram-feed-portrait', 'approved', brandedOverlay)],
     });
     const feed = buildMediaRecommendationLanes({
       event: event(),
@@ -203,11 +291,22 @@ describe('platform media derivatives', () => {
     }).find((lane) => lane.id === 'instagram-feed');
     expect(feed?.recommendations[0].asset.id).toBe('prepared');
     expect(feed?.recommendations[0].reasons).toContain(
-      'Approved platform-ready crop is available',
+      'Approved graphic is branded for this event',
     );
   });
 
-  it('validates event assignments that preserve the canonical derivative reference', () => {
+  it('validates overlay recipes and event assignments that preserve derivative references', () => {
+    const overlay = buildDefaultMediaOverlay(
+      event(),
+      'instagram-feed-portrait',
+    );
+    const parsedLibrary = MediaLibraryAssetSchema.parse(
+      libraryAsset({
+        derivatives: [derivative('instagram-feed-portrait', 'approved', overlay)],
+      }),
+    );
+    expect(parsedLibrary.derivatives[0].overlay?.eventId).toBe('event-friday');
+
     const parsed = EventAssetSchema.parse({
       id: 'reuse-one',
       eventId: 'event-one',
@@ -229,8 +328,8 @@ describe('platform media derivatives', () => {
       width: 1080,
       height: 1350,
       sourceLibraryAssetId: 'media-one',
-      sourceLibraryDerivativeId: 'media-one-instagram-feed-portrait',
+      sourceLibraryDerivativeId: 'media-one-instagram-feed-portrait-event-event-friday',
     });
-    expect(parsed.sourceLibraryDerivativeId).toContain('instagram-feed-portrait');
+    expect(parsed.sourceLibraryDerivativeId).toContain('event-event-friday');
   });
 });
