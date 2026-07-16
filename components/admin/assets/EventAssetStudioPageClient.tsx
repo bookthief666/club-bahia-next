@@ -7,6 +7,7 @@ import { eventRepository } from '@/lib/admin/event-repository';
 import { EventAssetStudioClient } from './EventAssetStudioClient';
 import { EventMediaRecommendationsClient } from './EventMediaRecommendationsClient';
 import { MediaSessionLockBridge } from './MediaSessionLockBridge';
+import { VerticalVideoStudioClient } from './VerticalVideoStudioClient';
 
 export function EventAssetStudioPageClient({ eventId }: { eventId: string }) {
   const [event, setEvent] = useState<OperationsEvent | null | undefined>(undefined);
@@ -72,6 +73,7 @@ export function EventAssetStudioPageClient({ eventId }: { eventId: string }) {
         </div>
       </div>
       <EventMediaRecommendationsClient event={event} />
+      <VerticalVideoStudioClient event={event} />
       <EventAssetStudioClient eventId={event.id} eventTitle={event.title} />
     </>
   );
