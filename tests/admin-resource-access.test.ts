@@ -43,7 +43,7 @@ describe('private admin resource access', () => {
       role: 'owner' as const,
       avatarInitials: 'CB',
     };
-    const token = createAdminSessionToken(user, new Date('2026-07-16T12:00:00.000Z'));
+    const token = createAdminSessionToken(user, new Date());
     const request = new Request('https://club-bahia.example/api/admin/assets/library', {
       headers: {
         cookie: `${ADMIN_SESSION_COOKIE}=${encodeURIComponent(token)}`,
