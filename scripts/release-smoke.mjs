@@ -53,6 +53,7 @@ await expectStatus('/events', [200]);
 await expectStatus('/reservations', [200]);
 await expectLoginRedirect('/staff');
 await expectLoginRedirect('/admin');
+await expectLoginRedirect('/admin/review');
 await expectStatus('/api/admin/activation/readiness', [401]);
 
 console.log('Club Bahia release smoke checks passed.');
