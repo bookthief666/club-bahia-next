@@ -58,7 +58,14 @@ function pageIdentity(pathname: string): {
     return {
       eyebrow: 'Promotion assets',
       title: 'Media library',
-      subtitle: 'Reuse approved Club Bahia media without uploading it again.',
+      subtitle: 'Reuse approved media first; open production tools only when needed.',
+    };
+  }
+  if (pathname.endsWith('/results')) {
+    return {
+      eyebrow: 'Promotion steps · Step 6',
+      title: 'Review results',
+      subtitle: 'Connect publishing activity to tracked reservations and confirmed guests.',
     };
   }
   if (pathname.includes('/publishing/execute')) {
@@ -79,7 +86,7 @@ function pageIdentity(pathname: string): {
     return {
       eyebrow: 'Promotion steps · Step 3',
       title: 'Choose media',
-      subtitle: 'Use recommended library media or upload something new.',
+      subtitle: 'Use recommended library media or upload one strong asset.',
     };
   }
   if (pathname.endsWith('/growth')) {
@@ -128,7 +135,7 @@ function pageIdentity(pathname: string): {
     return {
       eyebrow: 'Club Bahia Promotion Autopilot',
       title: 'Events',
-      subtitle: 'Choose an event, then prepare and publish its promotion.',
+      subtitle: 'Choose an event, then prepare, publish, and measure its promotion.',
     };
   }
   return {
