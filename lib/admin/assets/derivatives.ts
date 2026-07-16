@@ -2,6 +2,8 @@ import type {
   EventAssetKind,
   EventAssetPlatform,
 } from './domain';
+import type { MediaOverlayRecipe } from './overlays';
+import { mediaOverlayVariantKey } from './overlays';
 
 export type MediaDerivativePresetId =
   | 'instagram-feed-portrait'
@@ -44,6 +46,8 @@ export interface MediaDerivative {
   id: string;
   presetId: MediaDerivativePresetId;
   sourceAssetId: string;
+  variantKey?: string;
+  overlay?: MediaOverlayRecipe;
   pathname: string;
   url: string;
   downloadUrl: string;
@@ -254,9 +258,29 @@ export function calculateMediaCoverCrop(input: {
   };
 }
 
+export function mediaDerivativeVariantKey(
+  derivative: Pick<MediaDerivative, 'variantKey' | 'overlay'>,
+): string {
+  return derivative.variantKey || mediaOverlayVariantKey(derivative.overlay);
+}
+
+export function findMediaDerivative(input: {
+  derivatives?: MediaDerivative[];
+  presetId: MediaDerivativePresetId;
+  variantKey?: string;
+}): MediaDerivative | undefined {
+  const variantKey = input.variantKey ?? 'base';
+  return (input.derivatives ?? []).find(
+    (derivative) =>
+      derivative.presetId === input.presetId &&
+      mediaDerivativeVariantKey(derivative) === variantKey,
+  );
+}
+
 export function approvedDerivativeForPlatform(input: {
   derivatives?: MediaDerivative[];
   platform?: EventAssetPlatform;
+  eventId?: string;
 }): MediaDerivative | undefined {
   const approved = (input.derivatives ?? []).filter(
     (derivative) => derivative.status === 'approved',
@@ -269,18 +293,34 @@ export function approvedDerivativeForPlatform(input: {
         : input.platform === 'website'
           ? ['website-hero']
           : [];
+  const preferredVariants = input.eventId
+    ? [`event-${input.eventId.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 100)}`, 'base']
+    : ['base'];
 
-  for (const id of preferredIds) {
-    const derivative = approved.find((item) => item.presetId === id);
-    if (derivative) return derivative;
+  for (const variantKey of preferredVariants) {
+    for (const id of preferredIds) {
+      const derivative = approved.find(
+        (item) =>
+          item.presetId === id &&
+          mediaDerivativeVariantKey(item) === variantKey,
+      );
+      if (derivative) return derivative;
+    }
   }
   return undefined;
 }
 
-export function derivativeReadinessCount(derivatives?: MediaDerivative[]): number {
+export function derivativeReadinessCount(
+  derivatives?: MediaDerivative[],
+  variantKey = 'base',
+): number {
   return new Set(
     (derivatives ?? [])
-      .filter((derivative) => derivative.status === 'approved')
+      .filter(
+        (derivative) =>
+          derivative.status === 'approved' &&
+          mediaDerivativeVariantKey(derivative) === variantKey,
+      )
       .map((derivative) => derivative.presetId),
   ).size;
 }
