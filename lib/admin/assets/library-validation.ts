@@ -13,6 +13,11 @@ const SafeLibraryIdSchema = z
   .regex(/^[a-zA-Z0-9_-]+$/)
   .max(160);
 
+const HexColorSchema = z
+  .string()
+  .trim()
+  .regex(/^#[0-9a-fA-F]{6}$/);
+
 const MediaLibraryCollectionSchema = z.enum([
   'club-bahia-evergreen',
   'venue-exterior',
@@ -49,10 +54,35 @@ export const MediaDerivativePresetSchema = z.enum(
   ],
 );
 
+export const MediaOverlayRecipeSchema = z.object({
+  schemaVersion: z.literal(1),
+  eventId: SafeLibraryIdSchema,
+  styleId: z.enum([
+    'club-bahia-classic',
+    'azucar-warm',
+    'bahia-nocturna',
+    'minimal-light',
+  ]),
+  wordmark: z.string().trim().min(1).max(80),
+  title: z.string().trim().min(1).max(180),
+  dateLabel: z.string().trim().min(1).max(100),
+  timeLabel: z.string().trim().min(1).max(80),
+  cta: z.string().trim().min(1).max(100),
+  placement: z.enum(['top-left', 'bottom-left', 'center']),
+  alignment: z.enum(['left', 'center']),
+  textScale: z.number().min(0.7).max(1.3),
+  shadeOpacity: z.number().min(0).max(0.85),
+  accentColor: HexColorSchema,
+  textColor: HexColorSchema,
+  logoAssetId: SafeLibraryIdSchema.optional(),
+});
+
 export const MediaDerivativeSchema = z.object({
   id: SafeLibraryIdSchema,
   presetId: MediaDerivativePresetSchema,
   sourceAssetId: SafeLibraryIdSchema,
+  variantKey: SafeLibraryIdSchema.optional().default('base'),
+  overlay: MediaOverlayRecipeSchema.optional(),
   pathname: z.string().trim().min(1).max(1200),
   url: z.string().url().max(2000),
   downloadUrl: z.string().url().max(2000),
@@ -113,7 +143,7 @@ export const MediaLibraryAssetSchema = z.object({
   credit: z.string().trim().max(300),
   rightsConfirmedAt: z.string().datetime(),
   capturedAt: z.string().datetime().optional(),
-  derivatives: z.array(MediaDerivativeSchema).max(20).default([]),
+  derivatives: z.array(MediaDerivativeSchema).max(80).default([]),
   usageHistory: z.array(MediaLibraryUsageSchema).max(200),
   usageCount: z.number().int().min(0).max(100000),
   lastUsedAt: z.string().datetime().optional(),
@@ -164,6 +194,7 @@ export const MediaLibraryMutationSchema = z.discriminatedUnion('action', [
 export const MediaDerivativeUploadPayloadSchema = z.object({
   libraryAssetId: SafeLibraryIdSchema,
   presetId: MediaDerivativePresetSchema,
+  variantKey: SafeLibraryIdSchema.optional().default('base'),
 });
 
 export type MediaLibraryMutation = z.infer<typeof MediaLibraryMutationSchema>;
