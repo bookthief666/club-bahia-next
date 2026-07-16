@@ -26,12 +26,17 @@ export interface LoadedEventReviewData {
 export interface LoadedPromotionReviewInbox {
   records: LoadedEventReviewData[];
   items: PromotionReviewItem[];
-  queueWarning: string;
+  warnings: string[];
 }
 
 interface QueueResponse {
   jobs?: PublishingQueueJob[];
   error?: string;
+}
+
+interface EventLoadResult {
+  record: LoadedEventReviewData | null;
+  warning?: string;
 }
 
 async function mapWithConcurrency<T, R>(
@@ -57,39 +62,94 @@ async function mapWithConcurrency<T, R>(
 
 async function loadQueue(): Promise<{
   jobs: PublishingQueueJob[];
-  warning: string;
+  warning?: string;
 }> {
-  const response = await fetch('/api/admin/autopilot/queue', {
-    cache: 'no-store',
-  });
-  const payload = (await response.json().catch(() => ({}))) as QueueResponse;
-  if (!response.ok) {
+  try {
+    const response = await fetch('/api/admin/autopilot/queue', {
+      cache: 'no-store',
+    });
+    const payload = (await response.json().catch(() => ({}))) as QueueResponse;
+    if (!response.ok) {
+      return {
+        jobs: [],
+        warning:
+          payload.error ||
+          'Publishing queue status is unavailable. Copy and media review still work.',
+      };
+    }
+    return { jobs: payload.jobs ?? [] };
+  } catch {
     return {
       jobs: [],
       warning:
-        payload.error ||
-        'Publishing queue status is unavailable. Copy and media review still work.',
+        'The publishing queue could not be reached. Copy and media review still work; refresh before relying on provider-job status.',
     };
   }
-  return { jobs: payload.jobs ?? [], warning: '' };
 }
 
 async function loadAssets(eventId: string): Promise<{
   assets: EventAsset[];
   mediaAccess: PromotionMediaAccess;
 }> {
-  const response = await fetch(
-    `/api/admin/assets?eventId=${encodeURIComponent(eventId)}`,
-    { cache: 'no-store' },
-  );
-  if (response.ok) {
-    const payload = (await response.json()) as { assets?: EventAsset[] };
-    return { assets: payload.assets ?? [], mediaAccess: 'available' };
+  try {
+    const response = await fetch(
+      `/api/admin/assets?eventId=${encodeURIComponent(eventId)}`,
+      { cache: 'no-store' },
+    );
+    if (response.ok) {
+      const payload = (await response.json()) as { assets?: EventAsset[] };
+      return { assets: payload.assets ?? [], mediaAccess: 'available' };
+    }
+    return {
+      assets: [],
+      mediaAccess: response.status === 401 ? 'locked' : 'unavailable',
+    };
+  } catch {
+    return { assets: [], mediaAccess: 'unavailable' };
   }
-  return {
-    assets: [],
-    mediaAccess: response.status === 401 ? 'locked' : 'unavailable',
-  };
+}
+
+async function loadEventReviewData(
+  event: OperationsEvent,
+): Promise<EventLoadResult> {
+  try {
+    const workspace = await growthWorkspaceRepository.getWorkspace(event);
+    if (!workspace.content.length) return { record: null };
+
+    const [assemblyResult, media] = await Promise.all([
+      postAssemblyRepository
+        .get(event.id)
+        .then((assembly) => ({ assembly }))
+        .catch(() => ({ assembly: null })),
+      loadAssets(event.id),
+    ]);
+
+    if (!assemblyResult.assembly) {
+      return {
+        record: null,
+        warning: `${event.title}: post assignments could not be loaded. Open the event’s Review Posts step and refresh the inbox.`,
+      };
+    }
+
+    return {
+      record: {
+        event,
+        workspace,
+        assembly: assemblyResult.assembly,
+        assets: media.assets,
+        mediaAccess: media.mediaAccess,
+      },
+      warning:
+        media.mediaAccess === 'unavailable'
+          ? `${event.title}: event media could not be reached, so visual posts remain blocked from bulk approval.`
+          : undefined,
+    };
+  } catch {
+    return {
+      record: null,
+      warning: `${event.title}: campaign data could not be loaded. Open the event once, resolve any workspace conflict, and refresh the inbox.`,
+    };
+  }
 }
 
 export async function loadPromotionReviewInbox(): Promise<LoadedPromotionReviewInbox> {
@@ -98,24 +158,14 @@ export async function loadPromotionReviewInbox(): Promise<LoadedPromotionReviewI
     loadQueue(),
   ]);
   const activeEvents = allEvents.filter(isActiveEvent).slice(0, 40);
-  const loaded = await mapWithConcurrency(activeEvents, 4, async (event) => {
-    const workspace = await growthWorkspaceRepository.getWorkspace(event);
-    if (!workspace.content.length) return null;
-    const [assembly, media] = await Promise.all([
-      postAssemblyRepository.get(event.id),
-      loadAssets(event.id),
-    ]);
-    return {
-      event,
-      workspace,
-      assembly,
-      assets: media.assets,
-      mediaAccess: media.mediaAccess,
-    };
-  });
-  const records = loaded.filter(
-    (record): record is LoadedEventReviewData => record !== null,
+  const loaded = await mapWithConcurrency(
+    activeEvents,
+    4,
+    loadEventReviewData,
   );
+  const records = loaded
+    .map((result) => result.record)
+    .filter((record): record is LoadedEventReviewData => record !== null);
   const sources: PromotionReviewSource[] = records.map((record) => ({
     ...record,
     queueJobs: queue.jobs.filter((job) => job.eventId === record.event.id),
@@ -123,7 +173,12 @@ export async function loadPromotionReviewInbox(): Promise<LoadedPromotionReviewI
   return {
     records,
     items: buildPromotionReviewItems(sources),
-    queueWarning: queue.warning,
+    warnings: [
+      ...(queue.warning ? [queue.warning] : []),
+      ...loaded
+        .map((result) => result.warning)
+        .filter((warning): warning is string => Boolean(warning)),
+    ],
   };
 }
 
