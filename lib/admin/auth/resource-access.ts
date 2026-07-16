@@ -1,21 +1,13 @@
 import 'server-only';
 
-import { requireAssetAccess } from '@/lib/admin/assets/server';
 import type { AdminUser } from '@/lib/admin/domain';
-import {
-  isProductionAdminAuthConfigured,
-  requireAdminRequest,
-} from '@/lib/admin/auth/session';
+import { requireAdminRequest } from '@/lib/admin/auth/session';
 
 /**
- * Production uses the signed Growth OS session. Preview environments without
- * production credentials retain the temporary media access code so existing
- * review deployments continue to work during migration.
+ * Private Growth OS resources use the same signed staff session as the rest of
+ * the admin application. Media, reservation, and publishing APIs must never
+ * require a second browser password after staff sign-in.
  */
 export function requireAdminResourceAccess(request: Request): AdminUser {
-  const user = requireAdminRequest(request);
-  if (!isProductionAdminAuthConfigured()) {
-    requireAssetAccess(request);
-  }
-  return user;
+  return requireAdminRequest(request);
 }
