@@ -4,7 +4,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "smoke:release": "node scripts/release-smoke.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "latest",
