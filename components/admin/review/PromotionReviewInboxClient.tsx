@@ -27,7 +27,7 @@ export function PromotionReviewInboxClient() {
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState('');
   const [message, setMessage] = useState('');
-  const [queueWarning, setQueueWarning] = useState('');
+  const [warnings, setWarnings] = useState<string[]>([]);
 
   const refresh = useCallback(async (clearMessage = true) => {
     setLoading(true);
@@ -36,7 +36,7 @@ export function PromotionReviewInboxClient() {
       const loaded = await loadPromotionReviewInbox();
       setRecords(loaded.records);
       setItems(loaded.items);
-      setQueueWarning(loaded.queueWarning);
+      setWarnings(loaded.warnings);
       setSelected(new Set());
     } catch (error) {
       setMessage(
@@ -203,10 +203,17 @@ export function PromotionReviewInboxClient() {
           Some event media could not be verified in this session. Open that event’s Choose Media step once to restore protected media access; the inbox will not bulk-approve those visual posts while verification is unavailable.
         </section>
       ) : null}
-      {queueWarning ? (
-        <section className="rounded-xl border border-white/10 bg-white/[.035] p-4 text-sm leading-6 text-white/48">
-          {queueWarning}
-        </section>
+      {warnings.length ? (
+        <details className="group rounded-xl border border-white/10 bg-white/[.035] p-4 text-sm text-white/48">
+          <summary className="cursor-pointer list-none font-semibold text-white/62">
+            Partial data warnings · {warnings.length}
+          </summary>
+          <ul className="mt-3 space-y-2 border-t border-white/8 pt-3 text-xs leading-5 text-white/46">
+            {warnings.map((warning) => (
+              <li key={warning}>• {warning}</li>
+            ))}
+          </ul>
+        </details>
       ) : null}
 
       <PromotionReviewToolbar
