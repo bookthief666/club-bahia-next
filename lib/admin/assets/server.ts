@@ -160,8 +160,9 @@ export function mediaLibraryDerivativeFolder(assetId: string): string {
 export function mediaLibraryDerivativePath(
   assetId: string,
   presetId: MediaDerivativePresetId,
+  variantKey = 'base',
 ): string {
-  return `${mediaLibraryDerivativeFolder(assetId)}/${cleanAssetSegment(presetId)}.jpg`;
+  return `${mediaLibraryDerivativeFolder(assetId)}/${cleanAssetSegment(presetId)}/${cleanAssetSegment(variantKey)}.jpg`;
 }
 
 export function isEventAsset(value: unknown): value is EventAsset {
