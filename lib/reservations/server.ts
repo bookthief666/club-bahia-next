@@ -8,6 +8,7 @@ import {
   type ReservationSubmission,
   type StoredReservation,
 } from '@/lib/reservations/domain';
+import { resolveReservationFollowUpAt } from '@/lib/reservations/follow-up';
 
 const RESERVATION_PREFIX = 'club-bahia/private-reservations/';
 
@@ -204,6 +205,7 @@ export async function updateStoredReservation(input: {
   id: string;
   status: ReservationStatus;
   staffNote?: string;
+  followUpAt?: string | null;
 }): Promise<StoredReservation> {
   if (!isReservationStorageConfigured()) {
     throw new Error('Online reservation intake is not configured.');
@@ -219,10 +221,16 @@ export async function updateStoredReservation(input: {
   if (!current) throw new Error('Reservation request could not be decrypted.');
 
   const now = new Date().toISOString();
+  const followUpAt = resolveReservationFollowUpAt({
+    current: current.followUpAt,
+    requested: input.followUpAt,
+    status: input.status,
+  });
   const next: StoredReservation = StoredReservationSchema.parse({
     ...current,
     status: input.status,
     staffNote: input.staffNote ?? current.staffNote,
+    followUpAt,
     updatedAt: now,
     contactedAt:
       input.status === 'contacted' ? current.contactedAt ?? now : current.contactedAt,
