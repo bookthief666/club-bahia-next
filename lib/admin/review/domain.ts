@@ -185,6 +185,12 @@ export function buildPromotionReviewItems(
       );
       const mediaVerificationBlocked =
         CHANNEL_ASSET_REQUIRED[item.channel] && source.mediaAccess !== 'available';
+      const matchingQueue = source.queueJobs
+        .filter((job) => job.contentItemId === item.id)
+        .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+      const hasQueueProblem = matchingQueue.some((job) =>
+        PROBLEM_QUEUE_STATUSES.has(job.status),
+      );
       const incompleteChecks = readiness.checks.filter(
         (check) => !check.complete && check.id !== 'copy',
       );
@@ -193,6 +199,9 @@ export function buildPromotionReviewItems(
         ...incompleteChecks.map((check) => check.detail),
         ...(mediaVerificationBlocked
           ? ['Unlock event media so the assigned asset and usage approval can be verified.']
+          : []),
+        ...(hasQueueProblem
+          ? ['Resolve the failed, paused, or media-blocked publishing job before using a bulk approval action.']
           : []),
       ]);
       const assetCheck = readiness.checks.find((check) => check.id === 'asset');
@@ -204,6 +213,7 @@ export function buildPromotionReviewItems(
         item.status === 'draft' &&
         qualityBlockers.length === 0 &&
         !mediaVerificationBlocked &&
+        !hasQueueProblem &&
         readiness.ready;
       const selected = selectedAssetsForItem(source, item);
       const compatibleSelected = selected.some((asset) =>
@@ -217,17 +227,12 @@ export function buildPromotionReviewItems(
         !compatibleSelected
           ? bestAsset?.id
           : undefined;
-      const matchingQueue = source.queueJobs
-        .filter((job) => job.contentItemId === item.id)
-        .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
-      const hasQueueProblem = matchingQueue.some((job) =>
-        PROBLEM_QUEUE_STATUSES.has(job.status),
-      );
       const primaryAsset = primaryAssetForItem(source, item);
       const readyForScheduling =
         item.status !== 'draft' &&
         qualityBlockers.length === 0 &&
         !mediaVerificationBlocked &&
+        !hasQueueProblem &&
         readiness.ready;
 
       return {
