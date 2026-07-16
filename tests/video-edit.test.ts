@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { OperationsEvent } from '../lib/admin/domain';
-import type { CampaignContentItem } from '../lib/admin/growth/domain';
+import type { MediaLibraryAsset } from '../lib/admin/assets/library-domain';
 import {
   approveVideoEditProject,
   createVideoEditProject,
@@ -10,7 +9,10 @@ import {
   videoEditTotalDuration,
   type VideoEditClip,
 } from '../lib/admin/assets/video-edit';
+import { canonicalizeVideoEditSources } from '../lib/admin/assets/video-edit-sources';
 import { VideoEditProjectSchema } from '../lib/admin/assets/video-edit-validation';
+import type { OperationsEvent } from '../lib/admin/domain';
+import type { CampaignContentItem } from '../lib/admin/growth/domain';
 
 const NOW = new Date('2026-07-16T00:00:00.000Z');
 
@@ -84,6 +86,46 @@ function clip(
     trimStartSeconds: start,
     trimEndSeconds: end,
     muted: true,
+  };
+}
+
+function libraryVideo(id: string, overrides: Partial<MediaLibraryAsset> = {}): MediaLibraryAsset {
+  return {
+    schemaVersion: 1,
+    id: `media-${id}`,
+    sourceEventId: 'source-event',
+    sourceAssetId: `source-${id}`,
+    name: `Canonical ${id}.mp4`,
+    pathname: `club-bahia/media/${id}.mp4`,
+    url: `https://canonical.example.com/${id}.mp4`,
+    downloadUrl: `https://canonical.example.com/${id}.mp4?download=1`,
+    contentType: 'video/mp4',
+    size: 2_000_000,
+    kind: 'video',
+    role: 'raw-video',
+    platforms: ['reel', 'tiktok'],
+    status: 'active',
+    altText: `Club Bahia ${id} footage.`,
+    notes: '',
+    collections: ['crowd-energy'],
+    tags: ['crowd'],
+    performers: [],
+    genres: [],
+    orientation: 'vertical-video',
+    width: 1080,
+    height: 1920,
+    durationSeconds: 20,
+    qualityRating: 4,
+    rightsBasis: 'club-bahia-owned',
+    rightsNote: 'Club Bahia footage.',
+    credit: 'Club Bahia',
+    rightsConfirmedAt: NOW.toISOString(),
+    derivatives: [],
+    usageHistory: [],
+    usageCount: 0,
+    createdAt: NOW.toISOString(),
+    updatedAt: NOW.toISOString(),
+    ...overrides,
   };
 }
 
@@ -193,5 +235,44 @@ describe('vertical video sequencing', () => {
     expect(changed.status).toBe('draft');
     expect(changed.approvedContentVersion).toBeUndefined();
     expect(isVideoEditApprovalCurrent(changed)).toBe(false);
+  });
+
+  it('replaces browser-supplied names, URLs, and duration with canonical library facts', () => {
+    const project = completeProject();
+    const canonical = canonicalizeVideoEditSources({
+      project,
+      assets: ['one', 'two', 'three', 'four'].map((id) => libraryVideo(id)),
+    });
+    expect(canonical.clips[0].sourceName).toBe('Canonical one.mp4');
+    expect(canonical.clips[0].sourceUrl).toBe(
+      'https://canonical.example.com/one.mp4',
+    );
+    expect(canonical.clips[0].sourceDurationSeconds).toBe(20);
+  });
+
+  it('rejects archived or non-video source substitutions', () => {
+    const project = completeProject();
+    expect(() =>
+      canonicalizeVideoEditSources({
+        project,
+        assets: [
+          libraryVideo('one', { status: 'archived' }),
+          libraryVideo('two'),
+          libraryVideo('three'),
+          libraryVideo('four'),
+        ],
+      }),
+    ).toThrow(/no longer active/i);
+    expect(() =>
+      canonicalizeVideoEditSources({
+        project,
+        assets: [
+          libraryVideo('one', { kind: 'image', contentType: 'image/jpeg' }),
+          libraryVideo('two'),
+          libraryVideo('three'),
+          libraryVideo('four'),
+        ],
+      }),
+    ).toThrow(/not a video/i);
   });
 });
