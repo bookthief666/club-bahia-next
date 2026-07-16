@@ -152,6 +152,42 @@ async function loadEventReviewData(
   }
 }
 
+async function currentReviewItems(input: {
+  candidates: PromotionReviewItem[];
+  records: LoadedEventReviewData[];
+  requireQueueStatus: boolean;
+}): Promise<Map<string, PromotionReviewItem>> {
+  const candidateEventIds = [...new Set(input.candidates.map((item) => item.eventId))];
+  const queue = input.requireQueueStatus ? await loadQueue() : { jobs: [] };
+  if (input.requireQueueStatus && queue.warning) {
+    throw new Error(
+      'Publishing-job status could not be verified. Refresh the inbox or review the item inside its event before approving it.',
+    );
+  }
+
+  const sources = await mapWithConcurrency(candidateEventIds, 3, async (eventId) => {
+    const record = input.records.find((entry) => entry.event.id === eventId);
+    if (!record) throw new Error('One selected event is no longer loaded.');
+    const [workspace, assembly, media] = await Promise.all([
+      growthWorkspaceRepository.getWorkspace(record.event),
+      postAssemblyRepository.get(eventId),
+      loadAssets(eventId),
+    ]);
+    return {
+      event: record.event,
+      workspace,
+      assembly,
+      assets: media.assets,
+      mediaAccess: media.mediaAccess,
+      queueJobs: queue.jobs.filter((job) => job.eventId === eventId),
+    } satisfies PromotionReviewSource;
+  });
+
+  return new Map(
+    buildPromotionReviewItems(sources).map((item) => [item.key, item]),
+  );
+}
+
 export async function loadPromotionReviewInbox(): Promise<LoadedPromotionReviewInbox> {
   const [allEvents, queue] = await Promise.all([
     eventRepository.listEvents(),
@@ -186,27 +222,60 @@ export async function approvePromotionReviewItems(input: {
   items: PromotionReviewItem[];
   records: LoadedEventReviewData[];
 }): Promise<void> {
-  for (const item of input.items) {
-    const record = input.records.find((entry) => entry.event.id === item.eventId);
-    if (!record) throw new Error(`Event ${item.eventTitle} is no longer loaded.`);
+  const currentItems = await currentReviewItems({
+    candidates: input.items,
+    records: input.records,
+    requireQueueStatus: true,
+  });
+
+  for (const requested of input.items) {
+    const current = currentItems.get(requested.key);
+    if (!current?.bulkApprovable) {
+      throw new Error(
+        `${requested.eventTitle} · ${requested.channelLabel} changed or no longer passes every safety gate. Refresh and review its blockers.`,
+      );
+    }
+  }
+
+  for (const requested of input.items) {
+    const record = input.records.find(
+      (entry) => entry.event.id === requested.eventId,
+    );
+    if (!record) throw new Error(`Event ${requested.eventTitle} is no longer loaded.`);
     await growthWorkspaceRepository.updateContentStatus(
       record.event,
-      item.contentItemId,
+      requested.contentItemId,
       'approved',
     );
   }
 }
 
-export async function assignPromotionReviewMedia(
-  items: PromotionReviewItem[],
-): Promise<void> {
-  for (const item of items) {
-    if (!item.autoAssignableAssetId) continue;
+export async function assignPromotionReviewMedia(input: {
+  items: PromotionReviewItem[];
+  records: LoadedEventReviewData[];
+}): Promise<void> {
+  const currentItems = await currentReviewItems({
+    candidates: input.items,
+    records: input.records,
+    requireQueueStatus: false,
+  });
+
+  const assignments = input.items.map((requested) => {
+    const current = currentItems.get(requested.key);
+    if (!current?.autoAssignableAssetId) {
+      throw new Error(
+        `${requested.eventTitle} · ${requested.channelLabel} no longer has a verified approved media recommendation. Refresh before assigning.`,
+      );
+    }
+    return current;
+  });
+
+  for (const current of assignments) {
     await postAssemblyRepository.assignPrimaryAsset(
-      item.eventId,
-      item.contentItemId,
-      item.channel,
-      item.autoAssignableAssetId,
+      current.eventId,
+      current.contentItemId,
+      current.channel,
+      current.autoAssignableAssetId,
     );
   }
 }
