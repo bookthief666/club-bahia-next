@@ -451,7 +451,6 @@ export function MediaLibraryClient() {
     const saved = sessionStorage.getItem(ACCESS_SESSION_KEY) ?? '';
     setAccessCode(saved);
     void load(saved);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filtered = useMemo(() => {
